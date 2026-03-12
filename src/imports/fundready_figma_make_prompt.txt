@@ -1,0 +1,426 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║   FUNDREADY™ — FIGMA MAKE EXPERT REDESIGN PROMPT                        ║
+║   Built from full design system audit · Production-grade output only     ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 0 — HOW TO READ THIS PROMPT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This prompt is structured in execution order. Work through each section
+completely before moving to the next. Do not skip sections. Do not combine
+sections into a single pass. Each section has a specific output target.
+
+When a section says "APPLY TO ALL FILES" apply it globally.
+When a section says "PRESERVE" do not touch that code.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — PLATFORM CONTEXT & IDENTITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Platform:    FundReady (formerly SaaS Financing System)
+Owner:       Fundabl — info@getfundabl.com
+Purpose:     Pre-funding readiness platform for small business owners.
+
+Primary user: Underserved small business owner. Smart. Determined.
+              Time-poor. Needs clarity and action, not inspiration.
+
+The platform already has 100% of its logic built:
+  17 funding product pages (AccessFunding/)
+  Full lender compliance module system (LenderCompliance/)
+  BusinessSuccessScan assessment (Steps 1-3 + Results)
+  Status reports, AICoachChat, FicoWidget, FundingApplicationModal
+  fundingEligibility.ts, lenderComplianceModules.ts, fundingRequirements.ts
+
+YOUR ROLE: Senior product designer and React/Tailwind engineer.
+YOUR MANDATE: Redesign the VISUAL LAYER ONLY. Zero logic changes.
+              Zero routing changes. Zero utility file changes.
+              Only: colors, typography, spacing, layout, component styling.
+
+WHAT THIS PLATFORM MUST COMMUNICATE ON EVERY SCREEN:
+  1. This system knows exactly what lenders want
+  2. Every number shown is trustworthy and specific
+  3. There is always one clear next action visible
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — CURRENT DESIGN BASELINE (DO NOT REBUILD)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Current colors being replaced:
+  Primary:       #1e40af (deep blue) - REPLACE with lime green system
+  Background:    #f8fafc (light) - REPLACE with dark system
+  Cards:         #ffffff (white) - REPLACE with dark surface
+  Sidebar:       linear-gradient(180deg, #1e40af, #1e3a8a) - REPLACE
+
+Current typography being replaced:
+  Font: Inter / system-ui - REPLACE with Syne + DM Sans + Crimson Pro
+
+Current patterns to PRESERVE (do not break):
+  All Framer Motion animations - keep every single one
+  Shadcn/UI component library structure - keep all imports
+  Responsive grid breakpoints - keep sm/md/lg/xl
+  Pre-qualified badge count system - keep logic, restyle only
+  Expandable sidebar with AnimatePresence - keep behavior, restyle only
+  All routing logic in routes.tsx - do not touch
+  All utility files in /src/app/utils/ - do not touch
+
+Current gaps to FIX in this redesign:
+  Empty state designs - not consistent - standardize them
+  Error states - partially implemented - complete them
+  Loading skeletons - exist but underused - apply consistently
+  Disabled states - Tailwind defaults only - add explicit styling
+  Micro-interactions - weak - add button press and input focus depth
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — NEW DESIGN SYSTEM (APPLY GLOBALLY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TARGET FILE: src/styles/theme.css
+Replace existing CSS custom properties with these exact values:
+
+:root {
+  --background:          #0d0f0b;
+  --foreground:          #e4e8d8;
+  --card:                #131510;
+  --card-foreground:     #e4e8d8;
+  --card-border:         #2a2e22;
+  --popover:             #191c14;
+  --popover-foreground:  #e4e8d8;
+  --surface-1:           #131510;
+  --surface-2:           #191c14;
+  --surface-3:           #1f231a;
+  --border:              #2a2e22;
+  --border-medium:       #363b2c;
+  --border-strong:       #4a5038;
+  --primary:             #8ab820;
+  --primary-hover:       #5a7a10;
+  --primary-foreground:  #0d0f0b;
+  --primary-bg:          rgba(138, 184, 32, 0.08);
+  --primary-mid:         rgba(138, 184, 32, 0.20);
+  --primary-border:      rgba(138, 184, 32, 0.35);
+  --secondary:           #1f231a;
+  --secondary-foreground:#9aa088;
+  --success:             #8ab820;
+  --success-bg:          rgba(138, 184, 32, 0.08);
+  --success-border:      rgba(138, 184, 32, 0.25);
+  --warning:             #c89020;
+  --warning-bg:          rgba(200, 144, 32, 0.10);
+  --warning-border:      rgba(200, 144, 32, 0.25);
+  --destructive:         #b04428;
+  --destructive-bg:      rgba(176, 68, 40, 0.10);
+  --destructive-border:  rgba(176, 68, 40, 0.25);
+  --destructive-foreground: #e4e8d8;
+  --info:                #38a880;
+  --info-bg:             rgba(56, 168, 128, 0.08);
+  --muted:               #1f231a;
+  --muted-foreground:    #6b7258;
+  --input:               #1f231a;
+  --input-border:        #2a2e22;
+  --ring:                #8ab820;
+  --radius:              0.375rem;
+  --radius-sm:           0.25rem;
+  --radius-md:           0.375rem;
+  --radius-lg:           0.5rem;
+  --radius-xl:           0.75rem;
+  --radius-2xl:          1rem;
+  --shadow-sm:  0 1px 3px 0 rgba(0,0,0,0.4);
+  --shadow-md:  0 4px 8px -1px rgba(0,0,0,0.5);
+  --shadow-lg:  0 10px 20px -3px rgba(0,0,0,0.6);
+  --shadow-xl:  0 20px 30px -5px rgba(0,0,0,0.7);
+  --sidebar-bg:           #0a0c08;
+  --sidebar-border:       #1f231a;
+  --sidebar-text:         #9aa088;
+  --sidebar-text-active:  #e4e8d8;
+  --sidebar-accent:       rgba(138, 184, 32, 0.10);
+  --sidebar-accent-hover: rgba(138, 184, 32, 0.16);
+  --sidebar-width:        272px;
+  --chart-1: #8ab820;
+  --chart-2: #38a880;
+  --chart-3: #c89020;
+  --chart-4: #3878c8;
+  --chart-5: #b04428;
+  --font-display: 'Syne', sans-serif;
+  --font-body:    'DM Sans', sans-serif;
+  --font-serif:   'Crimson Pro', serif;
+}
+
+TARGET FILE: src/styles/fonts.css
+Replace existing font import with:
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Crimson+Pro:ital,wght@0,300;1,300;1,400&display=swap');
+
+TYPOGRAPHY SCALE - Apply globally:
+  Page titles:      Syne 800, clamp(28px,4vw,44px), -0.02em, lh 1.1
+  Section headings: Syne 700, 22px, -0.01em, lh 1.2
+  Card titles:      Syne 600, 15px, 0.02em, uppercase
+  Score numbers:    Syne 800, clamp(48px,8vw,96px), -0.03em, lh 1
+  Body text:        DM Sans 300, 14px, lh 1.65
+  Labels/Metadata:  DM Sans 400, 11px, 0.12em, uppercase
+  Callouts:         Crimson Pro italic 300, 16px, lh 1.7
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — COMPONENT REDESIGN RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CARDS (card.tsx, stat-card.tsx, card-modern.tsx, GoalCard, StatusCard):
+  bg: var(--card) #131510
+  border: 1px solid var(--border)
+  border-radius: rounded-lg - remove all rounded-2xl
+  hover: border-color var(--border-medium) - NO hover shadow
+  padding: p-5
+  unlocked variant: border var(--primary-border), bg var(--primary-bg)
+
+PRIMARY BUTTON (button.tsx + all CTAs):
+  bg: var(--primary) #8ab820
+  text: var(--primary-foreground) #0d0f0b
+  border-radius: rounded-sm - sharp corners, confident
+  font: Syne 700, 13px, 0.06em tracking, uppercase
+  padding: px-6 py-3
+  hover: bg var(--primary-hover) #5a7a10
+  active: scale(0.97) transform 100ms
+  transition: all 150ms
+
+SECONDARY BUTTON:
+  bg: transparent
+  border: 1px solid var(--border-medium)
+  text: var(--muted-foreground)
+  hover: border var(--primary-border), text var(--foreground)
+
+GHOST BUTTON:
+  bg: transparent, no border
+  text: var(--muted-foreground)
+  hover: bg var(--surface-2), text var(--foreground)
+
+BADGES (badge.tsx + all status indicators):
+  Shape: rounded-sm - NOT rounded-full
+  Font: DM Sans 400, 9px, 0.15em tracking, uppercase
+  Padding: px-2 py-0.5
+  Success: bg var(--success-bg), border var(--success-border), text var(--success)
+  Warning: bg var(--warning-bg), border var(--warning-border), text var(--warning)
+  Error:   bg var(--destructive-bg), border var(--destructive-border), text var(--destructive)
+  Info:    bg var(--info-bg), border rgba(56,168,128,.25), text var(--info)
+  Neutral: bg var(--surface-2), border var(--border), text var(--muted-foreground)
+
+INPUTS (input.tsx, select.tsx, textarea.tsx):
+  bg: var(--input) #1f231a
+  border: 2px solid var(--border)
+  border-radius: rounded-sm
+  text: var(--foreground), placeholder: var(--muted-foreground)
+  focus: border var(--primary), box-shadow 0 0 0 3px rgba(138,184,32,.12)
+  font: DM Sans 300, 14px | padding: px-4 py-3
+  Label: DM Sans 400, 10px, 0.15em tracking, uppercase, var(--muted-foreground)
+
+PROGRESS BAR (progress.tsx):
+  Track: 4px height, bg var(--border), radius 2px
+  Fill: linear-gradient(90deg, var(--destructive), var(--warning), #d4c443, var(--info), var(--success))
+  Transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1)
+
+PROGRESS RING (progress-ring.tsx, FicoWidget.tsx):
+  Active arc stroke: var(--primary)
+  Track stroke: var(--border)
+  Center number: Syne 800, var(--primary)
+
+SCORE DISPLAY - Color by band:
+  0-399:   var(--destructive) #b04428
+  400-549: var(--warning)     #c89020
+  550-649: #a0a020
+  650-749: var(--info)        #38a880
+  750-899: var(--success)     #8ab820
+  900+:    #c8f040
+
+SIDEBAR (Sidebar.tsx):
+  Width: 272px
+  bg: #0a0c08
+  border-right: 1px solid var(--sidebar-border)
+  Logo: "FUND" white + "READY" var(--primary), Syne 800 20px
+  Nav item default: text var(--sidebar-text), bg transparent
+  Nav item hover: bg var(--sidebar-accent), text var(--sidebar-text-active),
+                  left border 2px solid var(--primary)
+  Nav item active: bg var(--sidebar-accent-hover), text var(--foreground),
+                   left border 2px solid var(--primary)
+  Nav font: DM Sans 400, 13px
+  Section labels: DM Sans 400, 9px, 0.2em tracking, uppercase, var(--muted-foreground)
+  Keep all AnimatePresence expand/collapse logic
+
+TOP NAV (TopNav.tsx):
+  bg: var(--surface-1) #131510
+  border-bottom: 1px solid var(--border)
+  height: 52px
+  Right: score chip Syne 700 var(--primary)
+
+MODALS (all 4 modal components):
+  Overlay: rgba(0,0,0,.75)
+  Dialog bg: var(--surface-2)
+  Border: 1px solid var(--border-medium)
+  Border-radius: rounded-lg
+  Header: border-bottom 1px solid var(--border), padding 20px 24px
+  Body: padding 24px
+  Footer: border-top 1px solid var(--border), padding 16px 24px
+
+AI COACH CHAT (AICoachChat.tsx):
+  Container bg: var(--surface-1), border: 1px solid var(--border)
+  Header: "AI Coach" Syne 700 var(--primary)
+  User bubble: bg var(--surface-3), border var(--border), right-aligned
+  AI bubble: bg var(--primary-bg), border var(--primary-mid), left-aligned
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — PAGE REDESIGN SPECIFICATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DASHBOARD (Dashboard.tsx):
+  Hero row: massive Syne 800 FundScore (color-coded) + band name Crimson Pro italic
+  3 stat chips: X Unlocked (success) / X Approaching (warning) / X Locked (neutral)
+  Dimension bars: 6 rows, label + bar + pct, animate on mount
+  Top 3 priority actions: rank box + title + why text + pts/time pills
+  Capital access preview: horizontal scroll of product chips
+  Compliance progress: 20-dot visual + count + link
+
+ACCESS FUNDING (AccessFundingMain.tsx + all 17 product pages):
+  Group: UNLOCKED NOW / APPROACHING / LOCKED
+  Product card: status dot + name + amount + 4-col metadata + gap analysis collapsed
+  Gap analysis: score pill (warning) + compliance item pills, each clickable
+  Unlocked CTA: "Apply Now" primary | Locked CTA: "View Gap" secondary
+
+BUSINESS SUCCESS SCAN (Step1, Step2, Step3, Results_NEW):
+  Full-screen, no sidebar during scan
+  Progress bar top: 4px gradient
+  Question: Syne 600, clamp(20px,3vw,28px)
+  Why callout: left border 3px var(--primary-mid), bg var(--primary-bg), Crimson Pro italic
+  Option cards: dark surface, hover lime border/bg, selected lime border + checkmark
+  Trust strip first screen: lock icon + "No bank login. No credit pull. No data sold."
+  Results: animated score counter + band + meter + dim bars + top 5 actions + lender preview
+
+LENDER COMPLIANCE (LenderCompliance/index + 13 sub-pages):
+  20-dot summary header
+  2-column grid of compliance item cards
+  Card: number badge + name + description + time tag + checkbox
+  Checked state: success border + bg, filled checkbox
+  Sub-pages: back link + title + numbered steps + "Why Lenders Care" callout
+
+STATUS REPORTS (all 4 pages):
+  Massive color-coded metric number + breakdown + interpretation + gap + CTA
+
+FOUNDATION FIRST (locked state):
+  Blurred content behind upgrade card
+  Card: lock icon + "Foundation First" in var(--primary) + description + upgrade CTA
+  "What you unlock" list: 4-5 items with lime checkmarks
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — MISSING STATES (BUILD THESE NOW)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EMPTY STATE (all data-dependent pages):
+  Centered py-16 | 40px icon var(--muted-foreground)
+  Title: Syne 600 16px | Subtitle: DM Sans 300 13px max-w-xs centered
+  CTA: primary if action available, ghost if informational
+
+ERROR STATE:
+  border var(--destructive-border), bg var(--destructive-bg)
+  AlertCircle icon + message + "Try Again" ghost button
+
+LOADING SKELETON:
+  Use skeleton.tsx with var(--surface-3) base + shimmer
+  Apply to: Dashboard cards, product page rows, status report metrics
+
+DISABLED STATE:
+  opacity: 0.4 | cursor: not-allowed | pointer-events: none
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — MICRO-INTERACTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep all existing Framer Motion animations. Add:
+
+1. Primary button press: scale(0.97) on click, 100ms ease-out
+2. Option card select: border flashes lime, bg fades to primary-bg, checkmark
+   spring-scales in - 150ms total
+3. Compliance item check: card border/bg transitions to success, checkbox
+   fill spring-scales in - 200ms
+4. Score counter (Results + Dashboard): count from 0 to final over 1.5s,
+   cubic-bezier(0.16,1,0.3,1), color transitions red to final band color
+5. Dimension bars: animate width 0% to final on mount, 80ms stagger,
+   1s per bar, cubic-bezier(0.16,1,0.3,1)
+6. Product card unlock: when compliance check unlocks a product, that
+   card border pulses once in var(--primary) ring animation - 600ms
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — EXECUTION ORDER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 1:  theme.css — all color tokens
+STEP 2:  fonts.css — Syne, DM Sans, Crimson Pro
+STEP 3:  tailwind.css — extend fontFamily
+STEP 4:  Core UI: button, badge, input, card, stat-card, card-modern
+STEP 5:  Navigation: Sidebar, TopNav
+STEP 6:  Score components: progress, progress-ring, FicoWidget
+STEP 7:  Dashboard.tsx
+STEP 8:  BusinessSuccessScan — Step1, Step2, Step3, Results_NEW
+STEP 9:  AccessFundingMain + all 17 AccessFunding pages
+STEP 10: LenderCompliance index + all 13 sub-pages
+STEP 11: All 4 Status Report pages
+STEP 12: All 4 modal components
+STEP 13: Missing states — empty, error, loading, disabled
+STEP 14: Micro-interactions
+STEP 15: Final audit — verify zero blue, zero white cards, all Syne headings
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — HARD RULES (NEVER VIOLATE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. NEVER change any file in /src/app/utils/
+2. NEVER change routing in routes.tsx or RootLayout.tsx structure
+3. NEVER remove Framer Motion animations - only extend them
+4. NEVER use rounded-full on any card or button
+5. NEVER use white (#ffffff) as a background - dark mode throughout
+6. NEVER use #1e40af or any old blue - fully replaced by lime system
+7. NEVER show a product as accessible when eligibility logic says it is not
+8. ALWAYS make the primary CTA on any screen unmistakably obvious
+9. ALWAYS color-code score numbers by band - never static black or white
+10. ALWAYS complete a section fully before starting the next
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10 — QUALITY CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COLORS
+  Zero instances of #1e40af, #1e3a8a, #f8fafc, #ffffff in component files
+  All status colors use CSS variables not hardcoded hex
+  Sidebar uses #0a0c08 not gradient blue
+  All focus rings use var(--ring) lime green
+
+TYPOGRAPHY
+  All H1-H3 use Syne font
+  All score numbers use Syne 800
+  All body/label text uses DM Sans
+  Crimson Pro italic in callouts and band names
+
+COMPONENTS
+  All cards: dark bg, 1px border, no rounded-2xl, no white
+  All primary buttons: lime, sharp corners, Syne uppercase
+  All badges: rounded-sm, new semantic colors
+  All inputs: dark bg, lime focus ring
+  Progress bars: gradient fill, dark track
+
+STATES
+  Empty state on all data-dependent pages
+  Error state on all async components
+  Loading skeleton on Dashboard and product pages
+  Disabled state consistent everywhere
+
+MICRO-INTERACTIONS
+  Button press scale confirmed
+  Option select animation confirmed
+  Compliance check animation confirmed
+  Score counter animates on load
+  Dimension bars stagger-animate
+  Product card unlock pulse confirmed
+
+FUNCTIONALITY
+  All routing works
+  All eligibility logic correct
+  Compliance toggles update eligibility
+  All 17 product pages load
+  All 13 compliance sub-pages load
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BEGIN EXECUTION AT SECTION 8, STEP 1.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

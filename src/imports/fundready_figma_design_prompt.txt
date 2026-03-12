@@ -1,0 +1,972 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  FUNDREADY™ — FIGMA DESIGN SYSTEM & UX PROMPT                              ║
+║  Expert-Level · Production-Grade · Complete Screen Coverage                 ║
+║  For: Senior Figma Designer · Platform: Web SaaS · $10B Design Thinking    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+This prompt tells you WHAT to design, WHY every decision matters, HOW each
+screen connects to the next, and what the user must feel at every step.
+
+Do not design inspiration. Design results.
+Do not design screens. Design a system.
+Do not design for approval. Design for funding outcomes.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — WHAT THIS PLATFORM IS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FundReady™ is a pre-funding readiness SaaS platform for the 33 million small
+businesses in the United States. It exists to solve one problem:
+
+  Small businesses are denied funding not because they're unworthy —
+  but because they were never prepared before applying.
+
+The platform functions as three things simultaneously:
+  → Virtual CFO         (knows what lenders see)
+  → Funding Strategist  (knows which products they qualify for)
+  → Action Engine       (tells them exactly what to fix, in what order)
+
+THREE USER GOALS (the platform serves all three in sequence):
+  Goal 1: Access as much funding as possible RIGHT NOW
+  Goal 2: Build a bankable business over the next 30–90 days
+  Goal 3: Access larger, lower-rate conventional/SBA loans long-term
+
+CORE ENGINE — three layers that always work together:
+  Layer 1: FundScore™ (0–1000) — 6-dimension weighted composite score
+  Layer 2: 20-Item Lender Compliance Checklist — structural bankability
+  Layer 3: 17-Product Eligibility Matrix — pre-qualification engine
+
+The user's score + compliance status = their exact eligibility across
+17 funding products. Everything on the platform feeds this engine.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — DESIGN SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── 2A. DESIGN PHILOSOPHY ────────────────────────────────────────────────────
+
+This is a COMMAND CENTER, not a dashboard.
+The visual language must communicate:
+  1. Precision — every number is real and trustworthy
+  2. Urgency — there is always a next move
+  3. Authority — this system knows what lenders know
+  4. Momentum — progress is always visible
+
+Reference points: Bloomberg Terminal meets fintech meets SaaS clarity.
+NOT: colorful startup. NOT: banking conservatism. NOT: generic dashboard.
+
+Dark mode only. No white backgrounds. No light theme toggle in v1.
+Every screen must feel like a control room, not a website.
+
+── 2B. COLOR TOKENS ─────────────────────────────────────────────────────────
+
+BACKGROUNDS (layer system — each level slightly lighter):
+  bg-base:      #0d0f0b   Page background
+  bg-surface-1: #131510   Cards, sidebar
+  bg-surface-2: #191c14   Elevated cards, inner panels
+  bg-surface-3: #1f231a   Input fields, nested content
+
+BORDERS:
+  border-subtle:   #2a2e22   Default card borders
+  border-medium:   #363b2c   Hover/focus borders
+  border-strong:   #4a5038   Active/selected borders
+
+TEXT:
+  text-primary:  #e4e8d8   Headings, important values
+  text-secondary:#b8bca8   Body text, descriptions
+  text-muted:    #6b7258   Labels, metadata, placeholders
+  text-disabled: #3a3d2e   Inactive text
+
+BRAND — LIME SYSTEM (the primary action/success color):
+  lime-500:   #8ab820   Primary CTA, active states, score indicators
+  lime-600:   #5a7a10   Hover states, dark lime
+  lime-900:   #1a2a04   Deep lime background
+  lime-alpha: rgba(138,184,32,0.08)   Subtle lime tint
+  lime-glow:  rgba(138,184,32,0.20)   Glow effect on hover
+
+SCORE BAND COLORS (use ONLY these for any score-related number):
+  score-critical:    #b04428   0–399
+  score-low:         #c89020   400–549
+  score-developing:  #a0a020   550–649
+  score-approaching: #38a880   650–749
+  score-ready:       #8ab820   750–899
+  score-prime:       #c8f040   900–1000
+
+STATUS COLORS:
+  status-unlocked:    #8ab820   Pre-qualified products
+  status-approaching: #c89020   Within reach
+  status-locked:      #b04428   Blocked
+  status-done:        #8ab820   Completed items
+
+SEMANTIC:
+  amber:     #c89020   Warnings, medium-term items
+  red:       #b04428   Errors, locked, critical
+  teal:      #38a880   Info, approaching
+  violet:    #8858c8   Banking dimension
+  blue:      #3878c8   Narrative dimension
+
+── 2C. TYPOGRAPHY ───────────────────────────────────────────────────────────
+
+FONTS (Google Fonts — all 3 required):
+  Display/Scores:  Syne 800       — Hero numbers, brand mark, score displays
+  Headings/Labels: Syne 700/600   — Section titles, card headers, nav
+  Body/UI:         DM Sans 300/400/500  — Body text, inputs, metadata
+  Callouts:        Crimson Pro italic 300  — Advisory notes, platform voice
+
+TYPE SCALE:
+  score-hero:   Syne 800, 96px, -0.03em  (FundScore™ number)
+  score-large:  Syne 800, 64px, -0.02em  (section score displays)
+  score-medium: Syne 700, 44px, -0.02em  (card score numbers)
+  h1:  Syne 800, clamp(32px,5vw,52px), -0.02em  (page titles)
+  h2:  Syne 700, 28px, -0.01em           (section headings)
+  h3:  Syne 600, 20px, 0.01em            (card titles)
+  h4:  DM Sans 500, 16px, 0.02em         (subsection labels)
+  body-lg:   DM Sans 300, 16px, lh 1.7
+  body:      DM Sans 300, 14px, lh 1.65
+  body-sm:   DM Sans 400, 13px, lh 1.6
+  label:     DM Sans 400, 11px, 0.12em uppercase  (all-caps labels)
+  label-sm:  DM Sans 400, 9px, 0.2em uppercase    (micro labels)
+  callout:   Crimson Pro italic 300, 18px, lh 1.8  (advisory text)
+
+── 2D. COMPONENT LIBRARY ────────────────────────────────────────────────────
+
+BUILD THESE AS FIGMA COMPONENTS (with variants for every state):
+
+BUTTONS:
+  Primary:    bg lime-500, text black, Syne 700, 14px, 0.06em, uppercase
+              padding 14px 32px, 0 border radius (sharp corners)
+              hover: bg lime-600, slight glow
+              disabled: bg border-subtle, text muted
+              loading: lime spinner left of text
+
+  Secondary:  bg transparent, border 2px border-medium, text text-secondary
+              hover: border lime-500, text text-primary
+              active: bg lime-alpha
+
+  Ghost:      No border, text text-muted
+              hover: text lime-500
+
+  Danger:     bg red 10% alpha, border red, text red
+              hover: bg red 20% alpha
+
+SCORE CHIP (inline score badge):
+  bg lime-alpha, border 1px lime-600
+  Syne 700, 14px, lime-500
+  padding 4px 12px
+  Used in: topbar, card headers, product listings
+
+SCORE BADGE (large standalone):
+  Circular or square — designer's choice
+  Score number: Syne 800, sized to context
+  Color: from score band system
+  Band label below in Crimson Pro italic
+
+STATUS PILLS (for products):
+  Unlocked:    bg lime-alpha, border lime-600, dot + "Pre-Qualified" label
+  Approaching: bg amber 10%, border amber 60%, "Approaching" label
+  Locked:      bg red 10%, border red 60%, "Locked" label
+
+PROGRESS BAR:
+  Track: bg border-subtle, 4–6px height, 0 radius
+  Fill: linear-gradient(90deg, lime-600, lime-500)
+  Animate: cubic-bezier(0.16, 1, 0.3, 1)
+
+COMPLIANCE DOT (mini status indicators, 14×14):
+  Done:      bg lime-500
+  Quick:     bg amber
+  Medium:    bg #c87020
+  Long-term: bg red
+  Empty:     bg border-medium
+  All: border-radius 2px (slight rounding only)
+
+DIMENSION BAR (score breakdown):
+  Row: name (10px label) | track (flex-1, 5–8px) | percentage
+  Fill color: lime if ≥70%, amber if 45–69%, red if <45%
+  Animate in on mount with stagger
+
+GAP PILL (missing requirements):
+  Score gap:      border amber, text amber, small
+  Compliance gap: border amber 60%, text amber/muted
+  Done:           border lime, text lime
+
+CARD:
+  bg bg-surface-1, border 1px border-subtle
+  0 border radius (sharp — not rounded-2xl)
+  hover: border-color border-medium
+  active/selected: border lime-600
+
+INPUT:
+  bg bg-surface-3, border 2px border-subtle
+  DM Sans 300, 14px
+  focus: border lime-500, ring 2px lime-alpha
+  error: border red
+  placeholder: text-muted
+
+ADVISORY NOTE:
+  Crimson Pro italic 300, 16px
+  bg amber 10%, border-left 3px amber
+  padding 16px 20px
+
+── 2E. SPACING & GRID ───────────────────────────────────────────────────────
+
+8px base unit. All spacing is multiples of 8.
+Common values: 8, 16, 24, 32, 40, 48, 64, 80, 96
+
+Layout grid:
+  Sidebar:    280px fixed (desktop), 0px (mobile)
+  Content:    flex-1 with max-width 1280px
+  Gap:        32px column gap
+
+Card padding:     20–28px
+Section padding:  28–40px vertical, 32px horizontal
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — NAVIGATION ARCHITECTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+── 3A. SIDEBAR (Left, 280px) ────────────────────────────────────────────────
+
+bg: #0a0c08 (slightly darker than page bg)
+border-right: 1px border-subtle
+sticky, full height
+
+TOP SECTION (Brand + Score):
+  Logo: "FUND<span lime>READY™</span>" Syne 800, 20px
+  Below logo: FundScore™ chip showing current score
+  Score band label in Crimson Pro italic below
+  Score track bar (6px, shows score position 0–1000)
+
+NAVIGATION GROUPS (3 groups with labels):
+
+  GROUP 1 — "Your Readiness"
+    • FundScore™ Overview        /dashboard
+    • Lender Compliance (20/20)  /lender-compliance
+    • Business Health Scan       /business-success-scan
+    • My Action Plan             /action-plan
+
+  GROUP 2 — "Access Funding" (17 products)
+    • Capital Access Map         /capital-dashboard
+    • [All 17 product pages]
+    Show pre-qualified count badge on group header
+    Show "X pre-qualified" in lime badge
+
+  GROUP 3 — "Tools & Support"
+    • AI Financial Advisor       /ai-advisor
+    • Document Center            /documents
+    • FundScore™ Assessment      /fundscore-assessment
+    • Account & Settings         /settings
+
+BOTTOM:
+  Business name + entity type
+  "Last updated: X days ago" in muted text
+  Small lime dot if score freshness is good
+
+MOBILE:
+  Sidebar collapses to bottom tab bar (5 tabs max)
+  Score chip always visible in mobile header
+
+── 3B. TOP NAVIGATION (52px height) ────────────────────────────────────────
+
+bg: bg-surface-1, border-bottom: 1px border-subtle
+sticky, z-index 100
+
+LEFT: Breadcrumb — "FundReady™ / Section / Page"
+RIGHT: Score chip + notification bell + user avatar
+
+For Dashboard and multi-tab pages, use tab navigation inside top bar:
+  4 tabs, 12px uppercase Syne, active = lime bottom border 2px
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — SCREEN-BY-SCREEN DESIGN SPECIFICATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Design every screen with these states:
+  → Default (data loaded)
+  → Loading skeleton
+  → Empty state (first-time user, no data)
+  → Error state
+  → Mobile (375px)
+
+──────────────────────────────────────────────────────────────────────────────
+SCREEN 01 — MARKETING / LANDING PAGE
+──────────────────────────────────────────────────────────────────────────────
+
+PURPOSE: Convert skeptical small business owners who've been denied before.
+Do not sell hope. Sell the tool. Show the system.
+
+HERO SECTION:
+  Full viewport. Dark bg. Grain texture overlay (3% opacity).
+
+  Left column (55%):
+    H1 (Syne 800, clamp 40–72px):
+      Line 1: "You weren't denied"
+      Line 2 (lime): "because you failed."
+      Line 3: "You were denied because"
+      Line 4 (lime): "you weren't prepared."
+    Subhead (Crimson Pro italic, 20px, muted):
+      "33 million small businesses. 80%+ denied.
+       Not because their business isn't worthy —
+       because no one ever showed them what lenders actually check."
+    CTA row:
+      Primary: "Get My FundScore™ Free"
+      Secondary (ghost): "See How It Works"
+    Trust strip below CTA:
+      3 items: "No bank login" · "No credit pull" · "Results in 10 min"
+      Small shield icons. 12px label. Muted.
+
+  Right column (45%):
+    Floating UI preview card showing a sample score reveal:
+      Score: 624, band: "Developing", 3 pre-qualified products shown
+      Slight tilt (2–3 degrees), subtle shadow
+      Lime glow on edges
+
+  Background: Subtle grid pattern (1px lines, 3% opacity)
+
+PROBLEM SECTION (3 columns):
+  Headline: "The real reasons you were denied"
+  3 cards, each with an icon, stat, and explanation:
+    Card 1: "Credit Profile" — 78% don't know their business credit score
+    Card 2: "Compliance" — 14 of 20 items are fixable in under 30 days
+    Card 3: "Documentation" — Lenders check 12+ documents before deciding
+
+SOLUTION SECTION:
+  3 steps showing the platform flow:
+    Step 1: "FundScore™ Assessment" → "24 questions. 10 minutes. No bank login."
+    Step 2: "Gap Analysis" → "See exactly what's blocking you and by how much."
+    Step 3: "Capital Access" → "Pre-qualify today. Unlock more in 30–90 days."
+  Visual: Simplified score card between each step showing transformation
+
+SOCIAL PROOF STRIP:
+  "33M small businesses" · "$300B+ denied annually" · "17 funding products mapped"
+  Simple numbers. Syne 800. Lime for the numbers.
+
+──────────────────────────────────────────────────────────────────────────────
+SCREEN 02 — ONBOARDING FLOW (5 Steps)
+──────────────────────────────────────────────────────────────────────────────
+
+PURPOSE: Get enough business context to run first eligibility check.
+No dark patterns. No upsell. Just data collection that feels like setup.
+
+Layout: Centered card, max-width 600px, progress bar across top.
+No sidebar during onboarding. Full focus mode.
+
+STEP 1 — Business Basics:
+  Fields: Business Name, Entity Type (radio: Sole Prop / LLC / S-Corp / C-Corp),
+          State of Registration, Industry (searchable select), Years in Business
+  Design note: Entity type radio is visual — show entity icons, not just text
+
+STEP 2 — Revenue & Banking:
+  Fields: Average Monthly Revenue (slider + input), Business Bank Months Open,
+          Personal FICO Range (slider: 500–850), Avg Daily Balance Range
+  Design note: sliders should feel premium — not HTML defaults
+
+STEP 3 — Documentation Status:
+  Checklist format (not text inputs):
+    "Do you have these?" with Yes/No/In Progress for each:
+    Tax returns (2+ years), P&L statement, Bank statements (12 months),
+    Business plan, Articles of incorporation
+  Design: toggle cards — selected state shows lime border + checkmark
+
+STEP 4 — Current Situation:
+  Goal selection (visual cards):
+    Card 1: "Get funded now" — lightning icon
+    Card 2: "Build bankability" — building icon
+    Card 3: "Access premium rates" — bank icon
+  Users can select all three. Multi-select.
+  "How much are you looking to access?" — amount range selector
+
+STEP 5 — Score Preview (loading + reveal):
+  Full-screen loading state:
+    Animated progress bar
+    3 lines cycling: "Analyzing your credit profile..."
+                     "Running lender eligibility check..."
+                     "Building your action plan..."
+  Then: Score reveal animation (counter from 0 to final)
+  Below score: "Your assessment is ready. Let's review it together."
+  Single CTA: "View My FundReady™ Dashboard →"
+
+──────────────────────────────────────────────────────────────────────────────
+SCREEN 03 — MAIN DASHBOARD (Command Center)
+──────────────────────────────────────────────────────────────────────────────
+
+PURPOSE: The homepage of the app. Every session starts here.
+The user must see: their score, their readiness, what's changed, next action.
+All in one viewport — no scroll required to get the critical info.
+
+LAYOUT: 2-column (after sidebar)
+  Left column (38%): Score + Compliance Status
+  Right column (62%): Activity + Quick Actions + Products
+
+LEFT COLUMN:
+
+  SCORE CARD (top of left):
+    Score number: Syne 800, 96px, color from band system
+    Band label: Crimson Pro italic, 22px, muted
+    Score meter: 10px track, gradient fill 0–1000
+    Subscript: "Last updated X days ago · Take new assessment →"
+
+    6 DIMENSION BARS below score:
+      Each row: dim name (label) | bar (flex-1) | percentage
+      Bars color-coded by performance (lime/amber/red)
+      Stagger animate in on page load
+
+  COMPLIANCE CARD (below score):
+    Title: "Lender Compliance" + count "11/20 Complete"
+    20-dot grid (14×14 dots, color-coded by status)
+    Legend: Done · Quick Win · 30–60d · 60d+
+    "View All 20 Items →" link
+
+  ELIGIBILITY SUMMARY (below compliance):
+    3 badges in a row:
+      Green: "X Unlocked" — products pre-qualified now
+      Amber: "X Approaching" — within reach
+      Red: "X Locked" — needs work
+
+RIGHT COLUMN:
+
+  TOP ROW — Metric strip (4 quick stats):
+    Score Change (↑+12 this week) | Products Unlocked | Items Completed | Days Active
+
+  PRE-QUALIFIED PRODUCTS (primary focus):
+    Title: "Available to You Now"
+    Subtitle: "These products match your current score + compliance status"
+    Product cards (horizontal list, 3–4 visible):
+      Each card: status dot, product name, amount range, 2 key metrics
+      "Fastest" tag on fastest-funding product
+      "Best Rate" tag on lowest-cost product
+      CTA: "View Details →"
+
+  NEXT BEST ACTIONS (ranked, max 3):
+    Title: "Your Highest-Impact Moves"
+    Each action: rank number | action description | impact pill "+X pts" | time pill
+    Ranked by: score gain per hour of effort
+    "View Full Action Plan →"
+
+  APPROACHING PRODUCTS (secondary):
+    Title: "Within Your Reach"
+    2 compact cards showing what's closest to unlocking:
+      Gap visualization: "Need +47 pts and 2 compliance items"
+      Progress bar showing how close they are
+
+──────────────────────────────────────────────────────────────────────────────
+SCREEN 04 — FUNDSCORE™ ASSESSMENT (Questionnaire)
+──────────────────────────────────────────────────────────────────────────────
+
+PURPOSE: 24-question self-assessment. No bank login. No credit pull.
+Must feel authoritative, not like a quiz. This is a financial evaluation.
+
+LAYOUT: Full-page, no sidebar. Max-width 720px centered.
+
+TOPBAR (minimal):
+  Logo left. "No bank login required" right. Progress percentage.
+
+PROGRESS BAR:
+  Full-width below topbar. Lime gradient fill. 4px height.
+  Shows current section name ("Credit Profile — 4 of 6 sections")
+  Shows question count "Question 7 of 24" right aligned.
+
+WELCOME SCREEN (before Q1):
+  Trust strip (lime bg): "🔒 No bank login. No credit pull. Results in 10 min."
+  H1: "Find out if you're ready to get funded."
+  Subhead (Crimson Pro italic): "Answer 24 plain-language questions..."
+  Time badge (amber): "⏱ Most people finish in 6–9 minutes"
+  What you'll get card (4 checkmarks):
+    ✓ FundScore™ (0–1000)
+    ✓ 6-Dimension Breakdown
+    ✓ Ranked Action Plan
+    ✓ Lender Access Preview
+  Primary CTA: "Start My FundScore™ Assessment →"
+
+QUESTION SCREEN (Q1–Q24):
+  Section indicator: Lime dot + section name + "Question X of 24" right
+  Question text: Syne 600, clamp 20–28px
+  "Why this matters" callout (Crimson Pro italic, lime-bg, left border):
+    1–2 sentence explanation of why lenders care about this answer
+
+  OPTION CARDS (4–6 per question):
+    Full-width cards, stacked
+    Left: letter badge (A/B/C) in border-medium box — turns lime when selected
+    Right checkmark on selected
+    Option text: DM Sans 400, 15px
+    Option subtitle: DM Sans 300, 12px, muted
+    Hover: lime border, lime-alpha bg
+    Selected: lime border, lime-alpha bg, lime checkmark right
+
+  NAVIGATION:
+    "Continue" (primary, full-width) — disabled until answer selected
+    "Back" (ghost, left of Continue) — hidden on Q1
+
+RESULTS SCREEN:
+  Score animation: Count up from 0 to final over 1.2s
+  Band reveal: Crimson Pro italic, fades in after counter stops
+  Score meter fills after 300ms delay
+  6 dimension bars animate in staggered (80ms between each)
+  Top 5 actions revealed below
+  Lender access block (dark panel): shows unlocked + approaching products
+  Final CTA: "Get My Full Remediation Plan →" → /capital-dashboard
+
+──────────────────────────────────────────────────────────────────────────────
+SCREEN 05 — LENDER COMPLIANCE (20 Items)
+──────────────────────────────────────────────────────────────────────────────
+
+PURPOSE: The business infrastructure checklist. Separate from FundScore™.
+User checks off items as they complete them. Each check updates eligibility.
+
+LAYOUT: Standard sidebar + content. Max-width 900px.
+
+PAGE HEADER:
+  Title: "Lender Compliance"
+  Subhead: "20 structural items lenders verify before approving any application."
+  Progress: "11 of 20 complete" — large progress bar
+  3 badges: X Done · X Quick Wins (amber) · X Still Needed (red)
+
+COMPLIANCE GRID (2-column on desktop, 1 on mobile):
+  Each item card:
+    Checkbox (20px, border-medium → lime on check, spring animation)
+    Item number: "ITEM 3 OF 20" (9px label)
+    Item name: DM Sans 500, 13px
+    Description: DM Sans 300, 11px, muted
+    Time tag (only if incomplete):
+      "Quick Win — Under 7 days" (amber)
+      "30–60 Days" (orange)
+      "60–90+ Days" (red)
+    Done state: full card gets lime border, lime-alpha bg, lime checkmark
+
+IMPACT PANEL (sticky right sidebar, 300px):
+  Title: "What Completing These Unlocks"
+  Shows live count of how many products will unlock as items get checked
+  As user checks items, products section animates in
+  "Check an item to see what it unlocks →" in empty state
+
+──────────────────────────────────────────────────────────────────────────────
+SCREEN 06 — CAPITAL ACCESS MAP (Unified Dashboard)
+──────────────────────────────────────────────────────────────────────────────
+
+PURPOSE: The full picture of all 17 funding products and where the user stands.
+This is the most data-dense screen. Must be readable and actionable.
+
+LAYOUT: 300px sidebar + main panel. 4 tabs inside main panel.
+
+SIDEBAR (300px):
+  Section 1: FundScore™
+    Score number (52px, Syne 800, lime)
+    Band label (Crimson Pro italic)
+    Score track (6px gradient bar)
+    6 mini dim bars (labeled, 5px height each)
+
+  Section 2: Compliance Status
+    20-dot grid (14×14 each, color coded)
+    Legend below dots
+
+  Section 3: Eligibility
+    3 badges: X Unlocked · X Approaching · X Locked
+
+  Section 4: Adjust Profile (interactive sliders for demo/planning):
+    FundScore™ slider (200–950)
+    Compliance Items Done slider (0–20)
+    "Changes update eligibility in real time"
+    This feature shows users what would unlock if they improved
+
+MAIN PANEL — 4 TABS:
+
+  TAB 1 — Capital Access (default):
+    Sorted by status: Unlocked → Approaching → Locked
+    Group headers between status groups
+    Each product card:
+      Status dot (lime glow if unlocked, amber if approaching, muted if locked)
+      Product name (Syne 600, 14px)
+      Amount range (lime/amber/muted based on status)
+      4-column metadata: Rate · Speed · Min Score · Compliance Req
+      Expansion: gap analysis panel
+        If unlocked: "✓ Pre-Qualified" tag + requirements met
+        If approaching/locked: specific gap in points + missing compliance items as pills
+
+  TAB 2 — Lender Compliance:
+    Same 2-column checkbox grid from Screen 05
+    Checking an item here updates the Capital Access tab in real time
+
+  TAB 3 — FundScore™ Breakdown:
+    2-column grid of 6 dimension cards
+    Each card: dim name (colored) · weight % · score % · bar · 5 signal items
+
+  TAB 4 — Action Plan:
+    Ranked list of up to 6 actions
+    Each: rank box · title · explanation · pill row (pts gain · time · dimension)
+
+──────────────────────────────────────────────────────────────────────────────
+SCREEN 07 — INDIVIDUAL PRODUCT PAGES (17 Total)
+──────────────────────────────────────────────────────────────────────────────
+
+PURPOSE: Full detail on one specific funding product.
+Give the user everything they need to understand, qualify, and apply.
+
+LAYOUT: Standard sidebar + content. Max-width 900px.
+
+PRODUCT HERO (top):
+  Status pill (unlocked/approaching/locked) left of title
+  Product name: Syne 700, 32px
+  Amount range: Syne 800, 28px, lime/amber/muted
+  Key metrics row: Rate · Speed · Min Score · Compliance Count
+
+ELIGIBILITY SECTION:
+  Visual card split into two halves:
+    Left: "What You Have" — score bar, compliance items met (green checks)
+    Right: "What's Needed" — requirements list, gap vs. current status
+  If locked: red gap pills. If approaching: amber progress. If unlocked: lime checkmarks.
+
+REQUIREMENTS DEEP DIVE:
+  FundScore™ requirement: "Requires 550 points · You have 624 · ✓ Met"
+  Compliance requirements: each item listed with done/not-done status
+  "Missing items" expandable section if any are incomplete
+
+PRODUCT DETAILS ACCORDION:
+  What it is (plain language, Crimson Pro)
+  Typical terms (table: rate, term, collateral, guaranty)
+  Who it's best for
+  Application process
+  What happens after you apply
+
+ACTION:
+  If unlocked: "Apply Now" primary CTA (opens modal or external)
+  If approaching: "Complete These Items First" → links to compliance items needed
+  If locked: "Start Your Gap Plan" → sends to action plan page
+
+──────────────────────────────────────────────────────────────────────────────
+SCREEN 08 — ACTION PLAN
+──────────────────────────────────────────────────────────────────────────────
+
+PURPOSE: The ranked to-do list that bridges where they are to where they need to be.
+Everything in the platform leads here. This is the operational layer.
+
+LAYOUT: Standard sidebar + content, max-width 800px.
+
+PAGE HEADER:
+  Title: "Your Priority Action Plan"
+  Subtitle: "Ranked by funding impact. Do these in order."
+  Summary metric: "Completing all actions unlocks X new products"
+    and "Est. score improvement: +XXX points"
+
+ACTION CARDS (ordered list):
+  Each card:
+    Rank box (Syne 800, 28px, bg-surface-2)
+    Action title (DM Sans 500, 15px)
+    Why this matters (DM Sans 300, 12px, muted, 2 sentences)
+    Three pills: point gain (lime) · time estimate (amber) · dimension (dim color)
+    Expand button: shows step-by-step how to complete this action
+    Mark complete: lime checkbox — checking it updates score preview
+
+  Completed actions move to a "Completed" collapsed section below
+
+MILESTONE SECTION (visual timeline):
+  Shows 3 milestones based on user's trajectory:
+    Milestone 1 (30 days): "Unlock X additional products"
+    Milestone 2 (60 days): "Reach score of X, unlock Y products"
+    Milestone 3 (90 days): "SBA-ready / Premium tier access"
+  Each milestone shows: timeline point · score target · products unlocked
+
+──────────────────────────────────────────────────────────────────────────────
+SCREEN 09 — AI FINANCIAL ADVISOR CHAT
+──────────────────────────────────────────────────────────────────────────────
+
+PURPOSE: Chat-style interface where the user can ask any funding question.
+The AI knows their score, compliance status, and product eligibility.
+Responses are specific to their situation — not generic.
+
+LAYOUT: Sidebar + split-panel (chat left, context panel right)
+
+CHAT PANEL (left, 65%):
+  Clean message thread. Dark bg. Auto-scroll.
+  User messages: right-aligned, lime-alpha bg, border lime
+  AI messages: left-aligned, bg-surface-2, no border
+  AI messages can include embedded cards:
+    Score reference cards
+    Product comparison tables
+    Action item cards
+    Compliance checklist items
+
+  Input bar (bottom):
+    DM Sans 300, 14px
+    lime focus border
+    Send button (lime arrow icon)
+  Suggested prompts (chips above input on first load):
+    "What's my fastest path to $100K?"
+    "Why am I locked out of SBA loans?"
+    "What should I do first?"
+
+CONTEXT PANEL (right, 35%):
+  Title: "Your Current Status"
+  Shows live snapshot: score chip, compliance count, products unlocked
+  Updates if AI response changes anything
+  "Referenced in this conversation" section: shows any items the AI mentioned
+
+──────────────────────────────────────────────────────────────────────────────
+SCREEN 10 — DOCUMENT CENTER
+──────────────────────────────────────────────────────────────────────────────
+
+PURPOSE: Centralized document management for funding applications.
+Lenders require 12–20+ documents. This screen organizes them by product.
+
+LAYOUT: Standard sidebar + content. Tabs for organization.
+
+TABS: All Documents · By Lender Requirement · Checklist View · Upload
+
+DOCUMENT CARD (each):
+  Document name + type icon
+  Status: Uploaded (lime) / Missing (red) / Expired (amber) / Not Required (muted)
+  "Required for:" — shows which products need this doc
+  Upload button or preview button
+
+──────────────────────────────────────────────────────────────────────────────
+SCREEN 11 — BUSINESS HEALTH SCAN (3-Step Assessment)
+──────────────────────────────────────────────────────────────────────────────
+
+PURPOSE: Deeper diagnostic beyond the FundScore™ questionnaire.
+3 steps, uploads + inputs, produces detailed health report.
+
+STEP 1: Business Financials Upload
+  Upload: Last 2 years tax returns, P&L, bank statements
+  Manual fallback input if no documents
+  Progress: "1 of 3 steps"
+
+STEP 2: Credit + Banking Review
+  FICO range input, NSF history input, ADB trend
+  Entity verification section (state good standing, EIN match)
+
+STEP 3: Revenue Validation
+  Revenue inputs, trend selection, DSCR estimation tool
+
+RESULTS:
+  Health Report card for each area: Credit · Documentation · Banking · Structure
+  Letter grade A–F per area
+  Specific issues flagged with severity (critical/moderate/minor)
+  "Your Recommended Path" — 3-item personalized roadmap
+
+──────────────────────────────────────────────────────────────────────────────
+SCREEN 12 — MOBILE (375px) — KEY ADAPTATIONS
+──────────────────────────────────────────────────────────────────────────────
+
+Mobile is a simplified view. Not a compressed desktop.
+
+NAVIGATION: Bottom tab bar (5 tabs)
+  Home · Score · Products · Actions · Chat
+
+SCORE DISPLAY: Full-width card, score prominent, swipeable dimension cards below
+
+PRODUCT LIST: Single-column, compact cards, swipeable status filter chips
+
+COMPLIANCE: Single-column grid of dots on top, checklist below
+
+ACTION PLAN: Accordion cards, full-width
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — USER JOURNEY MAP (All 3 Goals)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GOAL 1 — ACCESS FUNDING RIGHT NOW:
+  Landing → Assessment → Results Screen → Capital Access Map (Tab 1)
+  → Select unlocked product → Product Detail → Apply
+  Time: 15 minutes from landing to first application
+
+GOAL 2 — BUILD A BANKABLE BUSINESS:
+  Dashboard → Action Plan → Complete Items → Compliance Checklist
+  → New products unlock → Capital Access Map updates
+  Time: 30–90 day loop, score improves with each action
+
+GOAL 3 — ACCESS PREMIUM LOANS AT LOWER RATES:
+  Dashboard → Score Trend → AI Advisor (What's my SBA path?)
+  → Action Plan (SBA-specific actions) → Business Health Scan
+  → Full document prep → SBA-ready milestone
+  Time: 90–180 day track for SBA and conventional bank access
+
+RETENTION LOOP (weekly):
+  Email/notification: "Your score is ready for review"
+  → Dashboard (see any changes)
+  → Check new items off compliance list
+  → See what newly unlocked
+  → Take one action from the plan
+  → Repeat
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — FIGMA FILE ORGANIZATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FILE STRUCTURE (organize Figma pages in this order):
+
+  Page 0: 🎨 Design System
+    Colors, typography, spacing, icons
+    All components (with variants labeled)
+
+  Page 1: 🌐 Marketing / Landing
+    Desktop + Mobile states
+
+  Page 2: 🚀 Onboarding Flow
+    Steps 1–5 + loading state + score reveal
+
+  Page 3: 🏠 Dashboard
+    Default (has data) + Empty (first time) + Loading skeleton
+
+  Page 4: 📊 FundScore™ Assessment
+    Welcome + Q1–Q24 template + Results
+
+  Page 5: ✅ Lender Compliance
+    Desktop + Mobile + Empty state
+
+  Page 6: 💰 Capital Access Map
+    All 4 tabs + Sidebar states + Mobile
+
+  Page 7: 🏦 Product Pages
+    Template × 1 shown for each status (Unlocked / Approaching / Locked)
+
+  Page 8: 🗺️ Action Plan
+    Default + Completed items + Milestone view
+
+  Page 9: 🤖 AI Advisor Chat
+    Default + Active conversation + Mobile
+
+  Page 10: 📄 Document Center
+    All tabs + Upload state
+
+  Page 11: 🏥 Business Health Scan
+    3 steps + Results page
+
+  Page 12: 📱 Mobile Full Flow
+    Full mobile prototype (12 key screens)
+
+  Page 13: 🔄 User Journey Map
+    Flow diagram showing all 3 goal paths
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — DESIGN DECISIONS & RATIONALE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHY DARK MODE ONLY:
+  The target user is making serious financial decisions. Dark mode signals
+  seriousness, reduces eye strain during long sessions, and creates authority.
+  Light dashboards feel like marketing. Dark dashboards feel like tools.
+
+WHY SHARP CORNERS (0 border radius on cards):
+  Rounded corners = consumer app. Sharp corners = financial terminal.
+  We want to look like Bloomberg, not a consumer fintech app. Sharp corners
+  communicate precision and trustworthiness to a skeptical user audience.
+
+WHY LIME AS PRIMARY:
+  Green signals money, approval, and success — but lime specifically is
+  distinctive (not the generic fintech teal/blue). It stands out against
+  the dark bg system without screaming. It says "funded" not "funded.com."
+
+WHY SYNE FOR NUMBERS:
+  Syne's geometric structure makes financial numbers feel precise and credible.
+  A score of 624 in Syne 800 looks authoritative. In Inter, it looks like a
+  settings page. The font choice is doing emotional work.
+
+WHY CRIMSON PRO FOR ADVISORY TEXT:
+  Platform voice must be advisory, not robotic. Crimson Pro italic shifts the
+  register from dashboard-read to human-guidance. When the platform explains
+  WHY something matters, it should feel like a knowledgeable advisor talking
+  — not a tooltip firing.
+
+WHY NO TOOLTIPS:
+  Tooltips are a crutch for unexplained UI. If a user needs to hover to
+  understand something, the UI failed. Every element should be self-explanatory
+  or have its explanation inline. Especially for a user who may have limited
+  financial literacy — hover-to-understand is a terrible pattern here.
+
+WHY THE COMPLIANCE DOTS:
+  20 dots give the user an immediate gestalt of their compliance status.
+  They don't need to count. The color ratio tells the story instantly.
+  Green-heavy = good. Red-heavy = work to do. This is data visualization
+  doing the job of a status summary.
+
+WHY THE SCORE BAND SYSTEM:
+  A score of 624 means nothing without context. "Developing — Momentum Building"
+  with a teal color means something emotionally. Users need to understand their
+  position in a range — not just a number. The band + color + label does this
+  in 3 elements simultaneously.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — PLATFORM VOICE IN DESIGN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+USE IN ALL MICROCOPY, EMPTY STATES, AND CTA TEXT:
+
+Platform speaks like a CFO who has been in the room with lenders.
+Direct. Specific. Never inspirational. Never apologetic.
+
+EMPTY STATES:
+  No score yet:
+    "Your FundScore™ is waiting. 24 questions. No bank login. 10 minutes."
+    CTA: "Start Assessment →"
+
+  No compliance items checked:
+    "None of your compliance items are verified yet. Start with the 9 quick wins."
+    CTA: "See Quick Wins →"
+
+  No products unlocked:
+    "Complete your assessment to see which products you pre-qualify for today."
+    CTA: "Get My Score →"
+
+ERROR STATES:
+  "Something went wrong. Your data is safe. Refresh to continue."
+
+LOADING STATES:
+  "Analyzing your profile against 17 lender requirements..."
+  "Running eligibility matrix..."
+  "Building your action plan..."
+
+SCORE BAND MESSAGES (Crimson Pro italic, shown below score):
+  0–399:   "Foundational work required before lender conversations."
+  400–549: "Foundation is being built. Focus on your top 3 actions."
+  550–649: "Momentum is building. You pre-qualify for several products now."
+  650–749: "Strong position. Premium products are within reach."
+  750–899: "Lender ready. Multiple products available at competitive rates."
+  900+:    "Prime. SBA access, lowest rates, maximum leverage."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — ANIMATION GUIDELINES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Annotate these as interaction notes in Figma:
+
+Score counter:   Count up 0 → final, 1.2s, cubic-bezier(0.16, 1, 0.3, 1)
+Bar fills:       0% → final%, 1.2s, stagger 80ms per bar
+Progress bars:   0% → final%, 0.5s, cubic-bezier(0.16, 1, 0.3, 1)
+Card entrance:   translateY(8px) opacity 0 → 1, 0.3s ease, stagger 40ms
+Checkbox:        Scale spring 1 → 0.8 → 1.2 → 1, 250ms (spring feel)
+Tab switch:      Slide + fade, 200ms
+Score chip:      Color transition 400ms when score band changes
+Compliance dot:  Scale 1 → 1.3 on hover, 100ms
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10 — FINAL INSTRUCTIONS FOR THE DESIGNER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The user of this platform has been denied funding. They came here because
+they were rejected, embarrassed, and confused. They are smart enough to know
+they need help. They are skeptical of another tool that promises and under-delivers.
+
+Every design decision must answer: "Does this make the user feel more capable,
+more informed, and more in control — or does it make them feel like they're
+using a product?"
+
+This is a $10B problem. Design it like one.
+
+Priority order for screens:
+  1. Design System (all tokens + components)
+  2. Dashboard (the core experience)
+  3. Capital Access Map (the most data-dense screen)
+  4. FundScore™ Assessment (the entry point)
+  5. Action Plan (the operational core)
+  6. Landing Page (conversion)
+  7. Remaining screens
+
+Build components FIRST. Then build screens from components.
+Never build one-off designs. Everything must be reusable.
+Every component must have: default · hover · active · disabled · loading · error · empty.
+
+The score, the compliance dots, and the action plan cards are the
+three most important visual elements in the entire system.
+Get those right above everything else.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BEGIN WITH THE DESIGN SYSTEM. THEN BUILD THE DASHBOARD.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -1,0 +1,828 @@
+════════════════════════════════════════════════════════════════════════════════
+FUNDREADY™ — FIGMA MAKE UPDATE PROMPT
+Complete System Intelligence + Precise Update Instructions
+File Key: Bk4S1ZUZbY6MND3Ax5AOuP
+════════════════════════════════════════════════════════════════════════════════
+
+YOU ARE OPERATING ON AN EXISTING FIGMA MAKE PROJECT.
+DO NOT CREATE A NEW PROJECT. DO NOT REBUILD FROM SCRATCH.
+READ THE EXISTING CODE FIRST. THEN APPLY TARGETED UPDATES ONLY.
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 1 — WHAT THIS CODEBASE ALREADY HAS (DO NOT TOUCH UNLESS SPECIFIED)
+════════════════════════════════════════════════════════════════════════════════
+
+The following files EXIST and are WORKING. Do not modify unless this prompt
+explicitly says to update a specific file:
+
+── ROUTES & LAYOUT ──────────────────────────────────────────────────────────
+  src/app/routes.tsx                    ← routing config, read before editing
+  src/app/App.tsx                       ← root app, read before editing
+  src/app/layout/RootLayout.tsx         ← persistent layout shell
+
+── DESIGN SYSTEM (DO NOT TOUCH) ─────────────────────────────────────────────
+  src/styles/theme.css                  ← ALL CSS custom properties, colors, bands
+  src/styles/index.css                  ← global base styles
+  src/styles/fonts.css                  ← Syne, DM Sans, Crimson Pro
+  src/styles/tailwind.css               ← Tailwind config
+
+── SHARED COMPONENTS (DO NOT TOUCH) ─────────────────────────────────────────
+  src/app/components/Sidebar.tsx
+  src/app/components/TopNav.tsx
+  src/app/components/UnifiedProgressBar.tsx
+  src/app/components/FicoWidget.tsx
+  src/app/components/ui/* (all shadcn/ui components)
+  src/app/components/ui/card-modern.tsx
+  src/app/components/ui/progress-ring.tsx
+  src/app/components/ui/stat-card.tsx
+
+── UTILITIES (READ BEFORE TOUCHING) ─────────────────────────────────────────
+  src/app/utils/businessData.ts         ← shared business data store
+  src/app/utils/fundingEligibility.ts   ← existing eligibility logic
+  src/app/utils/businessData.ts         ← audit items, NAP score
+  src/app/utils/lenderComplianceModules.ts
+  src/app/utils/phase1EligibilityChecker.ts
+
+── ASSESSMENT ENGINE (EXISTING — READ CAREFULLY) ────────────────────────────
+  src/app/pages/business-assessment/types.ts
+  src/app/pages/business-assessment/questions.ts
+  src/app/pages/business-assessment/engine.ts
+  src/app/pages/business-assessment/productEligibility.ts
+  src/app/pages/business-assessment/actionPlan.ts
+  src/app/pages/business-assessment/UnifiedAssessment.tsx
+  src/app/pages/business-assessment/FoundationQuestions.tsx
+  src/app/pages/business-assessment/Results.tsx           ← THIS IS THE KEY FILE
+
+── STATUS REPORT PAGES (EXIST — NEED UPDATES BELOW) ─────────────────────────
+  src/app/pages/StatusReports/EstimatedFunding.tsx        ← UPDATE REQUIRED
+  src/app/pages/StatusReports/BankableStatus.tsx          ← UPDATE REQUIRED
+  src/app/pages/StatusReports/BusinessFICO.tsx            ← UPDATE REQUIRED
+  src/app/pages/StatusReports/OwnersCredit.tsx            ← UPDATE REQUIRED
+  src/app/pages/StatusReports.tsx                         ← UPDATE REQUIRED
+  src/app/pages/IntegrateReports.tsx                      ← READ, MAY NEED UPDATE
+
+── DASHBOARD (EXISTS — READ TO UNDERSTAND DATA FLOW) ────────────────────────
+  src/app/pages/Dashboard.tsx           ← capital dashboard
+
+── REDUNDANCY TO ELIMINATE ──────────────────────────────────────────────────
+  src/app/utils/bssToFundscoreSync.ts   ← READ THEN DELETE REFERENCES
+  src/app/pages/BusinessSuccessScan/*   ← OLD SYSTEM — do not modify
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 2 — THE ONE REDUNDANCY TO FIX IN THE ASSESSMENT
+════════════════════════════════════════════════════════════════════════════════
+
+READ: src/app/pages/business-assessment/questions.ts
+
+FIND: The question about business credit file status (currently Question 25
+of 25 in the original flow, titled something like "Does your business have
+its own credit file and score?")
+
+THIS IS A DUPLICATE of the business credit file portion already captured in
+Question 11 (business credit file + hard inquiries question).
+
+ACTION: In questions.ts, locate the final question about business credit file
+status. Confirm it asks the same 4 options as the business credit file sub-
+question in the Foundation section (Paydex 80+ / Below thresholds / Building /
+No file). If confirmed duplicate — REMOVE IT from the questions array entirely.
+Update the total question count wherever it appears (progress bar label,
+"Question X of 25" counter, welcome screen copy) from 25 to 24.
+
+DO NOT remove the inquiry sub-question from Question 11. Only remove the
+standalone Q25 duplicate.
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 3 — THE RESULTS PAGE: WHAT EXISTS VS WHAT NEEDS TO CHANGE
+════════════════════════════════════════════════════════════════════════════════
+
+READ FIRST: src/app/pages/business-assessment/Results.tsx
+
+The existing Results.tsx currently shows:
+  ✓ FundScore™ hero (0–1000 score with band label)
+  ✓ Bankable Score (0–160)
+  ✓ 6-dimension breakdown bars (Credit/Docs/Cash/Banking/Structure/Narrative)
+  ✓ Pre-Approved Funding Products (17 products, eligibility status)
+  ✓ Action Plan items (ranked by impact)
+  ✓ Compliance Items section (20-item checklist)
+
+WHAT IS MISSING and must be ADDED:
+  ✗ Estimated Funding Range & Contingency Report (as a tab)
+  ✗ Bankable Status Report (as a tab)
+  ✗ Business FICO Report (as a tab)
+  ✗ Download/Print button per report
+  ✗ Dynamic data piped from assessment answers into all 3 reports
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 4 — THE DYNAMIC RESULTS COMPUTATION ENGINE
+════════════════════════════════════════════════════════════════════════════════
+
+READ: src/app/pages/business-assessment/engine.ts
+READ: src/app/pages/business-assessment/types.ts
+
+The engine.ts already has computeScore() returning:
+  { score, dimAvg, bankableScore, napScore }
+
+YOU MUST EXTEND the return type and computation to also return:
+
+interface ExtendedResultsOutput {
+  // Already exists — keep exactly:
+  fundScore: number;
+  bankableScore: number;
+  napScore: number;
+  dimAvg: Record<'C'|'D'|'F'|'B'|'S'|'N', number>;
+
+  // ADD THESE — pipe from UnifiedAnswers:
+  ownerName: string;                    // from data.firstName + ' ' + data.lastName
+  businessName: string;                 // from data.businessName
+  reportDate: string;                   // new Date().toLocaleDateString()
+  estimateExpiry: string;               // 14 days from today
+
+  // REPORT 1 — Funding Range data:
+  fundingRange: {
+    currentBand: string;                // score band name
+    businessOnlyMin: number;
+    businessOnlyMax: number;
+    personalAndBusinessMin: number;
+    personalAndBusinessMax: number;
+    scoreRangeLabel: string;            // e.g. "60 to 69"
+  };
+
+  ownerStatus: {
+    name: string;
+    experian: number;
+    transunion: number;
+    equifax: number;
+    inquiries3mo: number;               // approximate from Q11 inquiry selection
+    inquiries6mo: number;
+    inquiries12mo: number;
+    personalIncome: string;             // from Q9 income range label
+    timeInBusiness: string;             // calculated from Q3 start date
+    openTradelines: string;             // "Verify in credit report"
+    revolvingUsage: string;             // from Q9 utilization %
+  };
+
+  contingencies: Array<{
+    item: string;                       // Utilization | Inquiries | Derogatories | Accounts
+    found: number;                      // count of issues
+    cause: string;                      // explanation text or empty string
+    status: 'clear' | 'flagged';
+  }>;
+
+  // REPORT 2 — Bankable Status items:
+  bankableItems: Array<{
+    name: string;
+    status: 'pass' | 'fail';
+    description: string;
+  }>;
+
+  // REPORT 3 — Business FICO SBSS data:
+  sbssOwnerStatus: 'fail' | 'pass' | 'best';   // from composite FICO
+  sbssBusinessStatus: 'fail' | 'pass' | 'best'; // from bankableScore
+  sbssSections: Array<{
+    section: string;
+    percentage: string;                 // "35%" etc
+    status: 'pass' | 'partial' | 'fail';
+    description: string;
+  }>;
+  workNeeded: Array<{
+    item: string;
+    current: string | number;
+    goal: string;
+    description: string;
+  }>;
+}
+
+ADD THIS COMPUTATION LOGIC to engine.ts:
+
+── FUNDING RANGE LOOKUP (from fundScore) ────────────────────────────────────
+function getFundingRange(score: number): FundingRange {
+  if (score >= 900) return { scoreLabel: '90 to 100', bizOnly: [80000,100000], personal: [90000,120000] };
+  if (score >= 800) return { scoreLabel: '80 to 89',  bizOnly: [60000,80000],  personal: [70000,100000] };
+  if (score >= 700) return { scoreLabel: '70 to 79',  bizOnly: [40000,60000],  personal: [50000,80000]  };
+  if (score >= 600) return { scoreLabel: '60 to 69',  bizOnly: [20000,40000],  personal: [30000,60000]  };
+  return { scoreLabel: 'Below 60', bizOnly: [0,0], personal: [0,0], needsAction: true };
+}
+
+── CONTINGENCIES LOGIC (from UnifiedAnswers) ────────────────────────────────
+Utilization:
+  data.utilization > 45 → found: 1, cause: "Keep revolving balances below 45% of limit"
+  data.utilization <= 45 → found: 0, cause: ""
+
+Inquiries (map from data.inquiries30d):
+  '0' → found: 0, cause: ""
+  '1_2' → found: 0, cause: ""
+  '3_4' → found: 1, cause: "Multiple recent inquiries may signal credit-seeking behavior"
+  '5plus' → found: 2, cause: "Excessive inquiries in 30 days. Avoid new credit applications"
+  'unknown' → found: 0, cause: ""
+
+Derogatories (from Q10 data):
+  count = [hasCollections, hasChargeoffs, hasLatePay, hasTaxLiens, hasBankruptcy].filter(Boolean).length
+  found: count
+  cause: count > 0 ? "Must be no major derogatory history with banks you seek funding from" : ""
+
+Accounts:
+  taxReturnsMismatch = data.readinessAnswers[Q_R4_index] is 'Significant difference' or 'Not sure'
+  found: taxReturnsMismatch ? 2 : 0
+  cause: found > 0 ? "1. Tax returns must align with bank statements. 2. No more than two 30-day late payments in prior 24 months." : ""
+
+── BANKABLE STATUS ITEMS LOGIC (20 items) ───────────────────────────────────
+Compute each as pass (true) or fail (false) from UnifiedAnswers:
+
+1.  Available Funding:     always true (platform provides this)
+2.  Business FICO:         bankableScore >= 160 → pass (practically: bankableScore >= 130)
+3.  Owner's Credit:        composite >= 640 → pass
+4.  Bank Rating:           data.avgDailyBalance !== 'near_zero' AND data.nsfCount === 'zero' → pass
+5.  Business Credit:       data.bizCreditFile === 'paydex_80plus' → pass
+6.  Reporting Tradelines:  data.bizCreditFile === 'paydex_80plus' → pass (proxy: 10-12 tradelines)
+7.  Detailed Reports:      data.bizCreditFile !== 'none' → pass
+8.  Business Revenue:      data.monthlyRevenue >= 10000 → pass
+9.  Business Type:         data.entityType !== 'sole_prop' → pass
+10. Business Name:         !!data.businessName → pass
+11. Business Location:     data.hasEIN → pass (EIN implies registered address)
+12. Business Phones:       !!data.phone → pass (collected in Q1)
+13. Business Website:      data.hasWebsite → pass
+14. Business Email:        data.email && !['gmail','yahoo','hotmail','outlook','aol'].some(d => data.email.includes(d)) → pass
+15. Business EIN:          data.hasEIN → pass
+16. Business Trademark:    true (cannot verify without external check — default pass with "Verify" note)
+17. In Good Standing:      data.readinessAnswers[Q_R9_index] === 0 → pass (option A = "Yes, all filings current")
+18. Government Filings:    data.hasEIN AND readinessAnswers[Q_R9_index] === 0 → pass
+19. Web Rating Score:      data.hasWebsite → pass (estimate 60+ if website exists)
+20. NAP Validation:        data.hasWebsite AND data.hasEIN AND !!data.phone → pass
+
+── SBSS SECTIONS LOGIC ──────────────────────────────────────────────────────
+Section 1 — Owner's Credit (35%):
+  composite >= 700 → 'best'
+  composite >= 640 → 'pass'
+  composite < 640  → 'fail'
+
+Section 2 — Business Revenue (30%):
+  monthlyRevenue > 15000 AND nsfCount === 'zero' AND bankAccount === 'dedicated' → 'pass'
+  monthlyRevenue > 5000 OR bankAccount === 'dedicated' → 'partial'
+  else → 'fail'
+
+Section 3 — Business Status (20%):
+  hasWebsite AND hasEIN AND entityType !== 'sole_prop' AND goodStanding → 'pass'
+  2+ conditions met → 'partial'
+  else → 'fail'
+
+Section 4 — Business Credit (15%):
+  bizCreditFile === 'paydex_80plus' → 'pass'
+  bizCreditFile === 'below_80' OR bizCreditFile === 'building' → 'partial'
+  bizCreditFile === 'none' → 'fail'
+
+── WORK NEEDED TABLE ────────────────────────────────────────────────────────
+Row 1: Owner's Score    current: composite  goal: "700+"  desc: "Owner must have 640+ FICO 8"
+Row 2: Lender Compliance current: count of bankableItems that are 'pass'  goal: "20"  desc: "Entity, location, phone, email and website"
+Row 3: Reporting Tradelines current: bizCreditFile==='paydex_80plus'?'9':'0'  goal: "12"  desc: "Third parties that report payment histories"
+Row 4: Web Presence Score  current: hasWebsite?'30':'0'  goal: "80+"  desc: "Web rating score + business NAP validation"
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 5 — RESULTS PAGE: ADD 4-TAB NAVIGATION
+════════════════════════════════════════════════════════════════════════════════
+
+MODIFY: src/app/pages/business-assessment/Results.tsx
+
+CURRENT STATE: One scrollable page showing FundScore hero → products → actions
+→ compliance.
+
+NEW STATE: Same hero at top (always visible). Below hero: 4-tab navigation.
+
+TAB STRUCTURE:
+  Tab 1: "FundScore™ Overview"    → existing content (products + dims + actions + compliance)
+  Tab 2: "Funding Range"          → Estimated Funding Range Report
+  Tab 3: "Bankable Status"        → Bankable Status Report
+  Tab 4: "Business FICO"          → Business FICO Report
+
+Tab bar styling:
+  Container: bg var(--bg-surface-1), border-bottom var(--border-subtle), sticky below hero
+  Active tab: border-bottom 2px var(--primary), text var(--primary), DM Sans 500
+  Inactive tab: text var(--text-muted), DM Sans 400
+  Hover: text var(--text-secondary)
+  Padding: 0 24px per tab, height 44px
+  Mobile: horizontally scrollable tab bar
+
+The FundScore™ hero section stays above the tabs at all times (not inside tabs).
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 6 — TAB 2: ESTIMATED FUNDING RANGE REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+MODIFY: src/app/pages/StatusReports/EstimatedFunding.tsx
+
+This file exists. Read its current state first. Then rebuild it to match the
+following spec while keeping the FundReady™ dark design language.
+
+LAYOUT (single column, max-width 800px, centered):
+
+── HEADER CARD ──────────────────────────────────────────────────────────────
+  bg var(--bg-surface-1), border var(--border-subtle), border-radius 8px, padding 24px
+  TOP ROW: Left: "Estimated Funding Range & Contingency Report" — Syne 700 20px
+           Right: "Download PDF" button — ghost style, lime border, lime text
+  SUB ROW: Left: "For: {businessName}" — DM Sans 400 13px muted
+           Right: "Date Produced: {reportDate}" — DM Sans 400 13px muted
+
+── CRITICAL VARIABLES SECTION ───────────────────────────────────────────────
+  bg var(--bg-surface-2), padding 16px 24px, border-radius 6px, margin-top 16px
+  Header row: "Critical Variables" LEFT | "Estimate Expires: {estimateExpiry}" RIGHT
+  Both: DM Sans 600 13px var(--text-primary)
+  Body text: DM Sans 300 12px var(--text-secondary), 3 bullet conditions:
+    • Keep all revolving credit balances below 45% balance to limit
+    • Estimate based on no previous derogatory account with banks we seek funding from
+    • No other credit applied for after date produced
+
+── FUNDING ESTIMATOR RANGE TABLE ────────────────────────────────────────────
+  Header row: bg var(--primary), text #000, DM Sans 600 12px
+    Columns: "Score Range" | "Business Only Funding" | "Personal & Business Funding"
+    RIGHT of header: "Current Score: {fundScore}" badge — bg var(--primary-alpha),
+    border var(--primary), text var(--primary), DM Sans 600 11px
+
+  5 data rows (90–100, 80–89, 70–79, 60–69, Below 60):
+    Standard rows: bg var(--bg-surface-1), border-bottom var(--border-subtle)
+    ACTIVE ROW (matches user's score band): bg var(--primary-alpha),
+    border-left 3px var(--primary), text var(--primary) for numbers
+    Dollar amounts: formatted as "$XX,000 to $XX,000"
+    "Below 60" row: shows "Take actions to raise score" in both funding columns
+
+  DM Sans 400 13px for all row content
+
+── BUSINESS OWNER STATUS SECTION ────────────────────────────────────────────
+  Header: bg var(--bg-surface-2), "Business Owner Status" LEFT | "For: {ownerName}" RIGHT
+  DM Sans 600 12px
+
+  5-column table:
+    Owner Info | FICO Scores | Recent Inquiries | Open Tradelines | Revolving Usage
+    Header: DM Sans 600 11px muted
+    Content: DM Sans 400 12px
+
+    Owner Info column:
+      Line 1: ownerName
+      Line 2: "Income: {personalIncome}"
+      Line 3: "TIB: {timeInBusiness}"
+
+    FICO Scores column:
+      Line 1: "Experian: {experian}"
+      Line 2: "Equifax: {equifax}"
+      Line 3: "TransUnion: {transunion}"
+
+    Recent Inquiries column:
+      Line 1: "3 Months: {inquiries3mo}"
+      Line 2: "6 Months: {inquiries6mo}"
+      Line 3: "12 Months: {inquiries12mo}"
+
+    Open Tradelines column:
+      "Verify in credit report"
+      (Note: tradeline detail not collected in assessment)
+
+    Revolving Usage column:
+      "Utilization: {utilization}%"
+      "Above 30% actively hurts score" (if utilization > 30, amber text)
+
+── BUSINESS FUNDING CONTINGENCIES TABLE ─────────────────────────────────────
+  Header: bg var(--bg-surface-2), "Business Funding Contingencies"
+  DM Sans 600 12px
+
+  4-column table: Item | Found | Cause
+  Headers: DM Sans 600 11px muted
+
+  4 rows: Utilization | Inquiries | Derogatories | Accounts
+    "Found" column:
+      0 → "0" in var(--primary) (lime = clear)
+      1+ → count in #b04428 (red = issue found)
+    "Cause" column: DM Sans 300 12px var(--text-secondary), empty if 0
+
+  Row alternating: odd bg var(--bg-surface-1), even bg var(--bg-surface-2)
+
+── REQUIRED TRADELINE PAYDOWNS ──────────────────────────────────────────────
+  Show only if utilization > 45%:
+  Header: "Required Tradeline Pay Downs" — same table style
+  4 columns: Account | Limit | Balance | Utilization | Required Pay Down
+  Content: "High utilization detected — enter tradeline details to calculate paydowns"
+  DM Sans 300 12px muted, with link "Update in My Business Profile →"
+
+  If utilization <= 45%: show "No tradeline paydowns required at current utilization."
+
+── FOOTER DISCLAIMER TEXT ───────────────────────────────────────────────────
+  DM Sans 300 11px var(--text-muted), 3 paragraphs matching the report image:
+  Para 1: Business credit cards are considered Non-Bankable "aka Alternative"
+  business funding...
+  Para 2: While cards are 0% interest to start...
+  Para 3: After business credit cards are obtained...
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 7 — TAB 3: BANKABLE STATUS REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+MODIFY: src/app/pages/StatusReports/BankableStatus.tsx
+
+This file exists. Read current state. Then rebuild to match this spec.
+
+LAYOUT (single column, max-width 800px, centered):
+
+── HEADER ───────────────────────────────────────────────────────────────────
+  "Bankable Status Report" — Syne 700 24px RIGHT aligned
+  Intro paragraph: DM Sans 300 13px var(--text-secondary):
+    "This report shows where your business currently stands in the process of
+    becoming bankable and which critical items will need to be completed to
+    become bankable. There are many funding programs available to non-bankable
+    businesses but due to the higher risk those programs tend to be smaller
+    amounts, high interest and shorter repayment terms. Below are a few of the
+    requirements to become bankable. There are about 50, here are the top 20
+    you must address."
+
+  "Results For: {businessName}" — DM Sans 500 13px | "Report Date: {reportDate}"
+  Download button: ghost, lime border
+
+── 20-ITEM STATUS TABLE ─────────────────────────────────────────────────────
+  3 columns: "Bankable Item" | "Status" | "Description"
+  Header row: bg var(--primary), text #000, DM Sans 600 12px
+
+  20 rows (in this exact order):
+    1.  Available Funding
+    2.  Business FICO
+    3.  Owner's Credit
+    4.  Bank Rating
+    5.  Business Credit
+    6.  Reporting Tradelines
+    7.  Detailed Reports
+    8.  Business Revenue
+    9.  Business Type
+    10. Business Name
+    11. Business Location
+    12. Business Phones
+    13. Business Website
+    14. Business Email
+    15. Business EIN
+    16. Business Trademark
+    17. In Good Standing
+    18. Government Filings
+    19. Web Rating Score
+    20. NAP Validation
+
+  Status column per row:
+    pass → ✓ icon, color var(--primary) (lime)
+    fail → ✗ icon, color #b04428 (red)
+    Icon size 16px, centered in column
+
+  Description column: DM Sans 300 12px var(--text-secondary)
+  Descriptions (match image text verbatim, 20 rows):
+    1.  "Funding programs you currently pre-qualify for are listed inside the bankable system login."
+    2.  "A minimum 160 FICO SBSS is required by banks, credit unions and all the SBA lenders."
+    3.  "35% of the business FICO score is the Owner's credit. A minimum 640 FICO 8 is required."
+    4.  "30% of the business FICO SBSS score is the Bank Rating. A minimum Low 5 is required."
+    5.  "The business must have credit reports with Experian, Equifax and Dun & Bradstreet."
+    6.  "The business should have a minimum of 10 to 12 reporting business credit tradelines."
+    7.  "The business should have a detailed business profile inside the business credit reports."
+    8.  "The business should show existing revenue that is able to support servicing the debt."
+    9.  "A legal business entity is required such as an LLC or Corp separate from the owners."
+    10. "There are certain 'Trigger Words' that will get any business categorized as high risk."
+    11. "Location must be listed as a 'business' location by the USPS, not residence or mail stop."
+    12. "Phone numbers must be listed as 'business or VOIP' by FCC, not residence or cell."
+    13. "Must have a business website that describes the products or services that are offered."
+    14. "Must be using a professional email like john@xyzbusiness.com, not john@gmail.com."
+    15. "Must have a Federal Employer Identification Number for IRS business tax reporting."
+    16. "The business name and its domain name must not create a trademark infringement."
+    17. "The business entity must be listed as 'In Good Standing' with the Secretary of State."
+    18. "All the Federal, State, County and City filings must be accurate for taxes and licenses."
+    19. "Business should have a 'Web Rating Score' of at least a 60 on the scale of 0 to 100."
+    20. "Business should have 'Name, Address, Phone' listings correct on all major directories."
+
+  Row alternating: odd bg var(--bg-surface-1), even bg var(--bg-surface-2)
+  Row height: 52px minimum (for description to breathe)
+
+── TOTALS ROW ───────────────────────────────────────────────────────────────
+  Below table: "X of 20 items complete" — DM Sans 500 13px
+  Pass count in var(--primary), total in var(--text-secondary)
+  Progress bar: width (passCount/20)*100%, bg var(--primary), track bg var(--border-subtle)
+  Height 4px, border-radius 2px
+
+── BANKABLE EXPLANATION ─────────────────────────────────────────────────────
+  Subheading: "Becoming Bankable is not hard, but it is complicated..." paragraph
+  DM Sans 300 13px var(--text-secondary)
+
+── COMPARISON CALLOUT ───────────────────────────────────────────────────────
+  Subheading: "Here is an example of Non-Bankable loans versus Bankable loans:"
+  3 lines, DM Sans 400 13px:
+    "A $100,000 non-bankable loan may be at 35% interest on a 1 year repayment making the payment $11,250 a month."
+    "A $250,000 bankable loan may be at 12% interest on a 10 year repayment term making the payment ~$3,500 a month."
+    "By becoming bankable your business could receive $150,000 more in funding and pay $7,750 less per month for it."
+  bg var(--bg-surface-2), border-left 3px var(--primary), padding 16px 20px
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 8 — TAB 4: BUSINESS FICO REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+MODIFY: src/app/pages/StatusReports/BusinessFICO.tsx
+
+This file exists. Read current state. Then rebuild to match this spec.
+
+LAYOUT (single column, max-width 800px, centered):
+
+── HEADER ───────────────────────────────────────────────────────────────────
+  "Business FICO Report" — Syne 700 24px RIGHT
+  Subheading: "FICO SBSS (Small Business Scoring Service)" — Syne 600 16px
+  3-paragraph explanation (match report image text):
+    Para 1: "Just like personal FICO scores are the standard for all things consumer lending..."
+    Para 2: "The range is 0 to 300. If your FICO SBSS is below a 160..."
+    Para 3 (bold): "FICO SBSS is broken down into four sections..."
+      Section 1 - 35% - Owner credit detail
+      Section 2 - 30% - Business bank/revenue/debt
+      Section 3 - 20% - Industry/location/web presence
+      Section 4 - 15% - Business credit bureaus
+
+  "Results For: {businessName}" | "Report Date: {reportDate}" — DM Sans 500 13px
+  Download button: ghost, lime
+
+── DUAL GAUGE DIALS ──────────────────────────────────────────────────────────
+  Two SVG arc gauges side by side (50% width each), centered:
+
+  LEFT GAUGE — "Owners":
+    Arc: 180° semicircle, 3 colored zones:
+      Red zone (FAIL): left third of arc — #b04428
+      Yellow zone (PASS): middle third — #c89020
+      Green zone (BEST): right third — var(--primary)
+    Needle: points to zone based on sbssOwnerStatus
+      'fail' → left third, 'pass' → middle, 'best' → right
+    Center label: "Owners" — DM Sans 500 14px
+    Sub-label: "Anyone owning 20+%, goal should be 700+" — DM Sans 300 11px muted
+
+  RIGHT GAUGE — "Business":
+    Same arc structure
+    Needle position based on sbssBusinessStatus
+    Center label: "Business"
+    Sub-label: "FICO SBSS must be a 160+ to be bankable"
+
+  GAUGE IMPLEMENTATION:
+    Use SVG path for arc. Arc radius 80px. Needle is a line element rotated
+    by CSS transform. Zone colors applied as SVG stroke segments.
+    Needle rotation: 'fail'→-60deg, 'pass'→0deg, 'best'→60deg from center.
+    Needle color: var(--text-primary)
+    Gauge bg track: var(--border-subtle)
+
+── BUSINESS FICO SECTIONS TABLE ─────────────────────────────────────────────
+  4 columns: "Business FICO Sections" | "% of Total" | "Current" | "Description"
+  Header: bg var(--bg-surface-2), DM Sans 600 12px
+
+  4 rows:
+    Owner's Credit   | 35% | {sbssSections[0].status} | "Anyone owning 20+% of the business"
+    Business Revenue | 30% | {sbssSections[1].status} | "Business bank rating, revenue, debt ratio"
+    Business Status  | 20% | {sbssSections[2].status} | "Web presence, industry, location, margins"
+    Business Credit  | 15% | {sbssSections[3].status} | "Experian, Equifax and Dun & Bradstreet"
+
+  "Current" column status icons:
+    'pass'    → ✓ in var(--primary)
+    'partial' → + in #c89020 (amber)
+    'fail'    → ✗ in #b04428
+
+── WORK NEEDED TABLE ────────────────────────────────────────────────────────
+  4 columns: "Work Needed Doing" | "Current" | "# In Goal" | "Description"
+  Header: bg var(--bg-surface-2), DM Sans 600 12px
+
+  4 rows (data from workNeeded array):
+    Owner's Score       | {composite} | "700+"  | "Owner's must have 640 or higher FICO 8"
+    Lender Compliance   | {passCount} | "20"    | "Entity, location, phone, email and website"
+    Reporting Tradelines| {tradelineEstimate} | "12" | "Third parties that report payment histories"
+    Web Presence Score  | {webScore}  | "80+"   | "Web rating score + business NAP validation"
+
+  "Current" values colored:
+    At/above goal → var(--primary)
+    Below goal → #b04428
+
+── BOTTOM CALLOUT ───────────────────────────────────────────────────────────
+  3-line comparison (same pattern as Bankable report):
+    "There is a lot of high interest non-bankable money available with a below 160 business FICO score."
+    "A non-bankable $100,000 loan at 35% interest on a one year repayment will be ~$11,250 a month."
+    "A 160+ FICO bankable $250,000 loan at 12% on a 10 year payment will be ~$3,500 a month."
+  bg var(--bg-surface-2), border-left 3px var(--primary), padding 16px 20px
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 9 — PDF DOWNLOAD FUNCTIONALITY
+════════════════════════════════════════════════════════════════════════════════
+
+Each of the 3 report tabs has a "Download PDF" button (ghost, lime).
+
+IMPLEMENTATION using browser print API (no external library needed):
+
+function handleDownloadPDF(reportTitle: string) {
+  // Add print-specific class to document body
+  document.body.classList.add('printing-report');
+  document.title = `FundReady ${reportTitle} - ${businessName}`;
+  window.print();
+  document.body.classList.remove('printing-report');
+  document.title = 'FundReady™';
+}
+
+In index.css or theme.css, add print styles:
+@media print {
+  body.printing-report {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  body.printing-report .no-print { display: none !important; }
+  body.printing-report table { border-collapse: collapse; }
+  body.printing-report td, body.printing-report th {
+    border: 1px solid #cccccc;
+    padding: 6px 10px;
+    color: #000000;
+  }
+  body.printing-report .report-container {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+The Sidebar, TopNav, tab navigation, and FundScore hero are all .no-print.
+Only the active report content prints.
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 10 — DATA FLOW: HOW REPORT DATA GETS TO COMPONENTS
+════════════════════════════════════════════════════════════════════════════════
+
+PATTERN: All report data flows from ONE source — the assessment results.
+
+In Results.tsx:
+  On mount, call computeExtendedResults(unifiedAnswers) → ExtendedResultsOutput
+  Store in local state: const [results, setResults] = useState<ExtendedResultsOutput | null>(null)
+  Pass as props to each tab's report component
+
+Each status report component receives its slice of results as props:
+  <EstimatedFundingReport data={results.fundingRange} owner={results.ownerStatus} contingencies={results.contingencies} />
+  <BankableStatusReport items={results.bankableItems} businessName={results.businessName} reportDate={results.reportDate} />
+  <BusinessFICOReport sections={results.sbssSections} workNeeded={results.workNeeded} gaugeStatus={{owner: results.sbssOwnerStatus, business: results.sbssBusinessStatus}} />
+
+ALSO: The same reports in src/app/pages/StatusReports/ must read from
+businessData.ts (for users returning to dashboard after completing assessment).
+In that case, reconstruct UnifiedAnswers from businessData and run the same
+computation. The computation function is shared — do not duplicate it.
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 11 — STATUS REPORTS NAVIGATION IN DASHBOARD
+════════════════════════════════════════════════════════════════════════════════
+
+READ: src/app/pages/StatusReports.tsx
+READ: src/app/pages/Dashboard.tsx
+
+The dashboard already has a navigation entry for "Status Reports."
+Confirm the following routes exist and work:
+  /status-reports                → StatusReports.tsx (index, shows 3 report cards)
+  /status-reports/funding-range  → EstimatedFunding.tsx
+  /status-reports/bankable       → BankableStatus.tsx
+  /status-reports/business-fico  → BusinessFICO.tsx
+
+If any route is missing from routes.tsx, ADD IT.
+
+The StatusReports.tsx index page should show 3 clickable report cards:
+  Card 1: "Estimated Funding Range & Contingency Report"
+    Icon: DollarSign (lucide), desc: "See your projected funding range based on current score"
+    → navigates to /status-reports/funding-range
+
+  Card 2: "Bankable Status Report"
+    Icon: CheckCircle (lucide), desc: "20-item bankability checklist and gap analysis"
+    → navigates to /status-reports/bankable
+
+  Card 3: "Business FICO Report"
+    Icon: TrendingUp (lucide), desc: "FICO SBSS breakdown and work-needed analysis"
+    → navigates to /status-reports/business-fico
+
+  Card styling: bg var(--bg-surface-1), border var(--border-subtle), hover border
+  var(--border-medium), padding 24px, cursor pointer, full card clickable.
+  Card header: icon (lime, 24px) + title (Syne 600 16px) in row.
+  Card body: desc (DM Sans 300 13px muted)
+  Card footer: "View Report →" lime text, DM Sans 500 12px
+
+  All 3 cards note: "Data sourced from your most recent assessment"
+  DM Sans 300 11px muted, bottom of each card.
+
+  If no assessment has been completed: each card shows
+  "Complete your business assessment to generate this report"
+  with a CTA button "Start Assessment →" linking to /business-assessment
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 12 — DESIGN RULES: EVERY NEW ELEMENT MUST FOLLOW THESE
+════════════════════════════════════════════════════════════════════════════════
+
+These are non-negotiable for every component you add or modify:
+
+1. ALL COLORS from CSS custom properties in theme.css — never hardcode hex
+   Exception: The specific report content colors for status indicators:
+   Pass: var(--primary) = #8ab820
+   Fail: var(--score-critical) = #b04428
+   Partial/Amber: var(--score-low) = #c89020
+
+2. ALL SCORE NUMBERS in Syne 800. All body text in DM Sans 300/400.
+   Section headers in DM Sans 600. Report titles in Syne 700.
+
+3. ALL TABLES use:
+   Header: bg var(--bg-surface-2) OR bg var(--primary) with text #000
+   Body rows: alternate var(--bg-surface-1) / var(--bg-surface-2)
+   Borders: var(--border-subtle)
+   Cell padding: 10px 14px
+
+4. ALL CARDS:
+   bg var(--bg-surface-1), border 1px var(--border-subtle), border-radius 8px
+
+5. ALL BUTTONS:
+   Primary: bg var(--primary), text #000, DM Sans 600
+   Ghost/outline: border var(--primary), text var(--primary), bg transparent
+
+6. DO NOT use white backgrounds anywhere in the platform.
+   These reports render dark (FundReady theme) on screen.
+   White backgrounds only apply in @media print.
+
+7. MOBILE: All report tables must be horizontally scrollable on screens < 768px.
+   Wrap table in overflow-x: auto container. Do not break table structure.
+
+8. LOADING STATE: While results are computing, show skeleton loaders
+   (pulsing var(--bg-surface-2) blocks) for each table row.
+   Skeleton height matches expected row height. No spinners.
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 13 — EXECUTION ORDER
+════════════════════════════════════════════════════════════════════════════════
+
+Execute in this exact sequence. Do not skip steps.
+
+STEP 1: Read engine.ts. Extend computeScore() to return ExtendedResultsOutput.
+        Add all helper functions: getFundingRange(), computeContingencies(),
+        computeBankableItems(), computeSBSSSections(), computeWorkNeeded().
+
+STEP 2: Read types.ts. Extend UnifiedAnswers if any field is missing:
+        - email field (from Q1)
+        - phone field (from Q1)
+        - firstName, lastName fields (from Q1)
+        Confirm all Q answer indices are correct before computing.
+
+STEP 3: Read Results.tsx. Add 4-tab navigation below the hero section.
+        Tab 1 wraps existing content. Tabs 2-4 render new report components.
+
+STEP 4: Rebuild EstimatedFunding.tsx using spec from Section 6.
+        Wire to results data via props.
+
+STEP 5: Rebuild BankableStatus.tsx using spec from Section 7.
+        Wire to results data via props.
+
+STEP 6: Rebuild BusinessFICO.tsx using spec from Section 8.
+        Wire to results data via props. Build SVG gauge component.
+
+STEP 7: Update StatusReports.tsx index to show 3 clickable report cards.
+        Confirm routes.tsx has all 3 sub-routes registered.
+
+STEP 8: Add @media print styles to index.css. Add .no-print class to all
+        persistent layout elements (sidebar, topnav, tabs, hero).
+
+STEP 9: Fix Q25 duplication in questions.ts. Update progress counters.
+
+STEP 10: Test all routes:
+        /business-assessment → assessment runs → results page → all 4 tabs
+        /status-reports → 3 cards → each report renders with real data
+        Download PDF button → print dialog opens with white background
+
+════════════════════════════════════════════════════════════════════════════════
+SECTION 14 — WHAT NOT TO DO
+════════════════════════════════════════════════════════════════════════════════
+
+DO NOT rebuild or modify any of these:
+  ✗ The 17 product definitions
+  ✗ The 20 compliance item definitions
+  ✗ The existing FundScore™ hero animation or score counter
+  ✗ The 6 dimension bar components
+  ✗ The action plan card design
+  ✗ The sidebar navigation items
+  ✗ The top nav structure
+  ✗ Any AccessFunding/* pages
+  ✗ Any LenderCompliance/* pages
+  ✗ The Dashboard.tsx layout
+
+DO NOT add these patterns:
+  ✗ White or light background on any card or page
+  ✗ Hardcoded hex colors outside of the 3 status indicator exceptions
+  ✗ "You're doing great!" or any empty encouragement copy
+  ✗ Modal popups for report display (reports are full pages or tabs)
+  ✗ Any dependency on bssToFundscoreSync.ts for the new reports
+  ✗ Separate API calls — all data comes from local computation
+
+════════════════════════════════════════════════════════════════════════════════
+FINAL CONFIRMATION CHECKLIST
+════════════════════════════════════════════════════════════════════════════════
+
+Before completing this session, verify each item:
+
+  □ engine.ts returns ExtendedResultsOutput with all 5 data groups
+  □ Results.tsx has 4-tab navigation
+  □ Tab 1 shows existing FundScore overview content
+  □ Tab 2 shows Estimated Funding Range with dynamic data
+  □ Tab 3 shows Bankable Status 20-item table with pass/fail icons
+  □ Tab 4 shows Business FICO with dual SVG gauges and work table
+  □ All 3 standalone report pages under /status-reports/* work
+  □ Download PDF opens print dialog with white background
+  □ Q25 duplicate removed, question count updated to 24
+  □ All colors from theme.css custom properties
+  □ All tables mobile-scroll-safe
+  □ No empty states — if no assessment data, CTA to start assessment shown
+
+════════════════════════════════════════════════════════════════════════════════
+FILE KEY: Bk4S1ZUZbY6MND3Ax5AOuP
+Build exactly what is specified. Read existing code before touching anything.
+Do not create new files that duplicate existing ones.
+Do not guess at data shapes — read types.ts first.
+════════════════════════════════════════════════════════════════════════════════

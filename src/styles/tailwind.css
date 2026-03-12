@@ -1,0 +1,11 @@
+@import 'tailwindcss' source(none);
+@source '../**/*.{js,ts,jsx,tsx}';
+
+@import 'tw-animate-css';
+
+@theme {
+  /* FundReady Typography System */
+  --font-family-display: 'Syne', sans-serif;
+  --font-family-body: 'DM Sans', sans-serif;
+  --font-family-serif: 'Crimson Pro', serif;
+}

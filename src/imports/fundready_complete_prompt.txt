@@ -1,0 +1,1108 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  FUNDREADY™ — COMPLETE FIGMA MAKE BUILD PROMPT                              ║
+║  Version 3 — Built from actual source code of all 3 files                   ║
+║  Covers: Design System · Logic · Data · State · Connections · Order         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 0 — WHAT YOU ARE BUILDING AND WHY IT MATTERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FundReady™ is a pre-funding readiness platform. It tells small business
+owners exactly where they stand before they walk into a lender conversation.
+
+The platform has THREE interconnected layers that must all work together:
+
+  LAYER 1 — FundScore™ (0–1000)
+    A weighted composite score across 6 dimensions:
+    Credit (28%) · Documentation (22%) · Cash Flow (20%) ·
+    Banking (13%) · Structure (10%) · Narrative (7%)
+    Generated from self-reported questionnaire answers. No integrations.
+
+  LAYER 2 — Lender Compliance Checklist
+    20 structural items lenders verify independently of the score.
+    A business can have a high score but still be locked out of products
+    because a compliance item is missing (e.g. no 411 listing, no D&B file).
+
+  LAYER 3 — Product Eligibility Matrix
+    17 funding products. Each has TWO hard requirements:
+      (a) minimum FundScore™ threshold
+      (b) specific compliance items that must be complete
+    BOTH must be met for a product to show as "unlocked."
+    Approaching = score within 80 pts AND ≤3 compliance items missing.
+    Locked = anything else.
+
+These three layers are not separate features. They are one engine.
+The score feeds eligibility. The compliance items feed eligibility.
+Every screen in the platform is a view into this engine.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 1 — THE EXISTING FIGMA MAKE PROJECT (DO NOT REBUILD LOGIC)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The project at https://www.figma.com/make/Bk4S1ZUZbY6MND3Ax5AOuP/ already
+has 100% of its logic built. It is a full React/TypeScript/Tailwind v4 app.
+
+PRESERVE — do not touch:
+  /src/app/utils/fundingEligibility.ts    ← eligibility logic lives here
+  /src/app/utils/lenderComplianceModules.ts
+  /src/app/utils/fundingRequirements.ts
+  /src/app/utils/businessData.ts
+  /src/app/routes.tsx                     ← routing
+  /src/app/layout/RootLayout.tsx          ← layout shell
+
+YOUR ROLE FOR THIS PROJECT: Visual redesign only.
+  Change: colors, fonts, spacing, component styling, border radius, shadows
+  Never change: logic, routing, data structures, utility functions
+
+EXISTING COLOR SYSTEM (being fully replaced):
+  Old primary: #1e40af (deep blue) → New: #8ab820 (lime green)
+  Old bg: #f8fafc (light) → New: #0d0f0b (near-black)
+  Old cards: #ffffff → New: #131510
+  Old sidebar: linear-gradient blue → New: #0a0c08 flat dark
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 2 — THE TWO NEW PAGES (BUILD FROM SCRATCH)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Two new pages must be created and added to the existing project:
+
+  PAGE A: FundScoreQuestionnaire.tsx  →  route: /fundscore-assessment
+  PAGE B: UnifiedCapitalDashboard.tsx →  route: /capital-dashboard
+
+These are not wireframes. They are fully working prototypes that have been
+designed and tested. Every data structure, every scoring formula, every
+render function, and every interaction is documented below.
+
+Build them exactly as specified. Do not improvise the logic.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 3 — GLOBAL DESIGN SYSTEM (APPLY TO ALL FILES)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Apply to: src/styles/theme.css
+
+:root {
+  --background:  #0d0f0b;
+  --foreground:  #e4e8d8;
+  --card:        #131510;
+  --card-border: #2a2e22;
+  --surface-1:   #131510;
+  --surface-2:   #191c14;
+  --surface-3:   #1f231a;
+  --border:      #2a2e22;
+  --border-med:  #363b2c;
+  --border-str:  #4a5038;
+  --primary:     #8ab820;
+  --primary-hov: #5a7a10;
+  --primary-fg:  #0d0f0b;
+  --primary-bg:  rgba(138,184,32,0.08);
+  --primary-mid: rgba(138,184,32,0.20);
+  --primary-bdr: rgba(138,184,32,0.35);
+  --success:     #8ab820;
+  --success-bg:  rgba(138,184,32,0.08);
+  --success-bdr: rgba(138,184,32,0.25);
+  --warning:     #c89020;
+  --warning-bg:  rgba(200,144,32,0.10);
+  --warning-bdr: rgba(200,144,32,0.25);
+  --danger:      #b04428;
+  --danger-bg:   rgba(176,68,40,0.10);
+  --danger-bdr:  rgba(176,68,40,0.25);
+  --info:        #38a880;
+  --muted:       #1f231a;
+  --muted-fg:    #6b7258;
+  --input:       #1f231a;
+  --ring:        #8ab820;
+  --radius:      0.375rem;
+  --sidebar-bg:  #0a0c08;
+  --sidebar-bdr: #1f231a;
+  --sidebar-txt: #9aa088;
+  --sidebar-act: #e4e8d8;
+  --sidebar-acc: rgba(138,184,32,0.10);
+  --sidebar-ahv: rgba(138,184,32,0.16);
+}
+
+FONTS — Apply to src/styles/fonts.css:
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Crimson+Pro:ital,wght@0,300;1,300;1,400&display=swap');
+
+TYPE SCALE:
+  Page titles:      Syne 800, clamp(28px,4vw,44px), -0.02em
+  Section headings: Syne 700, 22px, -0.01em
+  Card titles:      Syne 600, 15px, 0.02em, uppercase
+  Score numbers:    Syne 800, clamp(48px,8vw,96px), -0.03em
+  Body:             DM Sans 300, 14px, lh 1.65
+  Labels:           DM Sans 400, 11px, 0.12em, uppercase
+  Callouts:         Crimson Pro italic 300, 16px, lh 1.7
+
+SCORE COLOR BY BAND (use everywhere a score number appears):
+  0–399:   #b04428   Critical
+  400–549: #c89020   Low
+  550–649: #a0a020   Developing
+  650–749: #38a880   Approaching
+  750–899: #8ab820   Lender Ready
+  900+:    #c8f040   Prime
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 4 — MASTER DATA STRUCTURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+These are the exact data objects used in the working prototypes.
+Use these verbatim in both new pages.
+
+── 4A. DIMENSION WEIGHTS ────────────────────────────────────────────────────
+
+const WEIGHTS = { C: 0.28, D: 0.22, F: 0.20, B: 0.13, S: 0.10, N: 0.07 };
+
+const DIM_DATA = [
+  { key:'C', name:'Credit',        weight:'28%', color:'#8ab820',
+    signals:['Personal FICO score','Business Paydex (D&B)','Credit utilization ratio','Derogatory mark count','Credit account age'] },
+  { key:'D', name:'Documentation', weight:'22%', color:'#c89020',
+    signals:['Filed tax returns (2+ years)','P&L statement current','Bank statement coverage','Revenue cross-validation','Entity formation docs'] },
+  { key:'F', name:'Cash Flow',     weight:'20%', color:'#38a880',
+    signals:['DSCR (debt service coverage)','Revenue trend 12 months','Average monthly revenue','Gross margin stability','Owner draw ratio'] },
+  { key:'B', name:'Banking',       weight:'13%', color:'#8858c8',
+    signals:['NSF / overdraft frequency','Average daily balance','Fund separation status','ADB trend direction','Deposit consistency'] },
+  { key:'S', name:'Structure',     weight:'10%', color:'#b04428',
+    signals:['Entity type (LLC/Corp)','Time in business','NAICS risk classification','State good standing','Operating agreements'] },
+  { key:'N', name:'Narrative',     weight:'7%',  color:'#3878c8',
+    signals:['Use of funds specificity','Repayment logic clarity','Capital ROI demonstration','Prior loan history','Industry experience'] },
+];
+
+── 4B. 20 COMPLIANCE ITEMS ──────────────────────────────────────────────────
+
+const COMPLIANCE_ITEMS = [
+  {id:1,  name:'Entity with State Records',       desc:'Open, active, in good standing',                          time:'quick'},
+  {id:2,  name:'Federal EIN Filing',              desc:'EIN must match state filing exactly',                     time:'quick'},
+  {id:3,  name:'Business Bank Account',           desc:'Account open date = your lender clock start',            time:'quick'},
+  {id:4,  name:'Business Licenses',               desc:'All applicable city, county, state licenses filed',      time:'quick'},
+  {id:5,  name:'Business Physical Address',       desc:'USPS-verified address — no PO box',                      time:'quick'},
+  {id:6,  name:'Unique Business Phone',           desc:'FCC-listed business number — not cell or home',          time:'quick'},
+  {id:7,  name:'411 Directory Listing',           desc:'Phone listed under your exact legal business name',      time:'quick'},
+  {id:8,  name:'Business Website',                desc:'Found on local business searches and apps',              time:'quick'},
+  {id:9,  name:'Professional Business Email',     desc:'Free email (Gmail, Yahoo) triggers lender red flags',    time:'quick'},
+  {id:10, name:'Experian Business File',          desc:'Open with good history and strong score',                time:'medium'},
+  {id:11, name:'Creditsafe File',                 desc:'Open with good history and strong score',                time:'medium'},
+  {id:12, name:'Dun & Bradstreet File',           desc:'Open with good history and Paydex 80+',                  time:'medium'},
+  {id:13, name:'Equifax Business File',           desc:'Open with good history and strong score',                time:'medium'},
+  {id:14, name:'Bank Rating',                     desc:'Business bank rating minimum low 5',                     time:'medium'},
+  {id:15, name:'Vendor Credit Lines (7+)',        desc:'Net-30 accounts with early payment history',             time:'longterm'},
+  {id:16, name:'Business Credit Cards (5+)',      desc:'Business credit cards with early payment history',       time:'longterm'},
+  {id:17, name:'Installment Trade-Lines (3+)',    desc:'Installment credit with early payment records',          time:'longterm'},
+  {id:18, name:'Bank Loan or Equipment Lease',    desc:'At least one with early payment history',                time:'longterm'},
+  {id:19, name:'15+ Total Reporting Trade-Lines', desc:'Minimum 15 trade-lines reporting to bureaus',            time:'longterm'},
+  {id:20, name:'SBA-Compliant Business Plan',     desc:'Market analysis and revenue projections included',       time:'medium'},
+];
+
+// Time categories for display:
+// quick    = items 1–9   = "Quick Win — Under 7 days"   (amber)
+// medium   = items 10–14, 20 = "30–60 Days"             (orange)
+// longterm = items 15–19  = "60–90+ Days"               (red)
+
+── 4C. 17 FUNDING PRODUCTS ──────────────────────────────────────────────────
+
+const PRODUCTS = [
+  {id:'mca',     name:'Merchant Cash Advance',        range:'Up to $500K',           rate:'Factor 1.1–1.5',      speed:'24–48 hrs',  minScore:350, compReq:[1,2,3,5]},
+  {id:'wc',      name:'Working Capital Loans',         range:'Up to $10M',            rate:'10–35%',              speed:'24–48 hrs',  minScore:400, compReq:[1,2,3,4,5,9]},
+  {id:'inv_fact',name:'Invoice Factoring',             range:'Up to 90% of invoices', rate:'1–5%/mo',             speed:'24–48 hrs',  minScore:350, compReq:[1,2,3,5]},
+  {id:'equip',   name:'Equipment Financing',           range:'Up to 100% of value',   rate:'5–30%',               speed:'3–7 days',   minScore:380, compReq:[1,2,3,4,5]},
+  {id:'rev',     name:'Revenue Based Loan',            range:'10% of annual revenue', rate:'15–35%',              speed:'2–3 days',   minScore:480, compReq:[1,2,3,5,9,10]},
+  {id:'bcl',     name:'Business Credit Line',          range:'Up to $750K',           rate:'8–25%',               speed:'1–3 days',   minScore:550, compReq:[1,2,3,4,5,6,7,8,9,10,12,13]},
+  {id:'btl',     name:'Business Term Loan',            range:'Up to $10M',            rate:'8–30%',               speed:'2–5 days',   minScore:580, compReq:[1,2,3,4,5,6,7,8,9,10,12,13,20]},
+  {id:'po',      name:'Purchase Order Finance',        range:'$100K–$10M+',           rate:'1.5–6%/transaction',  speed:'7–14 days',  minScore:520, compReq:[1,2,3,5,9]},
+  {id:'pcc',     name:'Personal Credit Cards',         range:'Varies',                rate:'Varies',              speed:'7–14 days',  minScore:620, compReq:[]},
+  {id:'sloc',    name:'Syndicated Line of Credit',     range:'$25K–$150K',            rate:'0% APR (promo)',       speed:'7–14 days',  minScore:650, compReq:[]},
+  {id:'cu',      name:'Credit Union Loans',            range:'$5K–$75K',              rate:'6–18%',               speed:'3–10 days',  minScore:600, compReq:[1,2,3,4,5,6]},
+  {id:'bridge',  name:'Bridge Loans',                  range:'$100K–$3M',             rate:'8–15%',               speed:'3–5 days',   minScore:520, compReq:[1,2,5]},
+  {id:'dscr',    name:'DSCR Loans',                    range:'$100K–$1.5M',           rate:'7–12%',               speed:'14–30 days', minScore:580, compReq:[1,2,5]},
+  {id:'const',   name:'Construction Loans',            range:'$200K–$2.5M',           rate:'8–14%',               speed:'14–30 days', minScore:580, compReq:[1,2,5]},
+  {id:'ar',      name:'Accounts Receivable Finance',   range:'Up to 95% of AR',       rate:'1–3%/mo',             speed:'5–10 days',  minScore:600, compReq:[1,2,3,5,9]},
+  {id:'inv_loc', name:'Inventory Line of Credit',      range:'Up to 85% of inventory',rate:'8–20%',               speed:'7–14 days',  minScore:600, compReq:[1,2,3,4,5]},
+  {id:'sba',     name:'SBA Loans (7a & 504)',           range:'Up to $5M',             rate:'5–11%',               speed:'30–90 days', minScore:720, compReq:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]},
+];
+
+── 4D. THE ELIGIBILITY FUNCTION ─────────────────────────────────────────────
+
+This exact function must be used everywhere eligibility is calculated.
+Do not rewrite it. Do not simplify it.
+
+function getStatus(product, currentScore, compDone) {
+  // compDone is a Set of completed compliance item IDs
+  const scoreMet = currentScore >= product.minScore;
+  const compMet  = product.compReq.every(id => compDone.has(id));
+
+  if (scoreMet && compMet) return 'unlocked';
+
+  const closeScore   = currentScore >= product.minScore - 80;
+  const missingComp  = product.compReq.filter(id => !compDone.has(id));
+  const closeComp    = missingComp.length <= 3;
+
+  if (closeScore && closeComp) return 'approaching';
+  return 'locked';
+}
+
+// Gap analysis — call this for locked/approaching products:
+function getGap(product, currentScore, compDone) {
+  const missingScore = Math.max(0, product.minScore - currentScore);
+  const missingComp  = product.compReq
+    .filter(id => !compDone.has(id))
+    .map(id => COMPLIANCE_ITEMS.find(c => c.id === id));
+  return { missingScore, missingComp };
+}
+
+── 4E. THE BAND FUNCTION ────────────────────────────────────────────────────
+
+function getBand(score) {
+  if (score < 400) return { name: 'Critical — Rebuild Required',   color: '#b04428' };
+  if (score < 550) return { name: 'Low — Foundation Gaps',         color: '#c89020' };
+  if (score < 650) return { name: 'Developing — Momentum Building',color: '#a0a020' };
+  if (score < 750) return { name: 'Approaching Ready',             color: '#38a880' };
+  if (score < 900) return { name: 'Lender Ready — Apply Now',      color: '#8ab820' };
+  return           { name: 'Prime — Maximum Leverage',             color: '#c8f040' };
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 5 — PAGE A: FUNDSCORE™ QUESTIONNAIRE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File: src/app/pages/FundScoreQuestionnaire.tsx
+Route: /fundscore-assessment
+No sidebar. Full viewport. 3 screens managed by state.
+
+── 5A. STATE SHAPE ──────────────────────────────────────────────────────────
+
+// Section labels per question (index matches QUESTIONS array)
+const SECTIONS = [
+  'Credit Profile','Credit Profile','Credit Profile','Credit Profile',
+  'Documentation','Documentation','Documentation','Documentation',
+  'Cash Flow','Cash Flow','Cash Flow','Cash Flow',
+  'Banking Behavior','Banking Behavior','Banking Behavior','Banking Behavior',
+  'Business Structure','Business Structure','Business Structure','Business Structure',
+  'Narrative Strength','Narrative Strength','Narrative Strength','Narrative Strength'
+];
+
+// State variables:
+let currentQ  = 0;               // which question (0–23)
+let answers   = {};              // { [questionIndex]: optionIndex }
+let screen    = 'welcome';       // 'welcome' | 'questions' | 'result'
+
+// Score state (populated after computeScore):
+let finalScore   = 0;
+let finalDimAvg  = {};           // { C: 0.72, D: 0.58, F: 0.68, B: 0.44, S: 0.80, N: 0.62 }
+
+── 5B. THE 24 QUESTIONS ─────────────────────────────────────────────────────
+
+Each question has: text, why, type ('options'), options array
+Each option has: label, sub (subtitle), score ({ DIM_KEY: 0.0–1.0 }),
+                 and optionally boost (flat point bonus added to final score)
+
+QUESTIONS array — all 24, in order:
+
+// ── CREDIT PROFILE (Q1–Q4) ──
+{
+  text: "What's your estimated personal credit score right now?",
+  why:  "Lenders check your personal credit first — before they look at anything else. This single number can open or close doors before a conversation even starts.",
+  type: 'options',
+  options: [
+    { label:'Below 580',    sub:'Needs significant work before most lenders will consider you', score:{C:0.05} },
+    { label:'580 – 619',    sub:'Qualifies for limited alternative lending only',               score:{C:0.20} },
+    { label:'620 – 649',    sub:'Opens SBA and some alt-lender products',                      score:{C:0.40} },
+    { label:'650 – 699',    sub:'Solid foundation — conventional lending range begins',        score:{C:0.60} },
+    { label:'700 – 739',    sub:'Good standing — qualifies for most products',                 score:{C:0.78} },
+    { label:'740 or above', sub:'Excellent — top-tier lender access',                         score:{C:1.00} },
+  ]
+},
+{
+  text: "What is your approximate personal credit utilization rate?",
+  why:  "This is how much of your available credit you're using. Lenders want to see below 30%. Above 50% is a red flag they see immediately.",
+  type: 'options',
+  options: [
+    { label:'Under 20%',      sub:'Ideal — strong signal of credit discipline', score:{C:1.00} },
+    { label:'20% – 30%',      sub:'Good — within acceptable lender range',      score:{C:0.75} },
+    { label:'30% – 50%',      sub:'Caution — starting to impact your score',    score:{C:0.45} },
+    { label:'Over 50%',       sub:'High — actively pulling your score down',    score:{C:0.10} },
+    { label:"I don't know",   sub:'',                                           score:{C:0.35} },
+  ]
+},
+{
+  text: "Do you have any active derogatory marks on your personal credit report?",
+  why:  "Collections, charge-offs, late payments — lenders see all of it. Recent derogatories (under 2 years) are weighted heavily against you.",
+  type: 'options',
+  options: [
+    { label:'No — my report is clean',                    sub:'',                               score:{C:1.00} },
+    { label:'Yes — but all are over 2 years old',         sub:'Less impact, but still visible', score:{C:0.60} },
+    { label:'Yes — some are within the last 2 years',     sub:'Active drag on your score',      score:{C:0.20} },
+    { label:"I haven't checked recently",                 sub:'',                               score:{C:0.40} },
+  ]
+},
+{
+  text: "Does your business have its own credit file and score?",
+  why:  "Business credit (D&B Paydex, Experian Intelliscore) is separate from your personal credit. Most small business owners don't have one — and don't know it matters.",
+  type: 'options',
+  options: [
+    { label:'Yes — active file with Paydex 80+',            sub:'Strong business credit standing',      score:{C:1.00} },
+    { label:'Yes — but score is below 80',                  sub:'File exists but needs improvement',    score:{C:0.50} },
+    { label:"I've started building it but it's new",        sub:'',                                     score:{C:0.30} },
+    { label:"No — I don't have a business credit file",     sub:'Very common — but it needs to be built', score:{C:0.05} },
+  ]
+},
+
+// ── DOCUMENTATION (Q5–Q8) ──
+{
+  text: "How many years of filed business tax returns do you have?",
+  why:  "The SBA requires 2 years of filed returns. Most banks want 2–3 years. No returns = instant denial from most conventional lenders.",
+  type: 'options',
+  options: [
+    { label:'None filed yet',        sub:'Hard stop for most lenders',              score:{D:0.00} },
+    { label:'1 year',                sub:'Qualifies for some alternative lenders',  score:{D:0.35} },
+    { label:'2 years',               sub:'Meets SBA minimum requirement',           score:{D:0.75} },
+    { label:'3 or more years',       sub:'Strong documentation history',            score:{D:1.00} },
+  ]
+},
+{
+  text: "Do you have a current Profit & Loss (P&L) statement for your business?",
+  why:  "A P&L shows lenders whether your business is actually making money. Without one, you're asking them to trust a number without proof.",
+  type: 'options',
+  options: [
+    { label:'Yes — current, professionally prepared',     sub:'CPA or accounting software generated',  score:{D:1.00} },
+    { label:'Yes — but I made it myself in a spreadsheet',sub:'Better than nothing but less credibility', score:{D:0.60} },
+    { label:"I have one but it's over 6 months old",      sub:'Lenders want current-year data',          score:{D:0.35} },
+    { label:"No — I don't have a P&L",                   sub:'',                                        score:{D:0.00} },
+  ]
+},
+{
+  text: "How many months of business bank statements can you provide right now?",
+  why:  "Lenders read your bank statements like a report card. 12 months is the gold standard. Less than 3 months disqualifies you from most products.",
+  type: 'options',
+  options: [
+    { label:'Less than 3 months',   sub:'Below minimum for most products',             score:{D:0.10} },
+    { label:'3 – 5 months',         sub:'Qualifies for some revenue-based products',   score:{D:0.35} },
+    { label:'6 – 11 months',        sub:'Good — approaching full coverage',            score:{D:0.65} },
+    { label:'12 or more months',    sub:'Full coverage — strong documentation signal', score:{D:1.00} },
+  ]
+},
+{
+  text: "Do the revenue figures on your tax returns and bank statements roughly match?",
+  why:  "Lenders cross-reference your documents. If your tax return says $200K but your bank shows $80K — that inconsistency raises immediate red flags.",
+  type: 'options',
+  options: [
+    { label:'Yes — they closely match (within 10%)',    sub:'Clean — no reconciliation concerns',              score:{D:1.00} },
+    { label:'Somewhat — within 15–25%',                 sub:'Minor gap — explainable but notable',            score:{D:0.60} },
+    { label:'No — there is a significant difference',   sub:'Will require explanation to every lender',       score:{D:0.15} },
+    { label:"I'm not sure",                             sub:'',                                               score:{D:0.35} },
+  ]
+},
+
+// ── CASH FLOW (Q9–Q12) ──
+{
+  text: "What is your business's approximate average monthly revenue over the last 6 months?",
+  why:  "This is how lenders calculate whether your business generates enough income to repay a loan. It sets your maximum borrowing power.",
+  type: 'options',
+  options: [
+    { label:'Under $3,000 / month',        sub:'', score:{F:0.10} },
+    { label:'$3,000 – $8,000 / month',     sub:'', score:{F:0.30} },
+    { label:'$8,000 – $20,000 / month',    sub:'', score:{F:0.55} },
+    { label:'$20,000 – $50,000 / month',   sub:'', score:{F:0.78} },
+    { label:'Over $50,000 / month',        sub:'', score:{F:1.00} },
+  ]
+},
+{
+  text: "Has your revenue been growing, flat, or declining over the past 12 months?",
+  why:  "Lenders don't just look at where you are — they look at where you're headed. A declining trend triggers automatic concern about repayment ability.",
+  type: 'options',
+  options: [
+    { label:'Growing — consistently up month over month', sub:'',                                    score:{F:1.00} },
+    { label:'Growing — but inconsistently',               sub:'Good but seasonal or sporadic',       score:{F:0.70} },
+    { label:'Flat — roughly the same each month',         sub:'Stable but not compelling',           score:{F:0.50} },
+    { label:'Declining — revenue has been going down',    sub:'Significant lender concern',          score:{F:0.10} },
+  ]
+},
+{
+  text: "After all business expenses, does your business consistently generate a monthly profit?",
+  why:  "Profit is how lenders know you can service new debt. A business that breaks even every month has very little room to add a loan payment.",
+  type: 'options',
+  options: [
+    { label:'Yes — we profit every month',          sub:'',                                          score:{F:1.00} },
+    { label:'Most months — occasional break-even',  sub:'',                                          score:{F:0.65} },
+    { label:'About half the time',                  sub:'Inconsistent — lenders will probe this',   score:{F:0.30} },
+    { label:'Rarely or not yet',                    sub:'',                                          score:{F:0.05} },
+  ]
+},
+{
+  text: "If you took on a new monthly loan payment, could your business comfortably cover it?",
+  why:  "This is the DSCR — Debt Service Coverage Ratio — the most important cash flow metric. Lenders want to see 25% more income than debt payments.",
+  type: 'options',
+  options: [
+    { label:'Yes — we have strong surplus above expenses', sub:'DSCR likely 1.35+',      score:{F:1.00} },
+    { label:'Yes — but it would be tight',                 sub:'DSCR likely 1.10–1.25',  score:{F:0.60} },
+    { label:'Possibly — depending on the payment amount',  sub:'',                        score:{F:0.35} },
+    { label:"No — we don't have much margin",              sub:'DSCR concern',            score:{F:0.05} },
+  ]
+},
+
+// ── BANKING BEHAVIOR (Q13–Q16) ──
+{
+  text: "How many overdrafts or NSFs has your business account had in the last 12 months?",
+  why:  "Lenders read 12 months of statements. NSFs signal cash flow instability. Even 2–3 in a year can raise red flags at traditional banks.",
+  type: 'options',
+  options: [
+    { label:'Zero — clean account history',  sub:'Best possible signal',                        score:{B:1.00} },
+    { label:'1 – 2',                         sub:'Minor — may need brief explanation',          score:{B:0.65} },
+    { label:'3 – 5',                         sub:'Concerning pattern — lenders will notice',    score:{B:0.25} },
+    { label:'More than 5',                   sub:'Significant red flag in lending review',      score:{B:0.00} },
+  ]
+},
+{
+  text: "What is the typical average daily balance in your business checking account?",
+  why:  "Lenders look for an average daily balance of at least 10% of your loan request. It signals you're not running your business to zero every month.",
+  type: 'options',
+  options: [
+    { label:'Usually near zero or negative', sub:'High-risk signal',                  score:{B:0.00} },
+    { label:'$500 – $2,000',                 sub:'Low — minimal cushion',             score:{B:0.25} },
+    { label:'$2,000 – $10,000',              sub:'Building — depends on loan size',   score:{B:0.55} },
+    { label:'$10,000 – $25,000',             sub:'Good stability signal',             score:{B:0.80} },
+    { label:'Over $25,000',                  sub:'Strong — well-capitalized signal',  score:{B:1.00} },
+  ]
+},
+{
+  text: "Are your personal and business finances completely separated?",
+  why:  "Mixing personal and business money is a red flag. It signals weak discipline, complicates tax filings, and creates legal concerns for lenders.",
+  type: 'options',
+  options: [
+    { label:'Yes — fully separate accounts and records', sub:'Clean structure',                                     score:{B:1.00} },
+    { label:'Mostly — occasional overlap',               sub:'Minor concern — address before applying',            score:{B:0.50} },
+    { label:"No — I use personal accounts for business", sub:'Significant issue — must fix before applying',       score:{B:0.00} },
+  ]
+},
+{
+  text: "Has your average daily bank balance been trending upward over the last 3–6 months?",
+  why:  "An improving cash position tells lenders your business is gaining financial strength — exactly what they want to see before extending credit.",
+  type: 'options',
+  options: [
+    { label:'Yes — consistently growing', sub:'Strong positive signal',               score:{B:1.00} },
+    { label:'About the same',             sub:'Neutral — stable but not compelling',   score:{B:0.55} },
+    { label:'Declining',                  sub:'Negative trend — needs to be addressed',score:{B:0.10} },
+    { label:"I haven't tracked it",       sub:'',                                      score:{B:0.40} },
+  ]
+},
+
+// ── BUSINESS STRUCTURE (Q17–Q20) ──
+{
+  text: "What is your current business entity type?",
+  why:  "Entity type signals legal seriousness. A sole proprietorship has no legal separation from personal assets — that creates risk lenders price in.",
+  type: 'options',
+  options: [
+    { label:'Sole Proprietorship',                sub:'No legal separation from your personal assets',     score:{S:0.10} },
+    { label:'LLC (Single-Member)',                sub:'Basic protection — good starting point',            score:{S:0.65} },
+    { label:'LLC (Multi-Member) or Partnership',  sub:'More structure — better lender signal',            score:{S:0.78} },
+    { label:'S-Corp or C-Corp',                   sub:'Strongest entity signal for conventional lending', score:{S:1.00} },
+  ]
+},
+{
+  text: "How long has your business been legally operating?",
+  why:  "Business age is a hard filter. Under 1 year locks out most products. Under 2 years blocks SBA. Time cannot be manufactured — this is a fixed clock.",
+  type: 'options',
+  options: [
+    { label:'Less than 6 months', sub:'Pre-qualification stage — very limited options', score:{S:0.05} },
+    { label:'6 – 12 months',      sub:'Some alt-lenders and MCAs available',            score:{S:0.25} },
+    { label:'1 – 2 years',        sub:'More options open — SBA approaching',            score:{S:0.55} },
+    { label:'2 – 5 years',        sub:'Meets most lender minimums',                    score:{S:0.85} },
+    { label:'Over 5 years',       sub:'Strong operational history',                    score:{S:1.00} },
+  ]
+},
+{
+  text: "What industry is your business in?",
+  why:  "Lenders use NAICS codes to apply risk overlays. Some industries face automatic additional scrutiny — even with strong financials.",
+  type: 'options',
+  options: [
+    { label:'Professional Services, Tech, or Healthcare', sub:'Low-risk industry classification',                  score:{S:1.00} },
+    { label:'Retail, E-commerce, or Wholesale',           sub:'Standard risk — no overlay',                       score:{S:0.85} },
+    { label:'Construction or Real Estate',                sub:'Moderate risk — additional documentation common',  score:{S:0.65} },
+    { label:'Restaurant, Food Service, or Hospitality',   sub:'Higher risk — additional scrutiny',               score:{S:0.40} },
+    { label:'Transportation, Trucking, or Logistics',     sub:'Moderate-high risk — fleet/liability issues',     score:{S:0.50} },
+    { label:'Other / Not listed',                         sub:'',                                                 score:{S:0.70} },
+  ]
+},
+{
+  text: "Is your business currently in good standing with your state?",
+  why:  "Lapsed filings or delinquent state fees trigger automatic rejection. Lenders verify this in minutes — and there is no workaround.",
+  type: 'options',
+  options: [
+    { label:'Yes — all filings are current',              sub:'Clean legal standing',              score:{S:1.00} },
+    { label:"I think so — but I haven't checked recently",sub:'Worth verifying before applying',   score:{S:0.65} },
+    { label:'No — there are outstanding issues',          sub:'Must be resolved before any application', score:{S:0.00} },
+  ]
+},
+
+// ── NARRATIVE STRENGTH (Q21–Q24) ──
+{
+  text: "Can you clearly explain exactly how you will use the loan funds?",
+  why:  "Vague answers kill applications. 'Working capital' is not an answer. Lenders want exact numbers, exact purpose, exact timeline.",
+  type: 'options',
+  options: [
+    { label:'Yes — I can explain it precisely with numbers',    sub:'Strong narrative position',          score:{N:1.00} },
+    { label:'Mostly — I have a general idea',                   sub:'Needs sharpening before applying',   score:{N:0.55} },
+    { label:"I know what I need but can't explain the ROI",    sub:'',                                   score:{N:0.25} },
+    { label:'Not really — I just know I need capital',         sub:'Must be developed before applying',  score:{N:0.00} },
+  ]
+},
+{
+  text: "Can you explain clearly how you will repay the loan?",
+  why:  "Lenders lend to plans, not desperation. Which revenue stream? What margin? What timeline? 'From revenue' is not a repayment plan.",
+  type: 'options',
+  options: [
+    { label:'Yes — specific repayment path from projected revenue', sub:'',                              score:{N:1.00} },
+    { label:'Generally — from ongoing business revenue',            sub:'Needs more specificity',        score:{N:0.50} },
+    { label:"I haven't thought through the repayment in detail",   sub:'',                              score:{N:0.10} },
+  ]
+},
+{
+  text: "Have you ever successfully repaid a business loan or line of credit?",
+  why:  "Past repayment is the strongest predictor of future behavior. Lenders weight this heavily — it's proof of credit character, not just credit score.",
+  type: 'options',
+  options: [
+    { label:'Yes — paid in full, on time',                  sub:'Strongest possible signal',                              score:{N:1.00}, boost:45 },
+    { label:'Yes — paid off but had some late payments',    sub:'Positive history with a caveat',                        score:{N:0.55} },
+    { label:"No — this is my first business loan",         sub:'Common — not a penalty, just no boost',                 score:{N:0.40} },
+    { label:'No — and there were defaults or issues',      sub:'Significant concern — will need to address directly',   score:{N:0.00} },
+  ]
+},
+{
+  text: "How relevant is your personal background and experience to the business you're operating?",
+  why:  "Years of relevant experience reduce perceived execution risk — especially for newer businesses. Lenders weigh operator expertise heavily.",
+  type: 'options',
+  options: [
+    { label:'10+ years in this exact industry',    sub:'Deep expertise — strong operator signal', score:{N:1.00} },
+    { label:'5 – 10 years of relevant experience', sub:'Solid background',                        score:{N:0.78} },
+    { label:'1 – 5 years — still learning',        sub:'',                                        score:{N:0.50} },
+    { label:'New to this industry',                sub:'Mitigate with a strong plan',             score:{N:0.20} },
+  ]
+},
+
+── 5C. THE SCORING ENGINE ────────────────────────────────────────────────────
+
+This is the exact algorithm. Implement it verbatim.
+
+function computeScore(answers, QUESTIONS, WEIGHTS) {
+  // Step 1: Collect per-dimension scores from answers
+  const dimBuckets = { C:[], D:[], F:[], B:[], S:[], N:[] };
+  let totalBoost = 0;
+
+  QUESTIONS.forEach((q, qi) => {
+    const ai = answers[qi];
+    if (ai === undefined) return;
+    const opt = q.options[ai];
+    if (!opt || !opt.score) return;
+    if (opt.boost) totalBoost += opt.boost;
+    Object.entries(opt.score).forEach(([dim, val]) => {
+      if (dimBuckets[dim]) dimBuckets[dim].push(val);
+    });
+  });
+
+  // Step 2: Average each dimension's scores
+  const dimAvg = {};
+  Object.entries(dimBuckets).forEach(([d, vals]) => {
+    dimAvg[d] = vals.length
+      ? vals.reduce((a, b) => a + b, 0) / vals.length
+      : 0.5;   // default 0.5 if no answers for that dim
+  });
+
+  // Step 3: Weighted composite
+  let base = 0;
+  Object.entries(WEIGHTS).forEach(([d, w]) => {
+    base += (dimAvg[d] || 0) * w;
+  });
+
+  // Step 4: Scale to 0–1000, add boost (capped at 80), clamp
+  let score = Math.round(base * 1000 + Math.min(totalBoost, 80));
+  score = Math.max(0, Math.min(1000, score));
+
+  return { score, dimAvg };
+  // dimAvg values are 0.0–1.0 fractions
+  // Display as percentages: Math.round(dimAvg[d] * 100)
+}
+
+── 5D. ACTION GENERATOR ─────────────────────────────────────────────────────
+
+Called after computeScore. Returns top 5 recommended actions.
+
+function generateActions(dimAvg, score) {
+  const actions = [];
+
+  if ((dimAvg.D||0) < 0.60) actions.push({
+    name: 'Upload 12 months of business bank statements',
+    why:  "Your documentation score is your fastest win. Bank statements are the #1 thing lenders read first — and getting to 12 months coverage takes days, not months.",
+    pts: '+42 pts', time: '1–3 days', dim: 'D'
+  });
+  if ((dimAvg.C||0) < 0.50) actions.push({
+    name: 'Pull your credit reports and dispute any errors',
+    why:  "Most credit reports have at least one error. A successful dispute can move your score 20–50 points — and open lender doors that are currently closed.",
+    pts: '+30–50 pts', time: '30–45 days', dim: 'C'
+  });
+  if ((dimAvg.S||0) < 0.65) actions.push({
+    name: 'Form an LLC and open a dedicated business bank account',
+    why:  "Operating as a sole prop or mixing finances is a structural red flag. LLC formation takes 1–2 weeks and immediately improves your lender presentation.",
+    pts: '+35 pts', time: '7–14 days', dim: 'S'
+  });
+  if ((dimAvg.D||0) < 0.75) actions.push({
+    name: 'Prepare or update your Profit & Loss statement',
+    why:  "Lenders want current financials. A clean P&L — even a simple one — shows you understand your own business.",
+    pts: '+25 pts', time: '3–7 days', dim: 'D'
+  });
+  if ((dimAvg.C||0) < 0.35) actions.push({
+    name: 'Register your business with Dun & Bradstreet (DUNS)',
+    why:  "Most small businesses have no business credit file. Building one takes 30–60 days but opens an entirely separate credit track lenders score independently.",
+    pts: '+28 pts', time: '30–60 days', dim: 'C'
+  });
+  if ((dimAvg.B||0) < 0.50) actions.push({
+    name: 'Build your average daily balance over the next 60 days',
+    why:  "Your banking behavior score is low. Lenders look at the last 6 months. Consistent positive balance growth is a visible, trackable signal you can move immediately.",
+    pts: '+20 pts', time: '30–60 days', dim: 'B'
+  });
+  if ((dimAvg.N||0) < 0.60) actions.push({
+    name: 'Write a specific use-of-funds statement with ROI projections',
+    why:  "Your narrative score needs work. This takes 20 minutes and can be the difference between a lender saying yes or asking another question.",
+    pts: '+18 pts', time: '20 minutes', dim: 'N'
+  });
+  if ((dimAvg.C||0) < 0.70) actions.push({
+    name: 'Reduce personal credit utilization below 30%',
+    why:  "High utilization is actively dragging your score down. Pay down balances or request a credit limit increase. Either move improves your number within 30 days.",
+    pts: '+22 pts', time: '30 days', dim: 'C'
+  });
+
+  // Always return at least 4 actions
+  if (actions.length < 4) actions.push({
+    name: 'Complete your FundReady™ document checklist',
+    why:  "Use our lender-specific document checklist to ensure nothing is missing before you apply. One missing document can delay an approval by weeks.",
+    pts: '+15 pts', time: '1–2 days', dim: 'D'
+  });
+
+  return actions.slice(0, 5);
+}
+
+── 5E. LENDER ACCESS GENERATOR ──────────────────────────────────────────────
+
+Called after computeScore. Returns unlocked + approaching lender tiers.
+
+function getLenderAccess(score) {
+  const unlocked = [];
+  const locked   = [];
+
+  if (score >= 350) unlocked.push({ label:'CDFI Microloans & Community Lenders', note:'Up to $50K · Mission-aligned lenders · FICO as low as 575' });
+  if (score >= 450) unlocked.push({ label:'Revenue-Based Financing',             note:'No FICO floor · Based on monthly deposits · Higher cost' });
+  if (score >= 550) unlocked.push({ label:'Online Alt-Lender Term Loans',        note:'FICO 600+ · 1yr in business · Faster funding' });
+  if (score >= 650) unlocked.push({ label:'SBA Microloan Program',               note:'FICO 620+ · Up to $50K · Best rates at this tier' });
+  if (score >= 700) unlocked.push({ label:'SBA 7(a) Standard Loan',              note:'FICO 650+ · 2yr in business · Up to $5M' });
+  if (score >= 750) unlocked.push({ label:'Conventional Bank Term Loan',         note:'FICO 680+ · Best terms · Lowest rates' });
+
+  if (score < 550) locked.push('Online Alt-Lender access — need +'+(550-score)+' pts');
+  if (score < 700) locked.push('SBA 7(a) Standard — need +'+(700-score)+' pts');
+  if (score < 750) locked.push('Conventional Bank — need +'+(750-score)+' pts');
+
+  return { unlocked, locked };
+}
+
+── 5F. SCREEN FLOW AND CONNECTIONS ──────────────────────────────────────────
+
+WELCOME SCREEN:
+  "Start My FundScore™ Assessment" button
+  → sets screen = 'questions', currentQ = 0
+  → calls renderQuestion(0)
+
+QUESTION SCREEN:
+  Each question rendered from QUESTIONS[currentQ]
+  Option selected → answers[currentQ] = optionIndex
+  "Continue" button (disabled until answer selected):
+    if currentQ < 23 → currentQ++, renderQuestion(currentQ)
+    if currentQ === 23 → calls showResults()
+  "Back" button (hidden on Q0):
+    currentQ--, renderQuestion(currentQ)
+  Progress bar: Math.round((currentQ / 24) * 100) + '%'
+  Section label: SECTIONS[currentQ]
+  Question counter: "Question " + (currentQ + 1) + " of 24"
+
+RESULTS SCREEN:
+  1. computeScore(answers) → { score, dimAvg }
+  2. getBand(score) → { name, color }
+  3. generateActions(dimAvg, score) → actions array
+  4. getLenderAccess(score) → { unlocked, locked }
+  5. Render everything
+  6. Animate score counter: setInterval from 0 → score over ~1.2s
+  7. After 200ms delay: animate dim bars from 0% → final width
+  8. After 300ms delay: animate meter fill from 0% → (score/10)%
+  9. CTA "Get My Full Remediation Plan →":
+     → navigates to /capital-dashboard
+     → passes { score, dimAvg, compDone: new Set() } via React context
+        or query params: ?score=624&dims=C72,D58,F68,B44,S80,N62
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 6 — PAGE B: UNIFIED CAPITAL DASHBOARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File: src/app/pages/UnifiedCapitalDashboard.tsx
+Route: /capital-dashboard
+
+── 6A. STATE SHAPE ──────────────────────────────────────────────────────────
+
+// Initialized from query params or context passed by questionnaire.
+// Falls back to defaults if accessed directly.
+let currentScore = 624;       // number 0–1000
+let compDone = new Set([1,2,3,4,5,6,7,8,9,11,12]); // Set of completed item IDs
+let activeTab = 'products';   // 'products' | 'compliance' | 'score' | 'actions'
+
+// Fixed dimension scores used for display — proportional to currentScore
+// These are the prototype defaults. In production, use scores from questionnaire.
+const FIXED_DIM = { C:72, D:58, F:68, B:44, S:80, N:62 };
+// When score changes via slider, scale each dim:
+// displayPct = Math.min(100, Math.max(0, Math.round(FIXED_DIM[key] * (currentScore / 624))))
+
+── 6B. RENDER PIPELINE ──────────────────────────────────────────────────────
+
+Every time score or compDone changes, call renderAll():
+
+function renderAll() {
+  renderSidebar();      // score number, band, track, dim bars, comp dots, elig badges
+  renderProducts();     // all 17 product cards sorted by status
+  renderCompliance();   // all 20 compliance items with check states
+  renderScoreDetail();  // 6 dimension cards with signals
+  renderActions();      // ranked action list based on weak dims + missing compliance
+}
+
+── 6C. SIDEBAR RENDER LOGIC ─────────────────────────────────────────────────
+
+renderSidebar() does these things in order:
+
+1. Score number: textContent = currentScore
+   Color = getBand(currentScore).color (transitions via CSS)
+
+2. Band name: textContent = getBand(currentScore).name
+
+3. Score track width: (currentScore / 10) + '%'
+
+4. Dimension bars (6 rows):
+   For each dim in DIM_DATA:
+     adj = Math.min(100, Math.max(0, Math.round(FIXED_DIM[dim.key] * (currentScore / 624))))
+     barColor = adj >= 70 ? '#8ab820' : adj >= 45 ? '#c89020' : '#b04428'
+     Render: name | bar track (adj% fill, barColor) | adj%
+
+5. Compliance dots (20 dots):
+   For each item in COMPLIANCE_ITEMS:
+     cls = compDone.has(item.id) ? 'done'
+         : item.time === 'quick'   ? 'quick'
+         : item.time === 'medium'  ? 'medium'
+         : 'longterm'
+     dot.className = 'comp-dot ' + cls
+     dot.onclick = () => toggleComp(item.id)
+
+6. Eligibility badges:
+   statuses = PRODUCTS.map(p => getStatus(p, currentScore, compDone))
+   unlocked   = statuses.filter(s => s === 'unlocked').length
+   approaching= statuses.filter(s => s === 'approaching').length
+   locked     = statuses.filter(s => s === 'locked').length
+   Update all 3 badge numbers.
+
+── 6D. PRODUCTS RENDER LOGIC ────────────────────────────────────────────────
+
+renderProducts() does this:
+
+1. Sort PRODUCTS by status:
+   order = { unlocked:0, approaching:1, locked:2 }
+   sorted = [...PRODUCTS].sort((a,b) => order[getStatus(a,...)] - order[getStatus(b,...)])
+
+2. Track lastStatus. When status changes, inject a group header div:
+   'unlocked':    "PRE-QUALIFIED NOW"           color: #8ab820
+   'approaching': "APPROACHING — WITHIN REACH"  color: #c89020
+   'locked':      "LOCKED — GAP ANALYSIS BELOW" color: #6b7258
+
+3. For each product, render a card with:
+   - Status dot (pulsing glow if unlocked, static if approaching, muted if locked)
+   - Product name (Syne 600)
+   - Amount range (lime if unlocked, amber if approaching, muted if locked)
+   - 4-column metadata: Rate | Speed | Min Score | Compliance count
+
+4. Card gap section:
+   IF unlocked:
+     Show "✓ Pre-Qualified" unlocked-tag
+     If product.req exists, show it in small muted text
+     If product.caution exists, show amber warning
+
+   IF approaching or locked:
+     missingScore = Math.max(0, product.minScore - currentScore)
+     missingComp  = product.compReq.filter(id => !compDone.has(id))
+     Gap text: "Score X → Y needed." or "Score ✓." + "Z compliance items missing."
+     Score gap pill (if missingScore > 0): "+X pts needed"
+     Compliance gap pills (one per missing item): "#ID: Item Name"
+
+── 6E. COMPLIANCE RENDER LOGIC ──────────────────────────────────────────────
+
+renderCompliance() does this:
+
+For each item in COMPLIANCE_ITEMS:
+  done = compDone.has(item.id)
+  Render comp-item with class 'done' if done
+  Checkbox shows '✓' if done, empty if not
+  Time tag shown only if NOT done:
+    quick   → "Quick Win — Under 7 days"  (amber)
+    medium  → "30–60 Days"               (orange)
+    longterm→ "60–90+ Days"              (red)
+  onclick = toggleComp(item.id)
+
+── 6F. SCORE DETAIL RENDER LOGIC ────────────────────────────────────────────
+
+renderScoreDetail() does this:
+
+For each dim in DIM_DATA:
+  pct = Math.min(100, Math.max(0, Math.round(FIXED_DIM[dim.key] * (currentScore / 624))))
+  barColor = pct >= 70 ? dim.color : pct >= 45 ? '#c89020' : '#b04428'
+
+  Render score-dim-card:
+    - Dimension name colored with dim.color
+    - Weight label
+    - Score percentage (barColor)
+    - Bar track + fill (barColor, pct%)
+    - 5 signal items from dim.signals with dim.color dots
+
+── 6G. ACTIONS RENDER LOGIC ─────────────────────────────────────────────────
+
+renderActions() does this:
+
+1. Find weak dimensions:
+   weakDims = DIM_DATA
+     .filter(d => FIXED_DIM[d.key] * (currentScore / 624) < 70)
+     .sort((a,b) => FIXED_DIM[a.key] - FIXED_DIM[b.key])
+
+2. Find missing quick compliance items:
+   missingQuick = COMPLIANCE_ITEMS.filter(c => !compDone.has(c.id) && c.time === 'quick')
+
+3. Build actions list (in this priority order):
+   a. Up to 2 missing quick compliance items (fastest wins):
+      title: "Complete: " + item.name
+      why: "This is a quick-win compliance item. Lenders verify this in minutes..."
+      pts: '+15–25 pts', time: 'Under 7 days', dim: 'Compliance'
+
+   b. Banking if FIXED_DIM.B * (currentScore/624) < 60:
+      title: "Eliminate all NSFs and build your average daily balance"
+      why: "Banking behavior is your lowest dimension..."
+      pts: '+20–35 pts', time: '30–60 days', dim: 'Banking'
+
+   c. Documentation if FIXED_DIM.D * (currentScore/624) < 75:
+      title: "Upload 12 months of bank statements and current P&L"
+      why: "Documentation is your second-weakest area..."
+      pts: '+30–42 pts', time: '1–3 days', dim: 'Documentation'
+
+   d. Credit if FIXED_DIM.C * (currentScore/624) < 75:
+      title: "Open D&B file and build 7+ vendor credit lines"
+      why: "You need at least 7 net-30 vendor accounts reporting..."
+      pts: '+28–40 pts', time: '30–60 days', dim: 'Credit'
+
+   e. Narrative if FIXED_DIM.N * (currentScore/624) < 80:
+      title: "Write a specific use-of-funds statement with repayment logic"
+      why: "Your Narrative score is dragging your overall number..."
+      pts: '+18 pts', time: '20 minutes', dim: 'Narrative'
+
+   f. Always append SBA gap item if score < 720:
+      title: "Complete remaining compliance items to unlock SBA access"
+      why: "You are X score points and Y items away from SBA eligibility..."
+      pts: 'Unlocks 5–11% rates', time: '60–120 days', dim: 'All Dimensions'
+
+4. Render up to 6 action items.
+   Pill colors:
+     pts pill:  pill-green (lime)
+     time pill: pill-amber
+     dim pill:  inline style border/color matching dimension color
+
+── 6H. INTERACTION HANDLERS ─────────────────────────────────────────────────
+
+switchTab(panel):
+  Remove 'active' from all nav-tabs and panel-sections
+  Add 'active' to clicked tab and corresponding panel
+  panel values: 'products' | 'compliance' | 'score' | 'actions'
+
+toggleComp(id):
+  If compDone.has(id) → compDone.delete(id)
+  Else → compDone.add(id)
+  Update compliance slider value to compDone.size
+  Update comp-val display
+  Call renderAll()
+
+updateScore(val):
+  currentScore = parseInt(val)
+  Update score-val display
+  Call renderAll()
+
+updateCompliance(val):
+  n = parseInt(val)
+  compDone = new Set()
+  for i = 0 to n-1: compDone.add(COMPLIANCE_ITEMS[i].id)
+  Update comp-val display
+  Call renderAll()
+
+── 6I. INITIALIZATION ───────────────────────────────────────────────────────
+
+On mount:
+1. Read query params or context: score, dimScores, compDone
+2. Set currentScore, compDone accordingly (or use defaults)
+3. Set slider values to match: score slider → currentScore, comp slider → compDone.size
+4. Call renderAll()
+5. After 100ms: trigger bar animations
+   All dim-bar-fill, sdc-fill, score-track-fill:
+     Capture target width → set to 0 → after 50ms set back to target
+     CSS transition handles the animation
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 7 — HOW THE THREE PAGES CONNECT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+USER FLOW:
+  /fundscore-assessment (Questionnaire)
+        ↓  completes 24 questions
+        ↓  computeScore() runs
+        ↓  score + dimAvg calculated
+        ↓  results screen shown
+        ↓  CTA button clicked
+        ↓
+  /capital-dashboard (Unified Dashboard)
+        ↓  reads score + dimAvg from context/params
+        ↓  initializes currentScore + compDone
+        ↓  renderAll() runs
+        ↓  user checks compliance items → toggleComp() → renderAll()
+        ↓  user adjusts sliders → updateScore/updateCompliance() → renderAll()
+        ↓  user clicks product "View Gap" → gap analysis visible in card
+        ↓  user clicks "Apply Now" → routes to /access-funding/[productId]
+
+DATA PASSING (questionnaire → dashboard):
+  Method A — React Context (preferred):
+    const FundReadyContext = createContext({ score, dimAvg, compDone })
+    Questionnaire writes to context on showResults()
+    Dashboard reads from context on mount
+
+  Method B — Query params (fallback):
+    /capital-dashboard?score=624&C=72&D=58&F=68&B=44&S=80&N=62&comp=11
+    Dashboard parses on mount:
+      score = parseInt(params.score) || 624
+      FIXED_DIM overridden with C, D, F, B, S, N params
+      compDone initialized with first 'comp' items
+
+DASHBOARD → EXISTING PROJECT PAGES:
+  Product "Apply Now" CTA routes to existing AccessFunding pages:
+    /access-funding/merchant-advance   (existing page)
+    /access-funding/working-capital    (existing page)
+    ... etc for all 17 products
+
+  Sidebar "Lender Compliance" link routes to existing:
+    /lender-compliance                 (existing page)
+
+  The two new pages sit ALONGSIDE the existing pages.
+  They do not replace them. They are the new entry point and command center.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 8 — EXECUTION ORDER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Execute in this exact sequence. Confirm each step before moving on.
+
+PHASE 1 — Design System (existing project)
+  Step 1:  theme.css — apply all color tokens from Part 3
+  Step 2:  fonts.css — import Syne, DM Sans, Crimson Pro
+  Step 3:  tailwind.css — extend fontFamily
+  Step 4:  button.tsx, badge.tsx, input.tsx, card.tsx — restyle
+  Step 5:  Sidebar.tsx, TopNav.tsx — restyle navigation
+
+PHASE 2 — Score Components (existing project)
+  Step 6:  progress.tsx, progress-ring.tsx, FicoWidget.tsx — apply score colors
+  Step 7:  Dashboard.tsx — apply new color system
+  Step 8:  All AccessFunding pages — apply new color system
+  Step 9:  All LenderCompliance pages — apply new color system
+  Step 10: All StatusReport pages — apply new color system
+  Step 11: All modal components — apply new color system
+
+PHASE 3 — New Page A (Questionnaire)
+  Step 12: Create FundScoreQuestionnaire.tsx
+           — Build SECTIONS, QUESTIONS arrays from Part 5B
+           — Build state variables from Part 5A
+           — Build Welcome screen
+           — Build Question screen with renderQuestion()
+           — Build Results screen with showResults()
+           — Implement computeScore() from Part 5C
+           — Implement generateActions() from Part 5D
+           — Implement getLenderAccess() from Part 5E
+           — Wire screen flow from Part 5F
+  Step 13: Add route /fundscore-assessment to routes.tsx
+  Step 14: Add "FundScore™ Assessment" link to Sidebar.tsx
+
+PHASE 4 — New Page B (Dashboard)
+  Step 15: Create UnifiedCapitalDashboard.tsx
+           — Build COMPLIANCE_ITEMS, PRODUCTS, DIM_DATA from Part 4
+           — Build state variables from Part 6A
+           — Build layout shell: topbar + 4 tabs + sidebar + main panel
+           — Implement renderSidebar() from Part 6C
+           — Implement renderProducts() from Part 6D
+           — Implement renderCompliance() from Part 6E
+           — Implement renderScoreDetail() from Part 6F
+           — Implement renderActions() from Part 6G
+           — Implement switchTab(), toggleComp(), updateScore(),
+             updateCompliance() from Part 6H
+           — Implement initialization from Part 6I
+  Step 16: Add route /capital-dashboard to routes.tsx
+  Step 17: Add "Capital Dashboard" link to Sidebar.tsx
+
+PHASE 5 — Connections
+  Step 18: Create FundReadyContext (or query param handler)
+           to pass score + dimAvg from Questionnaire to Dashboard
+  Step 19: Wire questionnaire CTA to navigate to /capital-dashboard
+  Step 20: Wire dashboard product "Apply Now" to existing AccessFunding routes
+  Step 21: Final audit — verify all 3 phases work end to end
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 9 — HARD RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1.  NEVER modify any file in /src/app/utils/
+2.  NEVER modify routes.tsx except to ADD the two new routes
+3.  NEVER show a product as 'unlocked' unless BOTH minScore AND all
+    compReq items are satisfied — no exceptions
+4.  NEVER approximate the scoring formula — use computeScore() verbatim
+5.  NEVER use #ffffff as a background — dark theme throughout
+6.  NEVER use #1e40af or any blue as a primary — lime system only
+7.  NEVER remove Framer Motion animations from existing components
+8.  ALWAYS complete one phase before starting the next
+9.  ALWAYS run renderAll() after any state change in the dashboard
+10. ALWAYS pass score data from questionnaire to dashboard —
+    a dashboard with no score context should load with the defaults
+    (currentScore: 624, compDone: items 1–9, 11, 12)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 10 — FINAL VERIFICATION CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LOGIC
+  □ computeScore() returns correct score for all-high answers (~900+)
+  □ computeScore() returns correct score for all-low answers (~50–150)
+  □ boost from Q22 "paid in full" adds up to 45 pts to final score
+  □ boost is capped at 80 total across all boosting answers
+  □ getStatus() shows MCA as unlocked at score 350 with items 1,2,3,5 done
+  □ getStatus() shows SBA as locked unless ALL 20 compliance items done AND score ≥ 720
+  □ toggleComp() updates compliance dots, eligibility badges, AND product cards
+  □ updateScore() updates score chip, band name, all dimension bars, AND product cards
+
+FLOW
+  □ Questionnaire welcome → question 1 → question 24 → results works
+  □ Back button hidden on question 1
+  □ Continue button disabled until option selected
+  □ Score counter animates from 0 to final on results screen
+  □ Dimension bars animate in staggered on results screen
+  □ "Get My Full Remediation Plan" CTA navigates to /capital-dashboard with score data
+  □ Dashboard loads with correct score from questionnaire
+  □ Dashboard sliders update all panels simultaneously
+  □ Tab switching shows correct panel, updates URL or state
+
+DESIGN
+  □ Zero instances of #1e40af or #ffffff in component files
+  □ All score numbers color-coded by band
+  □ All 4 dashboard panels render correct content
+  □ All 17 product cards render with correct status
+  □ All 20 compliance items render with correct check state
+  □ All 6 dimension cards render with correct signals
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BEGIN AT PART 8, PHASE 1, STEP 1.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
