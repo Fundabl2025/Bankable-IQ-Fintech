@@ -46,14 +46,32 @@ function scoreToBizFunding(score: number): { bizMin: number; bizMax: number; per
 }
 
 function projectScore(currentScore: number, daysOut: number, incompleteItems: AuditItem[]): number {
-  // Estimate score gain from completing high-priority incomplete items
+  // Realistic score gain estimates based on real-world credit & compliance timelines.
+  // Quick wins (EIN, bank account, NAP consistency) can complete in days.
+  // Structural improvements (trade lines, credit history) take 30-90 days to report.
+  // Full fundability (SBA-ready profile, seasoned credit) takes 6-12+ months.
   const criticalItems = incompleteItems.filter(i => i.priority === 'critical' || i.priority === 'high');
   const mediumItems   = incompleteItems.filter(i => i.priority === 'medium');
 
-  // Assume user completes ~2 critical items per 30 days and ~3 medium items
-  const periodsOf30 = daysOut / 30;
-  const criticalGain = Math.min(criticalItems.length, periodsOf30 * 2) * 40; // ~40 pts per critical
-  const mediumGain   = Math.min(mediumItems.length,   periodsOf30 * 3) * 15; // ~15 pts per medium
+  let criticalCompleted: number;
+  let mediumCompleted: number;
+
+  if (daysOut <= 30) {
+    // 30 days: complete ~1 critical item (only the fastest quick wins report this fast)
+    criticalCompleted = Math.min(criticalItems.length, 1);
+    mediumCompleted   = Math.min(mediumItems.length, 2);
+  } else if (daysOut <= 90) {
+    // 90 days: complete ~3 critical items + 5 medium (credit reporting cycles take 30-60 days)
+    criticalCompleted = Math.min(criticalItems.length, 3);
+    mediumCompleted   = Math.min(mediumItems.length, 5);
+  } else {
+    // Long-term (180+ days): most items addressable, score approaches ceiling
+    criticalCompleted = criticalItems.length;
+    mediumCompleted   = mediumItems.length;
+  }
+
+  const criticalGain = criticalCompleted * 40; // ~40 pts per critical item resolved
+  const mediumGain   = mediumCompleted   * 15; // ~15 pts per medium item resolved
   const totalGain    = criticalGain + mediumGain;
 
   return Math.min(currentScore + Math.round(totalGain), 1000);
@@ -159,16 +177,18 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
   }
 
   // ── Compute projections ────────────────────────────────────────────────────
+  // Realistic timelines: 30 days (quick wins) → 90 days (credit cycle improvements)
+  // → Long-Term (full fundability — trade lines seasoned, SBA-ready profile built)
   const incompleteItems = auditItems.filter(i => i.status !== 'complete');
   const currentScore    = data.fundScore;
   const score30         = projectScore(currentScore, 30,  incompleteItems);
   const score90         = projectScore(currentScore, 90,  incompleteItems);
-  const score180        = projectScore(currentScore, 180, incompleteItems);
+  const scoreLongTerm   = projectScore(currentScore, 365, incompleteItems); // 12 months = realistic ceiling
 
-  const current  = scoreToBizFunding(currentScore);
-  const at30     = scoreToBizFunding(score30);
-  const at90     = scoreToBizFunding(score90);
-  const at180    = scoreToBizFunding(score180);
+  const current      = scoreToBizFunding(currentScore);
+  const at30         = scoreToBizFunding(score30);
+  const at90         = scoreToBizFunding(score90);
+  const atLongTerm   = scoreToBizFunding(scoreLongTerm);
 
   // Get eligible products for comparison
   const eligibleProducts = products.filter(p => p.qualifies);
@@ -199,9 +219,9 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
       isCurrent: false,
     },
     {
-      label: '6 Months',
-      projectedScore: score180,
-      ...at180,
+      label: 'Long-Term',
+      projectedScore: scoreLongTerm,
+      ...atLongTerm,
       color: '#8b5cf6',
       border: '#a78bfa',
       isCurrent: false,
@@ -209,7 +229,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
   ];
 
   const topActions = getTopActions(incompleteItems, current.bizMin);
-  const totalPotentialUplift = at180.bizMax - current.bizMax;
+  const totalPotentialUplift = atLongTerm.bizMax - current.bizMax;
 
   return (
     <div style={{ background: 'var(--bg-base)', padding: '32px 24px', maxWidth: '820px', margin: '0 auto' }}>
@@ -370,7 +390,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
           >
             <TrendingUp style={{ width: '16px', height: '16px', color: '#10b981', flexShrink: 0 }} />
             <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#10b981', fontWeight: 500 }}>
-              With consistent improvements, you could unlock an additional {fmtMoney(totalPotentialUplift)} in funding capacity over 6 months.
+              With consistent improvements, you could unlock an additional {fmtMoney(totalPotentialUplift)} in funding capacity long-term.
             </span>
           </div>
         )}
@@ -390,7 +410,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
           Your Capital Growth Path
         </h2>
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 20px 0' }}>
-          Projected funding eligibility as you complete audit items and improve your FundScore.
+          Projected funding eligibility as you complete audit items and improve your FundScore. Quick wins impact your score in 30 days; structural improvements (trade lines, credit seasoning) take 90 days+.
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
