@@ -9,6 +9,7 @@ import {
   DollarSign, 
   TrendingUp,
   AlertCircle, 
+  AlertTriangle,
   CheckCircle2, 
   Zap, 
   ArrowRight,
