@@ -308,16 +308,16 @@ export function LandingPage() {
               transition={{ duration: 0.6 }}
               style={{
                 fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(40px, 5vw, 64px)',
+                fontSize: 'clamp(32px, 4vw, 48px)',
                 fontWeight: 800,
-                lineHeight: 1.1,
+                lineHeight: 1.2,
                 marginBottom: '24px',
+                maxWidth: '600px',
               }}
             >
-              You weren't denied<br />
-              <span style={{ color: 'var(--primary)' }}>because you failed.</span><br />
-              You were denied because<br />
-              <span style={{ color: 'var(--primary)' }}>you weren't prepared.</span>
+              You weren't denied <span style={{ color: 'var(--primary)' }}>because you failed.</span>
+              <br />
+              You were denied because <span style={{ color: 'var(--primary)' }}>you weren't prepared.</span>
             </motion.h1>
 
             <motion.p
@@ -326,12 +326,12 @@ export function LandingPage() {
               transition={{ delay: 0.2, duration: 0.6 }}
               style={{
                 fontFamily: 'var(--font-serif)',
-                fontSize: '20px',
+                fontSize: '16px',
                 fontStyle: 'italic',
                 color: 'var(--muted-foreground)',
                 lineHeight: 1.7,
                 marginBottom: '32px',
-                maxWidth: '540px',
+                maxWidth: '480px',
               }}
             >
               33 million small businesses. 80%+ denied. Not because their business isn't worthy — 
