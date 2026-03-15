@@ -263,7 +263,7 @@ export function LandingPage() {
             Sign In
           </Link>
           <Link
-            to="/business-assessment"
+            to="/app/business-assessment"
             style={{
               padding: '10px 20px',
               background: 'var(--primary)',
@@ -346,7 +346,7 @@ export function LandingPage() {
               style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}
             >
               <Link
-                to="/business-assessment"
+                to="/app/business-assessment"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -586,7 +586,7 @@ export function LandingPage() {
         </h2>
 
         <Link
-          to="/business-assessment"
+          to="/app/business-assessment"
           style={{
             display: 'inline-flex',
             alignItems: 'center',

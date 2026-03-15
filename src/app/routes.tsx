@@ -80,7 +80,7 @@ const LazyComponent = ({ Component, ...props }: { Component: React.LazyExoticCom
 export const router = createBrowserRouter([
   {
     path: 'fundscore-assessment',
-    element: <Navigate to="/business-assessment" replace />,
+    element: <Navigate to="/app/business-assessment" replace />,
   },
   // Public landing page (no sidebar/layout)
   {
@@ -98,9 +98,13 @@ export const router = createBrowserRouter([
   },
   // App routes with RootLayout (sidebar, topnav)
   {
-    path: '/',
+    path: '/app',
     Component: RootLayout,
     children: [
+      {
+        index: true,
+        element: <LazyComponent Component={Dashboard} />,
+      },
       {
         path: 'dashboard',
         element: <LazyComponent Component={Dashboard} />,
@@ -111,31 +115,31 @@ export const router = createBrowserRouter([
       },
       {
         path: 'business-success-scan',
-        element: <Navigate to="/business-assessment" replace />,
+        element: <Navigate to="/app/business-assessment" replace />,
       },
       {
         path: 'business-success-scan/step-1',
-        element: <Navigate to="/business-assessment" replace />,
+        element: <Navigate to="/app/business-assessment" replace />,
       },
       {
         path: 'business-success-scan/step-2',
-        element: <Navigate to="/business-assessment" replace />,
+        element: <Navigate to="/app/business-assessment" replace />,
       },
       {
         path: 'business-success-scan/step-3',
-        element: <Navigate to="/business-assessment" replace />,
+        element: <Navigate to="/app/business-assessment" replace />,
       },
       {
         path: 'business-success-scan/fundscore',
-        element: <Navigate to="/business-assessment" replace />,
+        element: <Navigate to="/app/business-assessment" replace />,
       },
       {
         path: 'business-success-scan/assessment',
-        element: <Navigate to="/business-assessment" replace />,
+        element: <Navigate to="/app/business-assessment" replace />,
       },
       {
         path: 'business-success-scan/results',
-        element: <Navigate to="/business-assessment/results" replace />,
+        element: <Navigate to="/app/business-assessment/results" replace />,
       },
       {
         path: 'business-assessment',
@@ -159,7 +163,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'my-business-profile',
-        element: <Navigate to="/settings/my-business-profile" replace />,
+        element: <Navigate to="/app/settings/my-business-profile" replace />,
       },
       {
         path: 'status-reports',
