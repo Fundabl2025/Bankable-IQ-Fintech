@@ -172,7 +172,8 @@ export interface ExtendedResultsOutput {
     description: string;
   }>;
 
-  // Report 3 — Business FICO
+  // Report 3 — Business FICO (SBSS)
+  sbssScore: number; // 0-300 composite score
   sbssOwnerStatus: 'fail' | 'pass' | 'best';
   sbssBusinessStatus: 'fail' | 'pass' | 'best';
   sbssSections: Array<{

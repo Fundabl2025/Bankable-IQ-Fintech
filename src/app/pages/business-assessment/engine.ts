@@ -385,6 +385,14 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
   // Work Needed
   const workNeeded = computeWorkNeeded(data, composite, bankableItems);
 
+  // SBSS Score (0-300) - weighted composite of owner credit + business credit
+  // SBSS = 50% owner credit health + 50% business credit health
+  // Owner credit: based on composite FICO (300-850 range mapped to 0-150)
+  // Business credit: based on bankable score (0-160 mapped to 0-150)
+  const ownerCreditComponent = Math.min(150, Math.max(0, Math.round(((composite - 300) / 550) * 150)));
+  const businessCreditComponent = Math.min(150, Math.round((baseResult.bankableScore / 160) * 150));
+  const sbssScore = ownerCreditComponent + businessCreditComponent;
+
   return {
     fundScore: baseResult.score,
     bankableScore: baseResult.bankableScore,
@@ -398,6 +406,7 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
     ownerStatus,
     contingencies,
     bankableItems,
+    sbssScore,
     sbssOwnerStatus,
     sbssBusinessStatus,
     sbssSections,
@@ -407,57 +416,58 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
 
 // ────────────────────────────────────────────────────────────────────────────────
 // HELPER: Funding Range Lookup
+// Aligned with Elon's strategic notes: ranges should reflect real capital unlock potential
+// Reference: "$80K → $250K → $1.4M" trajectory mentioned in strategic review
 // ────────────────────────────────────────────────────────────────────────────────
 function getFundingRange(score: number): ExtendedResultsOutput['fundingRange'] {
-  // Score is 0-1000, not 0-100. Convert to 0-100 band for lookup
-  const normalizedScore = score / 10; // 0-1000 → 0-100
-  
-  if (normalizedScore >= 90) {
+  // Score is 0-1000
+  if (score >= 900) {
     return {
       currentBand: '900 to 1000',
-      businessOnlyMin: 80000,
-      businessOnlyMax: 100000,
-      personalAndBusinessMin: 90000,
-      personalAndBusinessMax: 120000,
+      businessOnlyMin: 500000,
+      businessOnlyMax: 1500000,
+      personalAndBusinessMin: 750000,
+      personalAndBusinessMax: 2500000,
       scoreRangeLabel: '900 to 1000',
     };
   }
-  if (normalizedScore >= 80) {
+  if (score >= 800) {
     return {
       currentBand: '800 to 899',
-      businessOnlyMin: 60000,
-      businessOnlyMax: 80000,
-      personalAndBusinessMin: 70000,
-      personalAndBusinessMax: 100000,
+      businessOnlyMin: 100000,
+      businessOnlyMax: 500000,
+      personalAndBusinessMin: 150000,
+      personalAndBusinessMax: 750000,
       scoreRangeLabel: '800 to 899',
     };
   }
-  if (normalizedScore >= 70) {
+  if (score >= 700) {
     return {
       currentBand: '700 to 799',
-      businessOnlyMin: 40000,
-      businessOnlyMax: 60000,
-      personalAndBusinessMin: 50000,
-      personalAndBusinessMax: 80000,
+      businessOnlyMin: 50000,
+      businessOnlyMax: 150000,
+      personalAndBusinessMin: 75000,
+      personalAndBusinessMax: 250000,
       scoreRangeLabel: '700 to 799',
     };
   }
-  if (normalizedScore >= 60) {
+  if (score >= 600) {
     return {
       currentBand: '600 to 699',
-      businessOnlyMin: 20000,
-      businessOnlyMax: 40000,
-      personalAndBusinessMin: 30000,
-      personalAndBusinessMax: 60000,
+      businessOnlyMin: 25000,
+      businessOnlyMax: 75000,
+      personalAndBusinessMin: 40000,
+      personalAndBusinessMax: 125000,
       scoreRangeLabel: '600 to 699',
     };
   }
+  // Below 600 - limited options but still some alternative financing available
   return {
     currentBand: 'Below 600',
-    businessOnlyMin: 0,
-    businessOnlyMax: 0,
-    personalAndBusinessMin: 0,
-    personalAndBusinessMax: 0,
+    businessOnlyMin: 5000,
+    businessOnlyMax: 25000,
+    personalAndBusinessMin: 10000,
+    personalAndBusinessMax: 50000,
     scoreRangeLabel: 'Below 600',
   };
 }

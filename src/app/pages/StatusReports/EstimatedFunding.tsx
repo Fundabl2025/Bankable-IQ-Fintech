@@ -34,13 +34,14 @@ interface FundingSnapshot {
 }
 
 function scoreToBizFunding(score: number): { bizMin: number; bizMax: number; personalMin: number; personalMax: number } {
-  // 0–1000 scale. Ranges derived from real lending thresholds.
-  if (score >= 900) return { bizMin: 250000, bizMax: 500000, personalMin: 350000, personalMax: 750000 };
-  if (score >= 800) return { bizMin: 100000, bizMax: 250000, personalMin: 150000, personalMax: 400000 };
-  if (score >= 700) return { bizMin: 50000,  bizMax: 100000, personalMin: 75000,  personalMax: 175000 };
-  if (score >= 600) return { bizMin: 25000,  bizMax: 50000,  personalMin: 35000,  personalMax: 80000  };
-  if (score >= 500) return { bizMin: 10000,  bizMax: 25000,  personalMin: 15000,  personalMax: 40000  };
-  return               { bizMin: 0,      bizMax: 0,      personalMin: 0,     personalMax: 0      };
+  // 0–1000 scale. Aligned with engine.ts getFundingRange and Elon's strategic notes
+  // Reference: "$80K → $250K → $1.4M" capital unlock trajectory
+  if (score >= 900) return { bizMin: 500000, bizMax: 1500000, personalMin: 750000, personalMax: 2500000 };
+  if (score >= 800) return { bizMin: 100000, bizMax: 500000,  personalMin: 150000, personalMax: 750000  };
+  if (score >= 700) return { bizMin: 50000,  bizMax: 150000,  personalMin: 75000,  personalMax: 250000  };
+  if (score >= 600) return { bizMin: 25000,  bizMax: 75000,   personalMin: 40000,  personalMax: 125000  };
+  if (score >= 500) return { bizMin: 10000,  bizMax: 30000,   personalMin: 15000,  personalMax: 60000   };
+  return                   { bizMin: 5000,   bizMax: 25000,   personalMin: 10000,  personalMax: 50000   };
 }
 
 function projectScore(currentScore: number, daysOut: number, incompleteItems: AuditItem[]): number {

@@ -167,20 +167,11 @@ export function Results() {
                 fontFamily: 'var(--font-body)', 
                 fontSize: '13px', 
                 color: 'var(--text-secondary)', 
-                lineHeight: 1.6,
-                marginBottom: '12px'
-              }}>
-                <strong style={{ color: 'var(--text-primary)' }}>What Your FundScore™ Means:</strong>
-              </div>
-              <div style={{ 
-                fontFamily: 'var(--font-body)', 
-                fontSize: '13px', 
-                color: 'var(--text-secondary)', 
                 lineHeight: 1.6 
               }}>
-                Your FundScore™ is a comprehensive 0-1000 rating that measures your business's fundability across six critical dimensions. 
-                A higher score means you qualify for more financing options, better terms, and faster approvals. 
-                Think of it like a FICO score, but specifically for business financing access.
+                Your FundScore determines how much capital you can access and at what terms. 
+                The "Your Path to Capital" tab shows exactly what actions will unlock more funding — 
+                entrepreneurs who follow the roadmap typically increase their eligible funding by 3-5x within 90 days.
               </div>
               <div style={{ 
                 display: 'flex', 
