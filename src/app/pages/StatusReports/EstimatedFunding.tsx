@@ -236,10 +236,10 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
           </div>
           <div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Your Current Funding Eligibility
+              Your Funding Potential
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
-              Based on FundScore™ {currentScore}/1000
+              Maximum available at FundScore™ {currentScore}/1000 tier (requires meeting product-specific criteria)
             </div>
           </div>
         </div>
@@ -259,7 +259,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
               {fmtRange(current.bizMin, current.bizMax)}
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              No personal guarantee required at this tier
+              Available when all business criteria are met
             </div>
           </div>
           <div
@@ -276,9 +276,23 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
               {fmtRange(current.personalMin, current.personalMax)}
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Includes personal credit + business combined
+              Includes personal guarantee options
             </div>
           </div>
+        </div>
+
+        {/* Note about actual vs potential */}
+        <div
+          style={{
+            marginTop: '12px', padding: '10px 14px',
+            background: 'rgba(245,158,11,0.08)',
+            border: '1px solid rgba(245,158,11,0.2)',
+            borderRadius: '6px',
+          }}
+        >
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+            <strong style={{ color: '#f59e0b' }}>Note:</strong> These ranges show your tier's maximum potential. Actual eligibility depends on meeting specific product requirements. Check the "Your FundScore" tab to see which products you currently qualify for.
+          </span>
         </div>
 
         {totalPotentialUplift > 0 && (

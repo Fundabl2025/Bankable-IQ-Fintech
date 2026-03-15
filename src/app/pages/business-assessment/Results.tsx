@@ -298,17 +298,31 @@ export function Results() {
                 lineHeight: 1.8,
                 marginBottom: '24px'
               }}>
-                {result.score >= 900 ? (
-                  <p>Your FundScore of <strong style={{ color: 'var(--success)' }}>{result.score}</strong> places you in the <strong>Prime</strong> tier. You qualify for premium financing options including SBA loans, traditional bank lines, and the best available terms. Lenders will compete for your business.</p>
-                ) : result.score >= 800 ? (
-                  <p>Your FundScore of <strong style={{ color: 'var(--primary)' }}>{result.score}</strong> places you in the <strong>Ready</strong> tier. You qualify for most traditional financing products with competitive rates. A few targeted improvements could move you into Prime status.</p>
-                ) : result.score >= 700 ? (
-                  <p>Your FundScore of <strong style={{ color: 'var(--warning)' }}>{result.score}</strong> places you in the <strong>Approaching</strong> tier. You have access to alternative financing and some traditional products. Focus on the actions in "Your Path to Capital" to unlock significantly more funding.</p>
-                ) : result.score >= 600 ? (
-                  <p>Your FundScore of <strong style={{ color: 'var(--warning)' }}>{result.score}</strong> places you in the <strong>Developing</strong> tier. Limited financing options are available now, but your capital access can grow substantially. The "Path to Capital" tab shows exactly what to do.</p>
-                ) : (
-                  <p>Your FundScore of <strong style={{ color: 'var(--error)' }}>{result.score}</strong> indicates significant improvements are needed before accessing traditional funding. The good news: following the actions in "Your Path to Capital" can dramatically increase your eligibility within 90 days.</p>
-                )}
+                {(() => {
+                  // Dynamic text based on ACTUAL product eligibility, not just score tier
+                  const tier = result.score >= 900 ? 'Prime' : result.score >= 800 ? 'Ready' : result.score >= 700 ? 'Approaching' : result.score >= 600 ? 'Developing' : 'Building';
+                  const tierColor = result.score >= 900 ? 'var(--success)' : result.score >= 800 ? 'var(--primary)' : 'var(--warning)';
+                  const blockedCount = products.filter(p => !p.qualifies).length;
+                  
+                  // Calculate actual max funding from eligible products
+                  const maxFunding = eligibleProducts.length > 0 
+                    ? Math.max(...eligibleProducts.map(p => {
+                        const amt = p.maxAmount.replace(/[$,KM+]/g, '');
+                        return amt.includes('.') ? parseFloat(amt) * 1000000 : parseInt(amt) * 1000;
+                      }))
+                    : 0;
+                  const maxFundingText = maxFunding >= 1000000 ? `$${(maxFunding/1000000).toFixed(1)}M` : maxFunding >= 1000 ? `$${Math.round(maxFunding/1000)}K` : '$0';
+
+                  if (eligibleProducts.length === 0) {
+                    return <p>Your FundScore of <strong style={{ color: tierColor }}>{result.score}</strong> places you in the <strong>{tier}</strong> tier. However, based on your current profile, you don't yet qualify for any of the 17 financing products. The "Your Path to Capital" tab shows exactly what blockers to address to unlock funding options.</p>;
+                  } else if (eligibleProducts.length === 1) {
+                    return <p>Your FundScore of <strong style={{ color: tierColor }}>{result.score}</strong> places you in the <strong>{tier}</strong> tier. You currently qualify for <strong style={{ color: 'var(--success)' }}>1 financing product</strong> with up to <strong>{maxFundingText}</strong> available. Address the {blockedCount} blockers below to unlock significantly more capital.</p>;
+                  } else if (eligibleProducts.length <= 5) {
+                    return <p>Your FundScore of <strong style={{ color: tierColor }}>{result.score}</strong> places you in the <strong>{tier}</strong> tier. You qualify for <strong style={{ color: 'var(--success)' }}>{eligibleProducts.length} financing products</strong> with up to <strong>{maxFundingText}</strong> available. A few targeted improvements could unlock {blockedCount} more options.</p>;
+                  } else {
+                    return <p>Your FundScore of <strong style={{ color: tierColor }}>{result.score}</strong> places you in the <strong>{tier}</strong> tier. You qualify for <strong style={{ color: 'var(--success)' }}>{eligibleProducts.length} financing products</strong> with up to <strong>{maxFundingText}</strong> available. Excellent fundability — lenders will compete for your business.</p>;
+                  }
+                })()}
               </div>
 
               {/* Eligible Products Section */}
