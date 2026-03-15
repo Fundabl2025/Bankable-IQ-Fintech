@@ -3,11 +3,12 @@
 // Dynamic funding range report with contingency analysis
 // ════════════════════════════════════════════════════════════════════════════════
 
-import { Download } from 'lucide-react';
+import { Download, TrendingUp } from 'lucide-react';
 import { ExtendedResultsOutput } from '../business-assessment/types';
 import { useEffect, useState } from 'react';
 import { computeExtendedResults } from '../business-assessment/engine';
 import { useNavigate } from 'react-router';
+import { getAllAuditItems } from '../../utils/businessData';
 
 interface EstimatedFundingProps {
   data?: ExtendedResultsOutput;
@@ -325,7 +326,216 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
           })}
         </div>
 
-        {/* Business Owner Status Section */}
+        {/* ═════════════════════════════════════════════════════════════════════════════ */}
+        {/* CAPITAL UNLOCK FORECASTING — 30/60/90 Day Projections (STRATEGIC FEATURE)    */}
+        {/* ═════════════════════════════════════════════════════════════════════════════ */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #10b98130 0%, #06b6d430 100%)',
+            border: '2px solid #10b981',
+            borderRadius: '8px',
+            padding: '24px',
+            marginBottom: '24px',
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <div
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: '#10b981',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <TrendingUp style={{ width: '18px', height: '18px', color: 'white' }} />
+            </div>
+            <h2
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '18px',
+                fontWeight: 700,
+                color: '#10b981',
+                margin: 0,
+              }}
+            >
+              Your Funding Growth Path
+            </h2>
+          </div>
+
+          {/* Sub-heading */}
+          <p
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '13px',
+              fontWeight: 400,
+              color: 'var(--text-secondary)',
+              marginBottom: '20px',
+            }}
+          >
+            Complete high-impact audit items to unlock more capital. Here's your projected funding eligibility at key milestones:
+          </p>
+
+          {/* 30/60/90 Day Milestones */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+            {/* Today */}
+            <div
+              style={{
+                background: 'white',
+                border: '2px solid #10b981',
+                borderRadius: '6px',
+                padding: '16px',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#10b981',
+                  textTransform: 'uppercase',
+                  marginBottom: '8px',
+                }}
+              >
+                Today (Current)
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
+                  marginBottom: '6px',
+                }}
+              >
+                {formatCurrency(data.fundingRange.businessOnlyMin, data.fundingRange.businessOnlyMax)}
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '11px',
+                  fontWeight: 400,
+                  color: 'var(--text-muted)',
+                }}
+              >
+                FundScore: {data.fundScore}
+              </div>
+            </div>
+
+            {/* 30 Days */}
+            <div
+              style={{
+                background: 'white',
+                border: '1px solid #06b6d4',
+                borderRadius: '6px',
+                padding: '16px',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#06b6d4',
+                  textTransform: 'uppercase',
+                  marginBottom: '8px',
+                }}
+              >
+                After 30 Days
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
+                  marginBottom: '6px',
+                }}
+              >
+                $75K - $150K
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '11px',
+                  fontWeight: 400,
+                  color: 'var(--text-muted)',
+                }}
+              >
+                Projected FundScore: 750+
+              </div>
+            </div>
+
+            {/* 90 Days */}
+            <div
+              style={{
+                background: 'white',
+                border: '1px solid #3b82f6',
+                borderRadius: '6px',
+                padding: '16px',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#3b82f6',
+                  textTransform: 'uppercase',
+                  marginBottom: '8px',
+                }}
+              >
+                After 90 Days
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
+                  marginBottom: '6px',
+                }}
+              >
+                $150K - $400K
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '11px',
+                  fontWeight: 400,
+                  color: 'var(--text-muted)',
+                }}
+              >
+                Projected FundScore: 850+
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom note */}
+          <div
+            style={{
+              marginTop: '16px',
+              padding: '12px',
+              background: 'rgba(16, 185, 129, 0.05)',
+              borderRadius: '4px',
+            }}
+          >
+            <p
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '12px',
+                fontWeight: 400,
+                color: 'var(--text-secondary)',
+                margin: 0,
+              }}
+            >
+              <strong>💡 Tip:</strong> Completing audit items from "Lender Compliance" and "Building Credit" categories has the highest impact on unlocking capital.
+            </p>
+          </div>
+        </div>
         <div
           style={{
             background: 'var(--bg-surface-1)',
