@@ -796,7 +796,7 @@ export function Dashboard() {
                   className="flex items-center gap-2 p-3"
                   style={{ backgroundColor: 'rgba(16,185,129,0.1)', borderRadius: '2px' }}
                 >
-                  <CheckCircle style={{ color: 'var(--success)', width: 16, height: 16 }} />
+                  <CheckCircle2 style={{ color: 'var(--success)', width: 16, height: 16 }} />
                   <span style={{ 
                     fontFamily: 'var(--font-body)', 
                     fontSize: '13px',
@@ -1047,7 +1047,7 @@ export function Dashboard() {
           className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5"
         >
           {[
-            { label: 'Items Complete', value: `${progress.completedItems}/${progress.totalItems}`, icon: CheckCircle, color: 'var(--success)' },
+            { label: 'Items Complete', value: `${progress.completedItems}/${progress.totalItems}`, icon: CheckCircle2, color: 'var(--success)' },
             { label: 'Overall Progress', value: `${progress.percentage}%`, icon: TrendingUp, color: 'var(--primary)' },
             { label: 'Blockers Remaining', value: criticalBlockers.length.toString(), icon: AlertTriangle, color: 'var(--destructive)' },
             { label: 'Days to Bankable', value: distanceToBankable > 0 ? '~60' : '0', icon: Clock, color: 'var(--muted-foreground)' },
