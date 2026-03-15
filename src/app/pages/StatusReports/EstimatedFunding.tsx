@@ -276,9 +276,16 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
               border: '1px solid var(--border-subtle)',
             }}
           >
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
               Business Only
             </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              {fmtRange(current.bizMin, current.bizMax)}
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              No personal guarantee required at this tier
+            </div>
+          </div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, color: 'var(--primary)' }}>
               {fmtRange(current.bizMin, current.bizMax)}
             </div>
@@ -305,7 +312,19 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
           </div>
         </div>
 
-        {/* Actual vs Potential comparison */}
+        {/* Clarifying note about personal vs biz financing */}
+        <div
+          style={{
+            marginTop: '12px', padding: '10px 14px',
+            background: 'rgba(59,130,246,0.08)',
+            border: '1px solid rgba(59,130,246,0.2)',
+            borderRadius: '6px',
+          }}
+        >
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+            <strong style={{ color: '#3b82f6' }}>Note:</strong> "Business Only" means financing without requiring your personal guarantee. If you currently qualify for "Personal Guarantee Line" (in Your FundScore tab), you can use personal credit to unlock capital faster. As you improve your business metrics, you'll unlock pure business-backed financing.
+          </span>
+        </div>
         <div
           style={{
             marginTop: '12px', padding: '14px 16px',

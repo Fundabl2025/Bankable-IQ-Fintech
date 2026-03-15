@@ -341,7 +341,7 @@ export function Results() {
                             {product.name}
                           </div>
                           <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                            {product.category} | Up to {product.maxAmount} | {product.speed}
+                            {product.category} {product.category === 'Credit' && product.name === 'Personal Guarantee Line' ? '(Personal Guarantee)' : '(Business Financing)'} | Up to {product.maxAmount} | {product.speed}
                           </div>
                         </div>
                         <div style={{
