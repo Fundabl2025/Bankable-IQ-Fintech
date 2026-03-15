@@ -13,15 +13,13 @@ import { evaluateProducts, Product } from './productEligibility';
 import { generateActionPlan, Action } from './actionPlan';
 import { getAllAuditItems, AuditItem } from '../../utils/businessData';
 import { EstimatedFunding } from '../StatusReports/EstimatedFunding';
-import { BankableStatus } from '../StatusReports/BankableStatus';
-import { BusinessFICO } from '../StatusReports/BusinessFICO';
 
 export function Results() {
   const navigate = useNavigate();
   const [data, setData] = useState<UnifiedAnswers | null>(null);
   const [result, setResult] = useState<ReturnType<typeof computeScore> | null>(null);
   const [extendedResults, setExtendedResults] = useState<ExtendedResultsOutput | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'funding' | 'bankable' | 'fico'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'capital'>('overview');
 
   // Animated score counter
   const springScore = useSpring(0, { stiffness: 40, damping: 12 });
@@ -221,13 +219,13 @@ export function Results() {
                 </div>
                 <div>
                   <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                    Compliance Items
+                    Business FICO (SBSS)
                   </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 700, color: auditItems.length - incompleteItems.length === auditItems.length ? 'var(--success)' : 'var(--warning)' }}>
-                    {auditItems.length - incompleteItems.length}/{auditItems.length}
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 700, color: 'var(--primary)' }}>
+                    {extendedResults?.sbssScore || 0}/300
                   </div>
                   <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    Items completed
+                    Business creditworthiness
                   </div>
                 </div>
               </div>
@@ -238,60 +236,38 @@ export function Results() {
         {/* Tab Navigation */}
         <div
           style={{
-            background: 'var(--bg-surface-1)',
-            borderBottom: '1px solid var(--border-subtle)',
-            borderRadius: '12px 12px 0 0',
-            marginBottom: '0',
-            position: 'sticky',
-            top: '0',
-            zIndex: 10,
+            display: 'flex',
+            gap: '32px',
+            borderBottom: '1px solid var(--border)',
+            marginBottom: '40px',
+            paddingBottom: '16px',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              overflowX: 'auto',
-              gap: '0',
-            }}
-          >
-            {[
-              { id: 'overview', label: 'FundScore™ Overview' },
-              { id: 'funding', label: 'Funding Range' },
-              { id: 'bankable', label: 'Bankable Status' },
-              { id: 'fico', label: 'Business FICO' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '14px',
-                  fontWeight: activeTab === tab.id ? 500 : 400,
-                  padding: '0 24px',
-                  height: '44px',
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
-                  color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  if (activeTab !== tab.id) {
-                    e.currentTarget.style.color = 'var(--text-secondary)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (activeTab !== tab.id) {
-                    e.currentTarget.style.color = 'var(--text-muted)';
-                  }
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          {[
+            { id: 'overview', label: 'Your FundScore' },
+            { id: 'capital', label: 'Your Path to Capital' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              style={{
+                fontSize: '14px',
+                fontWeight: activeTab === tab.id ? 500 : 400,
+                cursor: 'pointer',
+                background: 'none',
+                border: 'none',
+                padding: '0',
+                borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
+                color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
+                transition: 'all 0.2s ease',
+                position: 'relative',
+                bottom: '-17px',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
         </div>
 
         {/* Tab Content */}
@@ -958,16 +934,8 @@ export function Results() {
           </>
         )}
 
-        {activeTab === 'funding' && (
+        {activeTab === 'capital' && (
           <EstimatedFunding data={extendedResults!} />
-        )}
-
-        {activeTab === 'bankable' && (
-          <BankableStatus data={extendedResults!} />
-        )}
-
-        {activeTab === 'fico' && (
-          <BusinessFICO data={extendedResults!} />
         )}
       </div>
     </div>
