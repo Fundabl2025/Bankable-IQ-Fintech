@@ -33,7 +33,7 @@ export function CapitalUnlockForecaster({ forecast }: Props) {
               We'll show you exactly which actions will unlock the most funding and how long it will take.
             </p>
             <Button
-              onClick={() => navigate('/assessment')}
+              onClick={() => navigate('/business-assessment')}
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               Take Assessment
