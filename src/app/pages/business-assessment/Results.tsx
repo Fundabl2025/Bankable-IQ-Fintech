@@ -3,6 +3,15 @@
 // Complete score reveal with products, actions, and comprehensive insights
 // ════════════════════════════════════════════════════════════════════════════════
 
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { motion, useSpring } from 'motion/react';
+import { UnifiedAnswers, ExtendedResultsOutput } from './types';
+import { computeScore, getBand, computeExtendedResults } from './engine';
+import { evaluateProducts } from './productEligibility';
+import { getAllAuditItems, AuditItem } from '../../utils/businessData';
+import { EstimatedFunding } from '../StatusReports/EstimatedFunding';
+
 // ════════════════════════════════════════════════════════════════════════════════
 // Status Badge System - Per Elon's vision
 // Maps FundScore + Bankable Score to clear status progression
