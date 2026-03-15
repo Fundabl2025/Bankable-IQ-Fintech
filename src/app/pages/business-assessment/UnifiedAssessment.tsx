@@ -11,6 +11,7 @@ import { UnifiedAnswers } from './types';
 import { READINESS_QUESTIONS } from './questions';
 import { calculatePartialScore, getBand } from './engine';
 import { FoundationQuestion } from './FoundationQuestions';
+import { setDataItem } from '../../lib/data-adapter';
 
 export function UnifiedAssessment() {
   const navigate = useNavigate();
@@ -26,9 +27,12 @@ export function UnifiedAssessment() {
   const [liveScore, setLiveScore] = useState(0);
   const springScore = useSpring(0, { stiffness: 40, damping: 12 });
 
-  // Save data to localStorage whenever it changes
+  // Save data to localStorage/Supabase whenever it changes
   useEffect(() => {
-    localStorage.setItem('unified_assessment', JSON.stringify(data));
+    const saveData = async () => {
+      await setDataItem('unified_assessment', JSON.stringify(data));
+    }
+    saveData();
     
     // Update live score
     const newScore = calculatePartialScore(data);
@@ -222,7 +226,7 @@ function LiveScoreBar({ score }: { score: number }) {
   );
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════���════════════════════════════════
 // READINESS QUESTION
 // ════════════════════════════════════════════════════════════════════════════════
 
