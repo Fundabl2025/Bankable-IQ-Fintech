@@ -14,10 +14,13 @@ import {
   getAllAuditItems 
 } from '../utils/businessData';
 import { getPreQualifiedPrograms, getTotalPreQualifiedAmount } from '../utils/fundingEligibility';
+import { getDataItem } from '../lib/data-adapter';
 
 export function Dashboard() {
   const navigate = useNavigate();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [fundScore, setFundScore] = useState(0);
+  const [scoreBand, setScoreBand] = useState({ name: 'Take Assessment to See Your Score', color: '#64748b' });
 
   // Listen for updates from other modules
   useEffect(() => {
@@ -37,6 +40,24 @@ export function Dashboard() {
       window.removeEventListener('fundscoreUpdated', handleUpdate);
     };
   }, []);
+
+  // Load FundScore using data adapter (works with localStorage or Supabase)
+  useEffect(() => {
+    const loadFundScore = async () => {
+      try {
+        const stored = await getDataItem('fundscore_result');
+        if (stored) {
+          const result = JSON.parse(stored);
+          setFundScore(result.score || 0);
+          setScoreBand(result.band || { name: 'Take Assessment to See Your Score', color: '#64748b' });
+        }
+      } catch (error) {
+        console.error('Error reading FundScore:', error);
+      }
+    };
+
+    loadFundScore();
+  }, [refreshKey]);
   
   // Pull REAL data from unified system (re-runs when refreshKey changes)
   const businessProfile = getBusinessProfile();
@@ -55,29 +76,6 @@ export function Dashboard() {
   const onlineAnalysisProgress = napScore;
   const organizeFinancialsProgress = 0;
   const becomeBankableProgress = 0;
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // FUNDSCORE™ — Unified 0-1000 Scale (Read from localStorage)
-  // ═══════════════════════════════════════════════════════════════════════════
-  const getFundScore = (): { score: number; band: { name: string; color: string } } => {
-    try {
-      const stored = localStorage.getItem('fundscore_result');
-      if (stored) {
-        const result = JSON.parse(stored);
-        return { score: result.score, band: result.band };
-      }
-    } catch (error) {
-      console.error('Error reading FundScore:', error);
-    }
-    
-    // Default: No score yet (user hasn't taken assessment)
-    return { 
-      score: 0, 
-      band: { name: 'Take Assessment to See Your Score', color: '#64748b' }
-    };
-  };
-
-  const { score: fundScore, band: scoreBand } = getFundScore();
 
   // Funding status counts
   const unlockedCount = preQualifiedCount;

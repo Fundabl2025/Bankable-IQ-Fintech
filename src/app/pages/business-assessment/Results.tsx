@@ -6,22 +6,81 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, useSpring } from 'motion/react';
-import { ArrowRight, CheckCircle2, AlertCircle, TrendingUp, FileText, Zap, Building, CreditCard, Package, AlertTriangle, DollarSign } from 'lucide-react';
-import { UnifiedAnswers, DIMENSION_INFO, ExtendedResultsOutput } from './types';
+import { UnifiedAnswers, ExtendedResultsOutput } from './types';
 import { computeScore, getBand, computeExtendedResults } from './engine';
-import { evaluateProducts, Product } from './productEligibility';
-import { generateActionPlan, Action } from './actionPlan';
+import { evaluateProducts } from './productEligibility';
 import { getAllAuditItems, AuditItem } from '../../utils/businessData';
 import { EstimatedFunding } from '../StatusReports/EstimatedFunding';
-import { BankableStatus } from '../StatusReports/BankableStatus';
-import { BusinessFICO } from '../StatusReports/BusinessFICO';
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Status Badge System - Per Elon's vision
+// Maps FundScore + Bankable Score to clear status progression
+// ════════════════════════════════════════════════════════════════════════════════
+
+interface StatusInfo {
+  status: 'Unprepared' | 'Fundable' | 'Progressing' | 'Bankable' | 'Elite';
+  bankableScore: number;
+  bankableThreshold: number;
+  pointsToBankable: number;
+  statusColor: string;
+  statusBgColor: string;
+  capitalTier: string;
+}
+
+function computeStatus(extendedResults: ExtendedResultsOutput): StatusInfo {
+  const bankableScore = extendedResults.sbssScore || 0;
+  const bankableThreshold = 160;
+  const pointsToBankable = Math.max(0, bankableThreshold - bankableScore);
+
+  let status: 'Unprepared' | 'Fundable' | 'Progressing' | 'Bankable' | 'Elite';
+  let statusColor: string;
+  let statusBgColor: string;
+  let capitalTier: string;
+
+  if (bankableScore < 80) {
+    status = 'Unprepared';
+    statusColor = '#ef4444';
+    statusBgColor = 'rgba(239,68,68,0.1)';
+    capitalTier = 'Tier 0 - Preparing Foundation';
+  } else if (bankableScore < 160) {
+    status = 'Fundable';
+    statusColor = '#f97316';
+    statusBgColor = 'rgba(249,115,22,0.1)';
+    capitalTier = 'Tier 1 - Alternative Capital';
+  } else if (bankableScore < 190) {
+    status = 'Progressing';
+    statusColor = '#eab308';
+    statusBgColor = 'rgba(234,179,8,0.1)';
+    capitalTier = 'Tier 2 - Growing Bankability';
+  } else if (bankableScore < 210) {
+    status = 'Bankable';
+    statusColor = '#10b981';
+    statusBgColor = 'rgba(16,185,129,0.1)';
+    capitalTier = 'Tier 3 - Bank Capital Eligible';
+  } else {
+    status = 'Elite';
+    statusColor = '#8b5cf6';
+    statusBgColor = 'rgba(139,92,246,0.1)';
+    capitalTier = 'Tier 4 - Elite Borrower';
+  }
+
+  return {
+    status,
+    bankableScore,
+    bankableThreshold,
+    pointsToBankable,
+    statusColor,
+    statusBgColor,
+    capitalTier,
+  };
+}
 
 export function Results() {
   const navigate = useNavigate();
   const [data, setData] = useState<UnifiedAnswers | null>(null);
   const [result, setResult] = useState<ReturnType<typeof computeScore> | null>(null);
   const [extendedResults, setExtendedResults] = useState<ExtendedResultsOutput | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'funding' | 'bankable' | 'fico'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'capital'>('overview');
 
   // Animated score counter
   const springScore = useSpring(0, { stiffness: 40, damping: 12 });
@@ -73,13 +132,9 @@ export function Results() {
 
   const band = getBand(result.score);
 
-  // Evaluate products and actions
+  // Evaluate products
   const products = evaluateProducts(data, result.score);
-  const actions = generateActionPlan(data, result.score);
-
-  // Filter to eligible products only
   const eligibleProducts = products.filter(p => p.qualifies);
-  const topActions = actions.slice(0, 5);
 
   // Get compliance items
   const auditItems = getAllAuditItems();
@@ -153,6 +208,116 @@ export function Results() {
             {band.name}
           </motion.div>
 
+          {/* Status Badge Section - Per Elon's vision */}
+          {extendedResults && (() => {
+            const statusInfo = computeStatus(extendedResults);
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '16px',
+                  marginBottom: '32px',
+                  maxWidth: '500px',
+                  margin: '0 auto 32px auto',
+                }}
+              >
+                {/* Status Badge */}
+                <div
+                  style={{
+                    padding: '16px',
+                    background: statusInfo.statusBgColor,
+                    borderRadius: '8px',
+                    border: `2px solid ${statusInfo.statusColor}`,
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>
+                    Status
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, color: statusInfo.statusColor }}>
+                    {statusInfo.status}
+                  </div>
+                </div>
+
+                {/* Capital Tier */}
+                <div
+                  style={{
+                    padding: '16px',
+                    background: 'var(--bg-surface-2)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-subtle)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>
+                    Capital Access
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {statusInfo.capitalTier}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })()}
+
+          {/* Bankable Score Progress - Distance to Bankable */}
+          {extendedResults && (() => {
+            const statusInfo = computeStatus(extendedResults);
+            return (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+                style={{
+                  padding: '16px',
+                  background: 'var(--bg-surface-2)',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-subtle)',
+                  marginBottom: '24px',
+                  maxWidth: '600px',
+                  margin: '0 auto 24px auto',
+                }}
+              >
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      Bankable Score
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: statusInfo.bankableScore >= statusInfo.bankableThreshold ? 'var(--success)' : 'var(--warning)' }}>
+                      {statusInfo.bankableScore} / {statusInfo.bankableThreshold}
+                    </div>
+                  </div>
+                  <div style={{
+                    width: '100%',
+                    height: '8px',
+                    background: 'var(--bg-surface-1)',
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                  }}>
+                    <div
+                      style={{
+                        width: `${Math.min(100, (statusInfo.bankableScore / statusInfo.bankableThreshold) * 100)}%`,
+                        height: '100%',
+                        background: statusInfo.bankableScore >= statusInfo.bankableThreshold ? 'var(--success)' : 'var(--primary)',
+                        transition: 'width 0.6s ease-out',
+                      }}
+                    />
+                  </div>
+                </div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                  {statusInfo.pointsToBankable === 0 
+                    ? '✓ Bankable threshold reached!'
+                    : `${statusInfo.pointsToBankable} points to Bankable`
+                  }
+                </div>
+              </motion.div>
+            );
+          })()}
+
           {/* Bankable Score */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -171,25 +336,36 @@ export function Results() {
             }}
           >
             <div style={{ maxWidth: '600px', textAlign: 'left' }}>
-              <div style={{ 
-                fontFamily: 'var(--font-body)', 
-                fontSize: '13px', 
-                color: 'var(--text-secondary)', 
-                lineHeight: 1.6,
-                marginBottom: '12px'
-              }}>
-                <strong style={{ color: 'var(--text-primary)' }}>What Your FundScore™ Means:</strong>
-              </div>
-              <div style={{ 
-                fontFamily: 'var(--font-body)', 
-                fontSize: '13px', 
-                color: 'var(--text-secondary)', 
-                lineHeight: 1.6 
-              }}>
-                Your FundScore™ is a comprehensive 0-100 rating that measures your business's fundability across six critical dimensions. 
-                A higher score means you qualify for more financing options, better terms, and faster approvals. 
-                Think of it like a FICO score, but specifically for business financing access.
-              </div>
+            <div style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '12px',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.6,
+              marginBottom: '16px',
+              padding: '12px 14px',
+              background: 'rgba(59,130,246,0.08)',
+              borderRadius: '6px',
+              border: '1px solid rgba(59,130,246,0.2)',
+              display: 'none' // Hide the old description
+            }}>
+              Your FundScore determines how much capital you can access and at what terms. 
+              The "Your Path to Capital" tab shows exactly what actions will unlock more funding — 
+              entrepreneurs who follow the roadmap typically increase their eligible funding by 3-5x within 90 days.
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '13px',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.7,
+              marginBottom: '16px',
+              padding: '14px 16px',
+              background: 'rgba(59,130,246,0.08)',
+              borderRadius: '6px',
+              border: '1px solid rgba(59,130,246,0.2)'
+            }}>
+              <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>Why This Information Matters</strong>
+              Most entrepreneurs apply for funding blind—lenders know their underwriting thresholds, you don't. This creates massive information asymmetry in capital markets. Your FundScore reveals what lenders see. The "Your Path to Capital" tab translates that into a clear economic incentive: entrepreneurs who follow the roadmap typically unlock 3-5x more capital within 90 days.
+            </div>
               <div style={{ 
                 display: 'flex', 
                 gap: '24px', 
@@ -221,13 +397,13 @@ export function Results() {
                 </div>
                 <div>
                   <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                    Compliance Items
+                    Business FICO (SBSS)
                   </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 700, color: auditItems.length - incompleteItems.length === auditItems.length ? 'var(--success)' : 'var(--warning)' }}>
-                    {auditItems.length - incompleteItems.length}/{auditItems.length}
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 700, color: 'var(--primary)' }}>
+                    {extendedResults?.sbssScore || 0}/300
                   </div>
                   <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    Items completed
+                    Business creditworthiness
                   </div>
                 </div>
               </div>
@@ -238,66 +414,43 @@ export function Results() {
         {/* Tab Navigation */}
         <div
           style={{
-            background: 'var(--bg-surface-1)',
-            borderBottom: '1px solid var(--border-subtle)',
-            borderRadius: '12px 12px 0 0',
-            marginBottom: '0',
-            position: 'sticky',
-            top: '0',
-            zIndex: 10,
+            display: 'flex',
+            gap: '32px',
+            borderBottom: '1px solid var(--border)',
+            marginBottom: '40px',
+            paddingBottom: '16px',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              overflowX: 'auto',
-              gap: '0',
-            }}
-          >
-            {[
-              { id: 'overview', label: 'FundScore™ Overview' },
-              { id: 'funding', label: 'Funding Range' },
-              { id: 'bankable', label: 'Bankable Status' },
-              { id: 'fico', label: 'Business FICO' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '14px',
-                  fontWeight: activeTab === tab.id ? 500 : 400,
-                  padding: '0 24px',
-                  height: '44px',
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
-                  color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  if (activeTab !== tab.id) {
-                    e.currentTarget.style.color = 'var(--text-secondary)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (activeTab !== tab.id) {
-                    e.currentTarget.style.color = 'var(--text-muted)';
-                  }
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          {[
+            { id: 'overview', label: 'Your FundScore' },
+            { id: 'capital', label: 'Your Path to Capital' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              style={{
+                fontSize: '14px',
+                fontWeight: activeTab === tab.id ? 500 : 400,
+                cursor: 'pointer',
+                background: 'none',
+                border: 'none',
+                padding: '0',
+                borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
+                color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
+                transition: 'all 0.2s ease',
+                position: 'relative',
+                bottom: '-17px',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Tab Content */}
         {activeTab === 'overview' && (
           <>
-            {/* Dimension Breakdown */}
+            {/* What Your Score Means - Actionable Intelligence */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -316,658 +469,192 @@ export function Results() {
                   fontSize: '24px',
                   fontWeight: 700,
                   color: 'var(--text-primary)',
-                  marginBottom: '32px',
+                  marginBottom: '24px',
                 }}
               >
-                Dimension Breakdown
+                What Your Score Means
               </h2>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {Object.entries(DIMENSION_INFO).map(([key, info], index) => {
-                  const percentage = Math.round((result.dimAvg[key as keyof typeof result.dimAvg] || 0) * 100);
+              <div style={{ 
+                fontFamily: 'var(--font-body)', 
+                fontSize: '15px', 
+                color: 'var(--text-secondary)', 
+                lineHeight: 1.8,
+                marginBottom: '24px'
+              }}>
+                {(() => {
+                  // Dynamic text based on ACTUAL product eligibility, not just score tier
+                  const tier = result.score >= 900 ? 'Prime' : result.score >= 800 ? 'Ready' : result.score >= 700 ? 'Approaching' : result.score >= 600 ? 'Developing' : 'Building';
+                  const tierColor = result.score >= 900 ? 'var(--success)' : result.score >= 800 ? 'var(--primary)' : 'var(--warning)';
+                  const blockedCount = products.filter(p => !p.qualifies).length;
                   
-                  return (
-                    <motion.div
-                      key={key}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 1.2 + index * 0.08 }}
-                    >
-                      {/* Dimension name and percentage */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <span
-                            style={{
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '14px',
-                              fontWeight: 600,
-                              color: 'var(--text-primary)',
-                            }}
-                          >
-                            {info.name}
-                          </span>
-                          <span
-                            style={{
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '11px',
-                              fontWeight: 400,
-                              color: 'var(--text-muted)',
-                            }}
-                          >
-                            {Math.round(info.weight * 100)}% weight
-                          </span>
-                        </div>
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-display)',
-                            fontSize: '18px',
-                            fontWeight: 700,
-                            color: info.color,
-                          }}
-                        >
-                          {percentage}%
-                        </span>
-                      </div>
+                  // Calculate actual max funding from eligible products
+                  const maxFunding = eligibleProducts.length > 0 
+                    ? Math.max(...eligibleProducts.map(p => {
+                        const amt = p.maxAmount.replace(/[$,KM+]/g, '');
+                        return amt.includes('.') ? parseFloat(amt) * 1000000 : parseInt(amt) * 1000;
+                      }))
+                    : 0;
+                  const maxFundingText = maxFunding >= 1000000 ? `$${(maxFunding/1000000).toFixed(1)}M` : maxFunding >= 1000 ? `$${Math.round(maxFunding/1000)}K` : '$0';
 
-                      {/* Progress bar */}
-                      <div
-                        style={{
-                          height: '8px',
-                          background: 'var(--bg-surface-3)',
-                          borderRadius: '4px',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <motion.div
-                          initial={{ width: '0%' }}
-                          animate={{ width: `${percentage}%` }}
-                          transition={{ delay: 1.2 + index * 0.08 + 0.1, duration: 0.6, ease: 'easeOut' }}
-                          style={{
-                            height: '100%',
-                            background: info.color,
-                          }}
-                        />
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                  if (eligibleProducts.length === 0) {
+                    return <p>Your FundScore of <strong style={{ color: tierColor }}>{result.score}</strong> places you in the <strong>{tier}</strong> tier. However, based on your current profile, you don't yet qualify for any of the 17 financing products. The "Your Path to Capital" tab shows exactly what blockers to address to unlock funding options.</p>;
+                  } else if (eligibleProducts.length === 1) {
+                    return <p>Your FundScore of <strong style={{ color: tierColor }}>{result.score}</strong> places you in the <strong>{tier}</strong> tier. You currently qualify for <strong style={{ color: 'var(--success)' }}>1 financing product</strong> with up to <strong>{maxFundingText}</strong> available. Address the {blockedCount} blockers below to unlock significantly more capital.</p>;
+                  } else if (eligibleProducts.length <= 5) {
+                    return <p>Your FundScore of <strong style={{ color: tierColor }}>{result.score}</strong> places you in the <strong>{tier}</strong> tier. You qualify for <strong style={{ color: 'var(--success)' }}>{eligibleProducts.length} financing products</strong> with up to <strong>{maxFundingText}</strong> available. A few targeted improvements could unlock {blockedCount} more options.</p>;
+                  } else {
+                    return <p>Your FundScore of <strong style={{ color: tierColor }}>{result.score}</strong> places you in the <strong>{tier}</strong> tier. You qualify for <strong style={{ color: 'var(--success)' }}>{eligibleProducts.length} financing products</strong> with up to <strong>{maxFundingText}</strong> available. Excellent fundability — lenders will compete for your business.</p>;
+                  }
+                })()}
               </div>
-            </motion.div>
 
-            {/* Critical Compliance Items */}
-            {criticalItems.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.3 }}
-                style={{
-                  background: 'var(--bg-surface-1)',
-                  borderRadius: '16px',
-                  border: '2px solid var(--warning)',
-                  padding: '40px',
-                  marginBottom: '32px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                  <AlertTriangle
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      color: 'var(--warning)',
-                    }}
-                  />
-                  <h2
-                    style={{
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '24px',
-                      fontWeight: 700,
-                      color: 'var(--text-primary)',
-                      margin: 0,
-                    }}
-                  >
-                    Critical Compliance Items
-                  </h2>
-                </div>
-
-                <p
-                  style={{
-                    fontFamily: 'var(--font-body)',
-                    fontSize: '14px',
-                    color: 'var(--text-secondary)',
-                    marginBottom: '32px',
-                    lineHeight: 1.6,
-                  }}
-                >
-                  These items must be completed to maximize your fundability and access to financing products. Each item contributes to your overall business credit profile.
+              {/* Eligible Products Section */}
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                  Products You Qualify For Today
+                </h3>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                  Based on your complete profile (credit, revenue, business age, etc.)
                 </p>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {criticalItems.map((item, index) => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 1.4 + index * 0.08 }}
-                      style={{
+                {eligibleProducts.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {eligibleProducts.slice(0, 5).map((product) => (
+                      <div key={product.id} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '16px',
                         background: 'var(--bg-surface-2)',
-                        borderRadius: '12px',
-                        padding: '20px',
-                        border: '1px solid var(--border-subtle)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                        <AlertCircle
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            color: 'var(--warning)',
-                            flexShrink: 0,
-                            marginTop: '2px',
-                          }}
-                        />
-                        <div style={{ flex: 1 }}>
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '15px',
-                              fontWeight: 600,
-                              color: 'var(--text-primary)',
-                              marginBottom: '6px',
-                            }}
-                          >
-                            {item.title}
-                          </div>
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '13px',
-                              fontWeight: 400,
-                              color: 'var(--text-secondary)',
-                              marginBottom: '10px',
-                              lineHeight: 1.5,
-                            }}
-                          >
-                            {item.description}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                            <div
-                              style={{
-                                fontFamily: 'var(--font-body)',
-                                fontSize: '11px',
-                                fontWeight: 500,
-                                color: 'var(--text-muted)',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                              }}
-                            >
-                              Category: {item.category}
-                            </div>
-                            <div
-                              style={{
-                                fontFamily: 'var(--font-body)',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                color: 'var(--primary)',
-                                background: 'var(--primary-alpha)',
-                                padding: '4px 10px',
-                                borderRadius: '6px',
-                              }}
-                            >
-                              +{item.ficoImpact} FICO Impact
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: '24px',
-                    padding: '16px',
-                    background: 'var(--bg-surface-2)',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border-subtle)',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-body)',
-                      fontSize: '13px',
-                      color: 'var(--text-secondary)',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    <strong style={{ color: 'var(--text-primary)' }}>Total Incomplete Items:</strong> {incompleteItems.length} of {auditItems.length} • 
-                    <strong style={{ color: 'var(--text-primary)' }}> Potential FICO Gain:</strong> {criticalItems.reduce((sum, item) => sum + item.ficoImpact, 0)} points
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Pre-Approved Funding Options */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.5 }}
-              style={{
-                background: 'var(--bg-surface-1)',
-                borderRadius: '16px',
-                border: '1px solid var(--border-subtle)',
-                padding: '40px',
-                marginBottom: '32px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                <DollarSign
-                  style={{
-                    width: '28px',
-                    height: '28px',
-                    color: 'var(--success)',
-                  }}
-                />
-                <h2
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '24px',
-                    fontWeight: 700,
-                    color: 'var(--text-primary)',
-                    margin: 0,
-                  }}
-                >
-                  Pre-Approved Funding Options
-                </h2>
-              </div>
-
-              <p
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '14px',
-                  color: 'var(--text-secondary)',
-                  marginBottom: '32px',
-                  lineHeight: 1.6,
-                }}
-              >
-                Based on your FundScore™ of <strong style={{ color: 'var(--primary)' }}>{result.score}/100</strong>, you qualify for <strong style={{ color: 'var(--success)' }}>{eligibleProducts.length} of 17</strong> financing products. 
-                Below is your complete funding landscape—products you're eligible for now, plus those you can unlock by improving specific areas.
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {products.map((product, index) => (
-                  <motion.div
-                    key={product.name}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1.6 + index * 0.05 }}
-                    style={{
-                      background: product.qualifies ? 'var(--bg-surface-2)' : 'var(--bg-surface-3)',
-                      borderRadius: '12px',
-                      padding: '24px',
-                      border: product.qualifies ? '2px solid var(--success)' : '1px solid var(--border-subtle)',
-                      opacity: product.qualifies ? 1 : 0.7,
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <CheckCircle2
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                            color: 'var(--success)',
-                            flexShrink: 0,
-                          }}
-                        />
+                        borderRadius: '8px',
+                        border: '1px solid var(--success)',
+                      }}>
                         <div>
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '16px',
-                              fontWeight: 600,
-                              color: 'var(--text-primary)',
-                              marginBottom: '4px',
-                            }}
-                          >
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
                             {product.name}
                           </div>
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '11px',
-                              fontWeight: 500,
-                              color: 'var(--text-muted)',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.05em',
-                            }}
-                          >
-                            {product.category} Financing
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                            {product.category} {product.category === 'Credit' && product.name === 'Personal Guarantee Line' ? '(Personal Guarantee)' : '(Business Financing)'} | Up to {product.maxAmount} | {product.speed}
                           </div>
                         </div>
-                      </div>
-                      <div
-                        style={{
-                          background: product.confidence === 'High' ? 'var(--success-alpha)' : product.confidence === 'Medium' ? 'var(--warning-alpha)' : 'var(--bg-surface-3)',
-                          color: product.confidence === 'High' ? 'var(--success)' : product.confidence === 'Medium' ? 'var(--warning)' : 'var(--text-muted)',
-                          padding: '6px 12px',
-                          borderRadius: '6px',
+                        <div style={{
                           fontFamily: 'var(--font-body)',
                           fontSize: '11px',
                           fontWeight: 600,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {product.confidence} Confidence
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        fontFamily: 'var(--font-body)',
-                        fontSize: '13px',
-                        fontWeight: 400,
-                        color: 'var(--text-secondary)',
-                        marginBottom: '16px',
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {product.description}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '11px',
-                            fontWeight: 400,
-                            color: 'var(--text-muted)',
-                            marginBottom: '4px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          Max Amount
-                        </div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-display)',
-                            fontSize: '18px',
-                            fontWeight: 700,
-                            color: 'var(--primary)',
-                          }}
-                        >
-                          {product.maxAmount}
+                          padding: '4px 10px',
+                          borderRadius: '4px',
+                          background: product.confidence === 'High' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+                          color: product.confidence === 'High' ? '#10b981' : '#f59e0b',
+                        }}>
+                          {product.confidence} Confidence
                         </div>
                       </div>
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '11px',
-                            fontWeight: 400,
-                            color: 'var(--text-muted)',
-                            marginBottom: '4px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          Funding Speed
-                        </div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            color: 'var(--text-primary)',
-                          }}
-                        >
-                          {product.speed}
-                        </div>
-                      </div>
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '11px',
-                            fontWeight: 400,
-                            color: 'var(--text-muted)',
-                            marginBottom: '4px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          Min Score Required
-                        </div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            color: 'var(--text-primary)',
-                          }}
-                        >
-                          {product.minScore}/100
-                        </div>
-                      </div>
-                    </div>
-
-                    {product.boosts.length > 0 && (
-                      <div style={{ marginTop: '16px' }}>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '11px',
-                            fontWeight: 500,
-                            color: 'var(--success)',
-                            marginBottom: '8px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          ✓ Strengths
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          {product.boosts.map((boost, i) => (
-                            <div
-                              key={i}
-                              style={{
-                                fontFamily: 'var(--font-body)',
-                                fontSize: '12px',
-                                color: 'var(--text-secondary)',
-                              }}
-                            >
-                              • {boost}
-                            </div>
-                          ))}
-                        </div>
+                    ))}
+                    {eligibleProducts.length > 5 && (
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                        +{eligibleProducts.length - 5} more products available
                       </div>
                     )}
-
-                    {product.blockers.length > 0 && !product.qualifies && (
-                      <div style={{ marginTop: '16px' }}>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '11px',
-                            fontWeight: 500,
-                            color: 'var(--warning)',
-                            marginBottom: '8px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          ⚠ Requirements Needed
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          {product.blockers.map((blocker, i) => (
-                            <div
-                              key={i}
-                              style={{
-                                fontFamily: 'var(--font-body)',
-                                fontSize: '12px',
-                                color: 'var(--text-secondary)',
-                              }}
-                            >
-                              • {blocker}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
+                  </div>
+                ) : (
+                  <div style={{
+                    padding: '20px',
+                    background: 'var(--bg-surface-2)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--warning)',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--warning)', marginBottom: '8px' }}>
+                      No products available yet
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      Complete the actions in "Your Path to Capital" to unlock financing options.
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {eligibleProducts.length === 0 && (
-                <div
-                  style={{
-                    textAlign: 'center',
-                    padding: '40px 20px',
-                    background: 'var(--bg-surface-2)',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-subtle)',
-                  }}
-                >
-                  <AlertCircle
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      color: 'var(--text-muted)',
-                      margin: '0 auto 16px',
-                    }}
-                  />
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-body)',
-                      fontSize: '16px',
-                      fontWeight: 600,
-                      color: 'var(--text-primary)',
-                      marginBottom: '8px',
-                    }}
-                  >
-                    No Pre-Approved Products Yet
+              {/* What's Blocking You Section */}
+              {products.filter(p => !p.qualifies).length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>
+                    What's Blocking Other Products:
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {products.filter(p => !p.qualifies).slice(0, 3).map((product) => (
+                      <div key={product.id} style={{
+                        padding: '12px 16px',
+                        background: 'var(--bg-surface-2)',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-subtle)',
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div>
+                            <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                              {product.name}
+                            </div>
+                            <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                              {product.blockers.slice(0, 2).join(' | ')}
+                            </div>
+                          </div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)' }}>
+                            Up to {product.maxAmount}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-body)',
-                      fontSize: '14px',
-                      color: 'var(--text-secondary)',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    Complete the critical compliance items above to unlock funding opportunities.
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px' }}>
+                    Fix these blockers to unlock {products.filter(p => !p.qualifies).length} more financing options.
                   </div>
                 </div>
               )}
-            </motion.div>
 
-            {/* Action Plan */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.8 }}
-              style={{
-                background: 'var(--bg-surface-1)',
-                borderRadius: '16px',
-                border: '1px solid var(--border-subtle)',
-                padding: '40px',
-                marginBottom: '32px',
-              }}
-            >
-              <h2
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '24px',
-                  fontWeight: 700,
-                  color: 'var(--text-primary)',
-                  marginBottom: '32px',
-                }}
-              >
-                Action Plan
-              </h2>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {topActions.map((action, index) => (
-                  <motion.div
-                    key={action.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1.8 + index * 0.08 }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <CheckCircle2
-                        style={{
-                          width: '24px',
-                          height: '24px',
-                          color: 'var(--success)',
-                        }}
-                      />
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-body)',
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          color: 'var(--text-primary)',
-                        }}
-                      >
-                        {action.title}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: 'var(--font-body)',
-                        fontSize: '12px',
-                        fontWeight: 400,
-                        color: 'var(--text-muted)',
-                        marginTop: '8px',
-                      }}
-                    >
-                      {action.description}
-                    </div>
-                  </motion.div>
-                ))}
+              {/* CTA to Path to Capital */}
+              <div style={{ 
+                marginTop: '24px', 
+                padding: '20px', 
+                background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(6,182,212,0.1) 100%)',
+                borderRadius: '12px',
+                border: '1px solid rgba(16,185,129,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px',
+                flexWrap: 'wrap'
+              }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                    Ready to unlock more capital?
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    See your personalized 30/90/180-day funding projections and exactly which actions to take.
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab('capital')}
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    padding: '12px 24px',
+                    background: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  View Path to Capital
+                </button>
               </div>
-            </motion.div>
-
-            {/* CTA */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 2.0 }}
-              style={{ textAlign: 'center' }}
-            >
-              <button
-                onClick={() => navigate('/capital-dashboard')}
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  padding: '16px 48px',
-                  background: 'var(--primary)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: 'var(--bg-base)',
-                  cursor: 'pointer',
-                }}
-              >
-                View Your Dashboard →
-              </button>
             </motion.div>
           </>
         )}
 
-        {activeTab === 'funding' && (
+        {activeTab === 'capital' && (
           <EstimatedFunding data={extendedResults!} />
-        )}
-
-        {activeTab === 'bankable' && (
-          <BankableStatus data={extendedResults!} />
-        )}
-
-        {activeTab === 'fico' && (
-          <BusinessFICO data={extendedResults!} />
         )}
       </div>
     </div>

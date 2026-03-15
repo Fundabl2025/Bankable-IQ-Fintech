@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { useNavigate } from 'react-router';
 import { getAllAuditItems, markAuditItemComplete, markAuditItemIncomplete } from '../utils/businessData';
 import { getPreQualifiedPrograms } from '../utils/fundingEligibility';
+import { getDataItem } from '../lib/data-adapter';
 
 export function LenderCompliance() {
   const navigate = useNavigate();
@@ -28,11 +29,11 @@ export function LenderCompliance() {
     };
   }, []);
 
-  // Load FundScore from localStorage
+  // Load FundScore from localStorage/Supabase using data adapter
   useEffect(() => {
-    const loadFundScore = () => {
+    const loadFundScore = async () => {
       try {
-        const stored = localStorage.getItem('fundscore_result');
+        const stored = await getDataItem('fundscore_result');
         if (stored) {
           const result = JSON.parse(stored);
           setFundScore(result.score || 0);
