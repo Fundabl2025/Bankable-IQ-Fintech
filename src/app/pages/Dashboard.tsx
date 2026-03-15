@@ -16,7 +16,8 @@ import {
   getAllAuditItems,
   getOverallProgress 
 } from '../utils/businessData';
-import { getDataItem } from '../lib/data-adapter';
+import { computeScore, getBand, computeExtendedResults } from './business-assessment/engine';
+import type { UnifiedAnswers } from './business-assessment/types';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // STATUS SYSTEM - Matches Elon's 5-tier progression
@@ -137,20 +138,32 @@ export function Dashboard() {
   const [scoreBand, setScoreBand] = useState({ name: 'Not Assessed', color: '#64748b' });
   const [hasAssessment, setHasAssessment] = useState(false);
 
-  // Load scores from storage
+  // Load scores from unified_assessment (same source as Results page)
   useEffect(() => {
-    const loadScores = async () => {
+    const loadScores = () => {
       try {
-        const stored = await getDataItem('fundscore_result');
+        const stored = localStorage.getItem('unified_assessment');
         if (stored) {
-          const result = JSON.parse(stored);
-          setFundScore(result.score || 0);
-          setBankableScore(result.sbssScore || Math.round((result.score || 0) * 0.18)); // Approximate
-          setScoreBand(result.band || { name: 'Not Assessed', color: '#64748b' });
+          const assessmentData = JSON.parse(stored) as UnifiedAnswers;
+          
+          // Use the same engine as Results page for consistent scoring
+          const scoreResult = computeScore(assessmentData);
+          const extendedResults = computeExtendedResults(assessmentData);
+          const band = getBand(scoreResult.score);
+          
+          setFundScore(scoreResult.score);
+          setBankableScore(extendedResults.sbssScore || Math.round(scoreResult.score * 0.18));
+          setScoreBand(band);
           setHasAssessment(true);
+          
+          console.log('[v0] Dashboard loaded scores:', { 
+            fundScore: scoreResult.score, 
+            bankableScore: extendedResults.sbssScore,
+            band: band.name 
+          });
         }
       } catch (error) {
-        console.error('Error loading scores:', error);
+        console.error('[v0] Error loading scores:', error);
       }
     };
     loadScores();
