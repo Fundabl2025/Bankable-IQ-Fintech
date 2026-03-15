@@ -177,7 +177,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
   }
 
   // ── Compute projections ────────────────────────────────────────────────────
-  // Realistic timelines: 30 days (quick wins) → 90 days (credit cycle improvements)
+  // Realistic timelines: Today (actual) → 30 days (quick wins) → 90 days (credit cycle)
   // → Long-Term (full fundability — trade lines seasoned, SBA-ready profile built)
   const incompleteItems = auditItems.filter(i => i.status !== 'complete');
   const currentScore    = data.fundScore;
@@ -185,19 +185,31 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
   const score90         = projectScore(currentScore, 90,  incompleteItems);
   const scoreLongTerm   = projectScore(currentScore, 365, incompleteItems); // 12 months = realistic ceiling
 
-  const current      = scoreToBizFunding(currentScore);
-  const at30         = scoreToBizFunding(score30);
-  const at90         = scoreToBizFunding(score90);
-  const atLongTerm   = scoreToBizFunding(scoreLongTerm);
-
-  // Get eligible products for comparison
+  // Get eligible products for comparison - THIS IS ACTUAL FUNDING AVAILABLE TODAY
   const eligibleProducts = products.filter(p => p.qualifies);
+  
+  // Calculate ACTUAL funding from eligible products (not theoretical tier potential)
+  const actualMaxFunding = eligibleProducts.length > 0 
+    ? Math.max(...eligibleProducts.map(p => {
+        const amt = p.maxAmount.replace(/[$,KM+]/g, '');
+        return amt.includes('.') ? parseFloat(amt) * 1000000 : parseInt(amt) * 1000;
+      }))
+    : 0;
+  
+  // Tier potentials for future projections
+  const tierAt30       = scoreToBizFunding(score30);
+  const tierAt90       = scoreToBizFunding(score90);
+  const tierLongTerm   = scoreToBizFunding(scoreLongTerm);
 
+  // Today shows ACTUAL eligible funding, future shows projected tier potential
   const snapshots: FundingSnapshot[] = [
     {
       label: 'Today',
       projectedScore: currentScore,
-      ...current,
+      bizMin: actualMaxFunding > 0 ? Math.round(actualMaxFunding * 0.5) : 0, // Range from ~50% to max
+      bizMax: actualMaxFunding,
+      personalMin: actualMaxFunding > 0 ? Math.round(actualMaxFunding * 0.75) : 0,
+      personalMax: actualMaxFunding > 0 ? Math.round(actualMaxFunding * 1.25) : 0,
       color: '#64748b',
       border: '#94a3b8',
       isCurrent: true,
@@ -205,7 +217,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
     {
       label: '30 Days',
       projectedScore: score30,
-      ...at30,
+      ...tierAt30,
       color: '#0ea5e9',
       border: '#38bdf8',
       isCurrent: false,
@@ -213,7 +225,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
     {
       label: '90 Days',
       projectedScore: score90,
-      ...at90,
+      ...tierAt90,
       color: '#10b981',
       border: '#34d399',
       isCurrent: false,
@@ -221,15 +233,15 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
     {
       label: 'Long-Term',
       projectedScore: scoreLongTerm,
-      ...atLongTerm,
+      ...tierLongTerm,
       color: '#8b5cf6',
       border: '#a78bfa',
       isCurrent: false,
     },
   ];
 
-  const topActions = getTopActions(incompleteItems, current.bizMin);
-  const totalPotentialUplift = atLongTerm.bizMax - current.bizMax;
+  const topActions = getTopActions(incompleteItems, actualMaxFunding);
+  const totalPotentialUplift = tierLongTerm.bizMax - actualMaxFunding;
 
   return (
     <div style={{ background: 'var(--bg-base)', padding: '32px 24px', maxWidth: '820px', margin: '0 auto' }}>
@@ -280,10 +292,10 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
           </div>
           <div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Your Funding Potential
+              Your Funding Today vs. Potential
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
-              Maximum available at FundScore™ {currentScore}/1000 tier (requires meeting product-specific criteria)
+              What you can access now vs. what you unlock by addressing blockers
             </div>
           </div>
         </div>
@@ -293,17 +305,17 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
             style={{
               background: 'var(--bg-surface-2)',
               borderRadius: '8px', padding: '16px',
-              border: '1px solid var(--border-subtle)',
+              border: '2px solid var(--success)',
             }}
           >
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-              Business Only
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--success)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+              Available Today
             </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {fmtRange(current.bizMin, current.bizMax)}
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, color: 'var(--success)' }}>
+              {actualMaxFunding > 0 ? fmtMoney(actualMaxFunding) : '$0'}
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              No personal guarantee required at this tier
+              From {eligibleProducts.length} product{eligibleProducts.length !== 1 ? 's' : ''} you qualify for
             </div>
           </div>
           <div
@@ -314,18 +326,18 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
             }}
           >
             <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-              Personal + Business Combined
+              Tier Potential (Long-Term)
             </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {fmtRange(current.personalMin, current.personalMax)}
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+              {fmtMoney(tierLongTerm.bizMax)}
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Includes personal guarantee options
+              Unlocked by addressing all blockers
             </div>
           </div>
         </div>
 
-        {/* Clarifying note about personal vs biz financing */}
+        {/* Clarifying note - dynamic based on actual funding */}
         <div
           style={{
             marginTop: '12px', padding: '10px 14px',
@@ -335,47 +347,8 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
           }}
         >
           <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)' }}>
-            <strong style={{ color: '#3b82f6' }}>How it works:</strong> You can access $150K immediately using your personal credit (Personal Guarantee Line). Your tier unlocks up to $500K when financed on business fundamentals alone—no personal guarantee needed. This is your path from startup (personal-backed) to established business (business-backed).
+            <strong style={{ color: '#3b82f6' }}>Your path:</strong> Today you can access {fmtMoney(actualMaxFunding)} from {eligibleProducts.length} product{eligibleProducts.length !== 1 ? 's' : ''}. By completing the actions below, you unlock more products and higher funding tiers—up to {fmtMoney(tierLongTerm.bizMax)} long-term.
           </span>
-        </div>
-        <div
-          style={{
-            marginTop: '12px', padding: '14px 16px',
-            background: 'var(--bg-surface-2)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '8px',
-          }}
-        >
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Tier Potential vs. Actual Eligibility
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-            <div>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)' }}>Tier Potential</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                Up to {fmtMoney(current.bizMax)}
-              </div>
-            </div>
-            <ArrowRight style={{ width: '16px', height: '16px', color: 'var(--text-muted)' }} />
-            <div>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)' }}>You Qualify For</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, color: eligibleProducts.length > 0 ? 'var(--success)' : 'var(--warning)' }}>
-                {eligibleProducts.length > 0 
-                  ? fmtMoney(Math.max(...eligibleProducts.map(p => {
-                      const amt = p.maxAmount.replace(/[$,KM+]/g, '');
-                      return amt.includes('.') ? parseFloat(amt) * 1000000 : parseInt(amt) * 1000;
-                    })))
-                  : '$0'
-                }
-              </div>
-            </div>
-          </div>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
-            {eligibleProducts.length > 0 
-              ? `Currently eligible for ${eligibleProducts.length} of 17 products. Address blockers to unlock more.`
-              : 'No products available yet. Complete actions below to unlock funding.'
-            }
-          </div>
         </div>
 
         {totalPotentialUplift > 0 && (
