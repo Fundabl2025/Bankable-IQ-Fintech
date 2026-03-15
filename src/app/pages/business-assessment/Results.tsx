@@ -6,11 +6,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, useSpring } from 'motion/react';
-import { ArrowRight, CheckCircle2, AlertCircle, TrendingUp, FileText, Zap, Building, CreditCard, Package, AlertTriangle, DollarSign } from 'lucide-react';
-import { UnifiedAnswers, DIMENSION_INFO, ExtendedResultsOutput } from './types';
+import { UnifiedAnswers, ExtendedResultsOutput } from './types';
 import { computeScore, getBand, computeExtendedResults } from './engine';
-import { evaluateProducts, Product } from './productEligibility';
-import { generateActionPlan, Action } from './actionPlan';
+import { evaluateProducts } from './productEligibility';
 import { getAllAuditItems, AuditItem } from '../../utils/businessData';
 import { EstimatedFunding } from '../StatusReports/EstimatedFunding';
 
@@ -71,13 +69,9 @@ export function Results() {
 
   const band = getBand(result.score);
 
-  // Evaluate products and actions
+  // Evaluate products
   const products = evaluateProducts(data, result.score);
-  const actions = generateActionPlan(data, result.score);
-
-  // Filter to eligible products only
   const eligibleProducts = products.filter(p => p.qualifies);
-  const topActions = actions.slice(0, 5);
 
   // Get compliance items
   const auditItems = getAllAuditItems();
@@ -272,7 +266,7 @@ export function Results() {
         {/* Tab Content */}
         {activeTab === 'overview' && (
           <>
-            {/* Dimension Breakdown */}
+            {/* What Your Score Means - Actionable Intelligence */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -291,644 +285,116 @@ export function Results() {
                   fontSize: '24px',
                   fontWeight: 700,
                   color: 'var(--text-primary)',
-                  marginBottom: '32px',
+                  marginBottom: '24px',
                 }}
               >
-                Dimension Breakdown
+                What Your Score Means
               </h2>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {Object.entries(DIMENSION_INFO).map(([key, info], index) => {
-                  const percentage = Math.round((result.dimAvg[key as keyof typeof result.dimAvg] || 0) * 100);
-                  
-                  return (
-                    <motion.div
-                      key={key}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 1.2 + index * 0.08 }}
-                    >
-                      {/* Dimension name and percentage */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <span
-                            style={{
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '14px',
-                              fontWeight: 600,
-                              color: 'var(--text-primary)',
-                            }}
-                          >
-                            {info.name}
-                          </span>
-                          <span
-                            style={{
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '11px',
-                              fontWeight: 400,
-                              color: 'var(--text-muted)',
-                            }}
-                          >
-                            {Math.round(info.weight * 100)}% weight
-                          </span>
-                        </div>
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-display)',
-                            fontSize: '18px',
-                            fontWeight: 700,
-                            color: info.color,
-                          }}
-                        >
-                          {percentage}%
-                        </span>
-                      </div>
-
-                      {/* Progress bar */}
-                      <div
-                        style={{
-                          height: '8px',
-                          background: 'var(--bg-surface-3)',
-                          borderRadius: '4px',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <motion.div
-                          initial={{ width: '0%' }}
-                          animate={{ width: `${percentage}%` }}
-                          transition={{ delay: 1.2 + index * 0.08 + 0.1, duration: 0.6, ease: 'easeOut' }}
-                          style={{
-                            height: '100%',
-                            background: info.color,
-                          }}
-                        />
-                      </div>
-                    </motion.div>
-                  );
-                })}
+              <div style={{ 
+                fontFamily: 'var(--font-body)', 
+                fontSize: '15px', 
+                color: 'var(--text-secondary)', 
+                lineHeight: 1.8,
+                marginBottom: '24px'
+              }}>
+                {result.score >= 900 ? (
+                  <p>Your FundScore of <strong style={{ color: 'var(--success)' }}>{result.score}</strong> places you in the <strong>Prime</strong> tier. You qualify for premium financing options including SBA loans, traditional bank lines, and the best available terms. Lenders will compete for your business.</p>
+                ) : result.score >= 800 ? (
+                  <p>Your FundScore of <strong style={{ color: 'var(--primary)' }}>{result.score}</strong> places you in the <strong>Ready</strong> tier. You qualify for most traditional financing products with competitive rates. A few targeted improvements could move you into Prime status.</p>
+                ) : result.score >= 700 ? (
+                  <p>Your FundScore of <strong style={{ color: 'var(--warning)' }}>{result.score}</strong> places you in the <strong>Approaching</strong> tier. You have access to alternative financing and some traditional products. Focus on the actions in "Your Path to Capital" to unlock significantly more funding.</p>
+                ) : result.score >= 600 ? (
+                  <p>Your FundScore of <strong style={{ color: 'var(--warning)' }}>{result.score}</strong> places you in the <strong>Developing</strong> tier. Limited financing options are available now, but your capital access can grow substantially. The "Path to Capital" tab shows exactly what to do.</p>
+                ) : (
+                  <p>Your FundScore of <strong style={{ color: 'var(--error)' }}>{result.score}</strong> indicates significant improvements are needed before accessing traditional funding. The good news: following the actions in "Your Path to Capital" can dramatically increase your eligibility within 90 days.</p>
+                )}
               </div>
-            </motion.div>
 
-            {/* Critical Compliance Items */}
-            {criticalItems.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.3 }}
-                style={{
-                  background: 'var(--bg-surface-1)',
-                  borderRadius: '16px',
-                  border: '2px solid var(--warning)',
-                  padding: '40px',
-                  marginBottom: '32px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                  <AlertTriangle
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      color: 'var(--warning)',
-                    }}
-                  />
-                  <h2
-                    style={{
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '24px',
-                      fontWeight: 700,
-                      color: 'var(--text-primary)',
-                      margin: 0,
-                    }}
-                  >
-                    Critical Compliance Items
-                  </h2>
+              {/* Quick Stats Grid */}
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(3, 1fr)', 
+                gap: '16px',
+                padding: '24px',
+                background: 'var(--bg-surface-2)',
+                borderRadius: '12px',
+                border: '1px solid var(--border-subtle)'
+              }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                    Products Eligible
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 700, color: 'var(--success)' }}>
+                    {eligibleProducts.length}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    of 17 financing types
+                  </div>
                 </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                    Audit Items Done
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 700, color: incompleteItems.length === 0 ? 'var(--success)' : 'var(--warning)' }}>
+                    {auditItems.length - incompleteItems.length}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    of {auditItems.length} total items
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                    Score Potential
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 700, color: 'var(--primary)' }}>
+                    +{Math.min(criticalItems.reduce((sum, item) => sum + (item.ficoImpact || 0), 0), 300)}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    points from critical items
+                  </div>
+                </div>
+              </div>
 
-                <p
+              {/* CTA to Path to Capital */}
+              <div style={{ 
+                marginTop: '24px', 
+                padding: '20px', 
+                background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(6,182,212,0.1) 100%)',
+                borderRadius: '12px',
+                border: '1px solid rgba(16,185,129,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px',
+                flexWrap: 'wrap'
+              }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                    Ready to unlock more capital?
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    See your personalized 30/90/180-day funding projections and exactly which actions to take.
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab('capital')}
                   style={{
                     fontFamily: 'var(--font-body)',
                     fontSize: '14px',
-                    color: 'var(--text-secondary)',
-                    marginBottom: '32px',
-                    lineHeight: 1.6,
-                  }}
-                >
-                  These items must be completed to maximize your fundability and access to financing products. Each item contributes to your overall business credit profile.
-                </p>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {criticalItems.map((item, index) => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 1.4 + index * 0.08 }}
-                      style={{
-                        background: 'var(--bg-surface-2)',
-                        borderRadius: '12px',
-                        padding: '20px',
-                        border: '1px solid var(--border-subtle)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                        <AlertCircle
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            color: 'var(--warning)',
-                            flexShrink: 0,
-                            marginTop: '2px',
-                          }}
-                        />
-                        <div style={{ flex: 1 }}>
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '15px',
-                              fontWeight: 600,
-                              color: 'var(--text-primary)',
-                              marginBottom: '6px',
-                            }}
-                          >
-                            {item.title}
-                          </div>
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '13px',
-                              fontWeight: 400,
-                              color: 'var(--text-secondary)',
-                              marginBottom: '10px',
-                              lineHeight: 1.5,
-                            }}
-                          >
-                            {item.description}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                            <div
-                              style={{
-                                fontFamily: 'var(--font-body)',
-                                fontSize: '11px',
-                                fontWeight: 500,
-                                color: 'var(--text-muted)',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                              }}
-                            >
-                              Category: {item.category}
-                            </div>
-                            <div
-                              style={{
-                                fontFamily: 'var(--font-body)',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                color: 'var(--primary)',
-                                background: 'var(--primary-alpha)',
-                                padding: '4px 10px',
-                                borderRadius: '6px',
-                              }}
-                            >
-                              +{item.ficoImpact} FICO Impact
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: '24px',
-                    padding: '16px',
-                    background: 'var(--bg-surface-2)',
+                    fontWeight: 600,
+                    padding: '12px 24px',
+                    background: '#10b981',
+                    color: 'white',
+                    border: 'none',
                     borderRadius: '8px',
-                    border: '1px solid var(--border-subtle)',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
                   }}
                 >
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-body)',
-                      fontSize: '13px',
-                      color: 'var(--text-secondary)',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    <strong style={{ color: 'var(--text-primary)' }}>Total Incomplete Items:</strong> {incompleteItems.length} of {auditItems.length} • 
-                    <strong style={{ color: 'var(--text-primary)' }}> Potential FICO Gain:</strong> {criticalItems.reduce((sum, item) => sum + item.ficoImpact, 0)} points
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Pre-Approved Funding Options */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.5 }}
-              style={{
-                background: 'var(--bg-surface-1)',
-                borderRadius: '16px',
-                border: '1px solid var(--border-subtle)',
-                padding: '40px',
-                marginBottom: '32px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                <DollarSign
-                  style={{
-                    width: '28px',
-                    height: '28px',
-                    color: 'var(--success)',
-                  }}
-                />
-                <h2
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '24px',
-                    fontWeight: 700,
-                    color: 'var(--text-primary)',
-                    margin: 0,
-                  }}
-                >
-                  Pre-Approved Funding Options
-                </h2>
+                  View Path to Capital
+                </button>
               </div>
-
-              <p
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '14px',
-                  color: 'var(--text-secondary)',
-                  marginBottom: '32px',
-                  lineHeight: 1.6,
-                }}
-              >
-                Based on your FundScore™ of <strong style={{ color: 'var(--primary)' }}>{result.score}/1000</strong>, you qualify for <strong style={{ color: 'var(--success)' }}>{eligibleProducts.length} of 17</strong> financing products. 
-                Below is your complete funding landscape—products you're eligible for now, plus those you can unlock by improving specific areas.
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {products.map((product, index) => (
-                  <motion.div
-                    key={product.name}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1.6 + index * 0.05 }}
-                    style={{
-                      background: product.qualifies ? 'var(--bg-surface-2)' : 'var(--bg-surface-3)',
-                      borderRadius: '12px',
-                      padding: '24px',
-                      border: product.qualifies ? '2px solid var(--success)' : '1px solid var(--border-subtle)',
-                      opacity: product.qualifies ? 1 : 0.7,
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <CheckCircle2
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                            color: 'var(--success)',
-                            flexShrink: 0,
-                          }}
-                        />
-                        <div>
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '16px',
-                              fontWeight: 600,
-                              color: 'var(--text-primary)',
-                              marginBottom: '4px',
-                            }}
-                          >
-                            {product.name}
-                          </div>
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '11px',
-                              fontWeight: 500,
-                              color: 'var(--text-muted)',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.05em',
-                            }}
-                          >
-                            {product.category} Financing
-                          </div>
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          background: product.confidence === 'High' ? 'var(--success-alpha)' : product.confidence === 'Medium' ? 'var(--warning-alpha)' : 'var(--bg-surface-3)',
-                          color: product.confidence === 'High' ? 'var(--success)' : product.confidence === 'Medium' ? 'var(--warning)' : 'var(--text-muted)',
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          fontFamily: 'var(--font-body)',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {product.confidence} Confidence
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        fontFamily: 'var(--font-body)',
-                        fontSize: '13px',
-                        fontWeight: 400,
-                        color: 'var(--text-secondary)',
-                        marginBottom: '16px',
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {product.description}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '11px',
-                            fontWeight: 400,
-                            color: 'var(--text-muted)',
-                            marginBottom: '4px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          Max Amount
-                        </div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-display)',
-                            fontSize: '18px',
-                            fontWeight: 700,
-                            color: 'var(--primary)',
-                          }}
-                        >
-                          {product.maxAmount}
-                        </div>
-                      </div>
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '11px',
-                            fontWeight: 400,
-                            color: 'var(--text-muted)',
-                            marginBottom: '4px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          Funding Speed
-                        </div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            color: 'var(--text-primary)',
-                          }}
-                        >
-                          {product.speed}
-                        </div>
-                      </div>
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '11px',
-                            fontWeight: 400,
-                            color: 'var(--text-muted)',
-                            marginBottom: '4px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          Min Score Required
-                        </div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            color: 'var(--text-primary)',
-                          }}
-                        >
-                          {product.minScore}/1000
-                        </div>
-                      </div>
-                    </div>
-
-                    {product.boosts.length > 0 && (
-                      <div style={{ marginTop: '16px' }}>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '11px',
-                            fontWeight: 500,
-                            color: 'var(--success)',
-                            marginBottom: '8px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          ✓ Strengths
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          {product.boosts.map((boost, i) => (
-                            <div
-                              key={i}
-                              style={{
-                                fontFamily: 'var(--font-body)',
-                                fontSize: '12px',
-                                color: 'var(--text-secondary)',
-                              }}
-                            >
-                              • {boost}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {product.blockers.length > 0 && !product.qualifies && (
-                      <div style={{ marginTop: '16px' }}>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '11px',
-                            fontWeight: 500,
-                            color: 'var(--warning)',
-                            marginBottom: '8px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          ⚠ Requirements Needed
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          {product.blockers.map((blocker, i) => (
-                            <div
-                              key={i}
-                              style={{
-                                fontFamily: 'var(--font-body)',
-                                fontSize: '12px',
-                                color: 'var(--text-secondary)',
-                              }}
-                            >
-                              • {blocker}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-
-              {eligibleProducts.length === 0 && (
-                <div
-                  style={{
-                    textAlign: 'center',
-                    padding: '40px 20px',
-                    background: 'var(--bg-surface-2)',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-subtle)',
-                  }}
-                >
-                  <AlertCircle
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      color: 'var(--text-muted)',
-                      margin: '0 auto 16px',
-                    }}
-                  />
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-body)',
-                      fontSize: '16px',
-                      fontWeight: 600,
-                      color: 'var(--text-primary)',
-                      marginBottom: '8px',
-                    }}
-                  >
-                    No Pre-Approved Products Yet
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-body)',
-                      fontSize: '14px',
-                      color: 'var(--text-secondary)',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    Complete the critical compliance items above to unlock funding opportunities.
-                  </div>
-                </div>
-              )}
-            </motion.div>
-
-            {/* Action Plan */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.8 }}
-              style={{
-                background: 'var(--bg-surface-1)',
-                borderRadius: '16px',
-                border: '1px solid var(--border-subtle)',
-                padding: '40px',
-                marginBottom: '32px',
-              }}
-            >
-              <h2
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '24px',
-                  fontWeight: 700,
-                  color: 'var(--text-primary)',
-                  marginBottom: '32px',
-                }}
-              >
-                Action Plan
-              </h2>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {topActions.map((action, index) => (
-                  <motion.div
-                    key={action.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1.8 + index * 0.08 }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <CheckCircle2
-                        style={{
-                          width: '24px',
-                          height: '24px',
-                          color: 'var(--success)',
-                        }}
-                      />
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-body)',
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          color: 'var(--text-primary)',
-                        }}
-                      >
-                        {action.title}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: 'var(--font-body)',
-                        fontSize: '12px',
-                        fontWeight: 400,
-                        color: 'var(--text-muted)',
-                        marginTop: '8px',
-                      }}
-                    >
-                      {action.description}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* CTA */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 2.0 }}
-              style={{ textAlign: 'center' }}
-            >
-              <button
-                onClick={() => navigate('/capital-dashboard')}
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  padding: '16px 48px',
-                  background: 'var(--primary)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: 'var(--bg-base)',
-                  cursor: 'pointer',
-                }}
-              >
-                View Your Dashboard →
-              </button>
             </motion.div>
           </>
         )}
