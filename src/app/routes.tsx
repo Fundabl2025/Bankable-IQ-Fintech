@@ -1,8 +1,9 @@
-import { createBrowserRouter, Navigate, redirect, Suspense } from 'react-router';
-import { lazy } from 'react';
+import { createBrowserRouter, Navigate } from 'react-router';
+import { lazy, Suspense } from 'react';
 import { RootLayout } from './layout/RootLayout';
+import { Shield, TrendingUp, Building, HelpCircle, User, DollarSign, GraduationCap } from 'lucide-react';
 
-// Lazy load all page components to reduce initial bundle and Vite scan time
+// Lazy load all page components
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const FoundationFirstDashboard = lazy(() => import('./pages/FoundationFirst/Dashboard').then(m => ({ default: m.Dashboard })));
 const IntegrateReports = lazy(() => import('./pages/IntegrateReports').then(m => ({ default: m.IntegrateReports })));
@@ -36,25 +37,42 @@ const OptimizeReporting = lazy(() => import('./pages/OptimizeReporting').then(m 
 const OnlineAnalysis = lazy(() => import('./pages/OnlineAnalysis').then(m => ({ default: m.OnlineAnalysis })));
 const OrganizeFinancials = lazy(() => import('./pages/OrganizeFinancials').then(m => ({ default: m.OrganizeFinancials })));
 const GenericPage = lazy(() => import('./pages/GenericPage').then(m => ({ default: m.GenericPage })));
-const Step1 = lazy(() => import('./pages/BusinessSuccessScan/Step1').then(m => ({ default: m.Step1 })));
-const Step2 = lazy(() => import('./pages/BusinessSuccessScan/Step2').then(m => ({ default: m.Step2 })));
-const Step3 = lazy(() => import('./pages/BusinessSuccessScan/Step3').then(m => ({ default: m.Step3 })));
-const TransitionScreen = lazy(() => import('./pages/BusinessSuccessScan/TransitionScreen').then(m => ({ default: m.TransitionScreen })));
-const IntegratedAssessment = lazy(() => import('./pages/BusinessSuccessScan/IntegratedAssessment').then(m => ({ default: m.IntegratedAssessment })));
-const OldResults = lazy(() => import('./pages/BusinessSuccessScan/Results_NEW').then(m => ({ default: m.Results })));
-const UnifiedAssessment = lazy(() => import('./pages/business-assessment/UnifiedAssessment').then(m => ({ default: m.default })));
+const UnifiedAssessment = lazy(() => import('./pages/business-assessment/UnifiedAssessment'));
 const UnifiedResults = lazy(() => import('./pages/business-assessment/Results').then(m => ({ default: m.Results })));
 const MyBusinessProfile = lazy(() => import('./pages/MyBusinessProfile').then(m => ({ default: m.MyBusinessProfile })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
 const TemplatesAndResources = lazy(() => import('./pages/TemplatesAndResources').then(m => ({ default: m.TemplatesAndResources })));
 const ResourceDetail = lazy(() => import('./pages/ResourceDetail').then(m => ({ default: m.ResourceDetail })));
 const CapitalAccessMap = lazy(() => import('./pages/CapitalAccessMap').then(m => ({ default: m.CapitalAccessMap })));
-const RedirectToAccountsReceivableFinance = lazy(() => import('./pages/RedirectToAccountsReceivableFinance').then(m => ({ default: m.RedirectToAccountsReceivableFinance })));
 const EntityFilings = lazy(() => import('./pages/LenderCompliance/EntityFilings').then(m => ({ default: m.EntityFilings })));
 
-// Loading fallback component
-const LoadingFallback = () => <div>Loading...</div>;
+// LenderCompliance sub-pages
+const BusinessLocation = lazy(() => import('./pages/LenderCompliance/index').then(m => ({ default: m.BusinessLocation })));
+const Phones411 = lazy(() => import('./pages/LenderCompliance/index').then(m => ({ default: m.Phones411 })));
+const WebsiteEmail = lazy(() => import('./pages/LenderCompliance/index').then(m => ({ default: m.WebsiteEmail })));
+const EINLicenses = lazy(() => import('./pages/LenderCompliance/index').then(m => ({ default: m.EINLicenses })));
+const BusinessBanking = lazy(() => import('./pages/LenderCompliance/index').then(m => ({ default: m.BusinessBanking })));
+const AgenciesNAICS = lazy(() => import('./pages/LenderCompliance/index').then(m => ({ default: m.AgenciesNAICS })));
+const BusinessPlan = lazy(() => import('./pages/LenderCompliance/index').then(m => ({ default: m.BusinessPlan })));
+const AssetsUCC = lazy(() => import('./pages/LenderCompliance/index').then(m => ({ default: m.AssetsUCC })));
+const CorpOnlyFacts = lazy(() => import('./pages/LenderCompliance/index').then(m => ({ default: m.CorpOnlyFacts })));
+const BankRating = lazy(() => import('./pages/LenderCompliance/index').then(m => ({ default: m.BankRating })));
+const ComparableCredit = lazy(() => import('./pages/LenderCompliance/index').then(m => ({ default: m.ComparableCredit })));
+const CDBusinessLoan = lazy(() => import('./pages/LenderCompliance/index').then(m => ({ default: m.CDBusinessLoan })));
 
+// Loading fallback
+const Loading = () => (
+  <div className="flex items-center justify-center min-h-[200px]">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+  </div>
+);
+
+// Wrapper for lazy components
+const LazyComponent = ({ Component, ...props }: { Component: React.LazyExoticComponent<any>, [key: string]: any }) => (
+  <Suspense fallback={<Loading />}>
+    <Component {...props} />
+  </Suspense>
+);
 
 export const router = createBrowserRouter([
   {
@@ -67,15 +85,15 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        Component: Dashboard,
+        element: <LazyComponent Component={Dashboard} />,
       },
       {
         path: 'dashboard',
-        Component: Dashboard,
+        element: <LazyComponent Component={Dashboard} />,
       },
       {
         path: 'capital-dashboard',
-        Component: Dashboard,
+        element: <LazyComponent Component={Dashboard} />,
       },
       {
         path: 'business-success-scan',
@@ -107,23 +125,23 @@ export const router = createBrowserRouter([
       },
       {
         path: 'business-assessment',
-        Component: UnifiedAssessment,
+        element: <LazyComponent Component={UnifiedAssessment} />,
       },
       {
         path: 'business-assessment/results',
-        Component: UnifiedResults,
+        element: <LazyComponent Component={UnifiedResults} />,
       },
       {
         path: 'integrate-reports',
-        Component: IntegrateReports,
+        element: <LazyComponent Component={IntegrateReports} />,
       },
       {
         path: 'settings',
-        Component: Settings,
+        element: <LazyComponent Component={Settings} />,
       },
       {
         path: 'settings/my-business-profile',
-        Component: MyBusinessProfile,
+        element: <LazyComponent Component={MyBusinessProfile} />,
       },
       {
         path: 'my-business-profile',
@@ -131,198 +149,143 @@ export const router = createBrowserRouter([
       },
       {
         path: 'status-reports',
-        Component: StatusReports,
+        element: <LazyComponent Component={StatusReports} />,
       },
       {
         path: 'status-reports/bankable-status',
-        Component: BankableStatus,
+        element: <LazyComponent Component={BankableStatus} />,
       },
       {
         path: 'status-reports/business-fico',
-        Component: BusinessFICO,
+        element: <LazyComponent Component={BusinessFICO} />,
       },
       {
         path: 'status-reports/estimated-funding',
-        Component: EstimatedFunding,
+        element: <LazyComponent Component={EstimatedFunding} />,
       },
       {
         path: 'status-reports/owners-credit',
-        Component: OwnersCredit,
+        element: <LazyComponent Component={OwnersCredit} />,
       },
       {
         path: 'access-funding',
-        Component: AccessFundingPage,
+        element: <LazyComponent Component={AccessFundingPage} />,
         children: [
-          {
-            path: 'business-credit-cards',
-            Component: BusinessCreditCards,
-          },
-          {
-            path: 'business-credit-line',
-            Component: BusinessCreditLine,
-          },
-          {
-            path: 'business-term-loan',
-            Component: BusinessTermLoan,
-          },
-          {
-            path: 'credit-union-loans',
-            Component: CreditUnionLoans,
-          },
-          {
-            path: 'equipment-financing',
-            Component: EquipmentFinancing,
-          },
-          {
-            path: 'merchant-advance',
-            Component: MerchantAdvance,
-          },
-          {
-            path: 'personal-credit-cards',
-            Component: PersonalCreditCards,
-          },
-          {
-            path: 'receivable-factoring',
-            Component: ReceivableFactoring,
-          },
-          {
-            path: 'revenue-based-loan',
-            Component: RevenueBasedLoan,
-          },
-          {
-            path: 'working-capital-loans',
-            Component: WorkingCapitalLoans,
-          },
-          {
-            path: 'sba-business-loan',
-            Component: SBABusinessLoan,
-          },
-          {
-            path: 'accounts-receivable-finance',
-            Component: AccountsReceivableFinance,
-          },
-          {
-            path: 'startup-equipment',
-            element: <Navigate to="/access-funding/accounts-receivable-finance" replace />,
-          },
-          {
-            path: 'truck-utility-vehicles',
-            element: <Navigate to="/access-funding/purchase-order-finance" replace />,
-          },
-          {
-            path: 'purchase-order-finance',
-            Component: PurchaseOrderFinance,
-          },
-          {
-            path: 'inventory-line-of-credit',
-            Component: InventoryLineOfCredit,
-          },
-          {
-            path: 'bridge-loans',
-            Component: BridgeLoans,
-          },
-          {
-            path: 'dscr-loans',
-            Component: DSCRLoans,
-          },
-          {
-            path: 'construction-loans',
-            Component: ConstructionLoans,
-          },
+          { path: 'business-credit-cards', element: <LazyComponent Component={BusinessCreditCards} /> },
+          { path: 'business-credit-line', element: <LazyComponent Component={BusinessCreditLine} /> },
+          { path: 'business-term-loan', element: <LazyComponent Component={BusinessTermLoan} /> },
+          { path: 'credit-union-loans', element: <LazyComponent Component={CreditUnionLoans} /> },
+          { path: 'equipment-financing', element: <LazyComponent Component={EquipmentFinancing} /> },
+          { path: 'merchant-advance', element: <LazyComponent Component={MerchantAdvance} /> },
+          { path: 'personal-credit-cards', element: <LazyComponent Component={PersonalCreditCards} /> },
+          { path: 'receivable-factoring', element: <LazyComponent Component={ReceivableFactoring} /> },
+          { path: 'revenue-based-loan', element: <LazyComponent Component={RevenueBasedLoan} /> },
+          { path: 'working-capital-loans', element: <LazyComponent Component={WorkingCapitalLoans} /> },
+          { path: 'sba-business-loan', element: <LazyComponent Component={SBABusinessLoan} /> },
+          { path: 'accounts-receivable-finance', element: <LazyComponent Component={AccountsReceivableFinance} /> },
+          { path: 'startup-equipment', element: <Navigate to="/access-funding/accounts-receivable-finance" replace /> },
+          { path: 'truck-utility-vehicles', element: <Navigate to="/access-funding/purchase-order-finance" replace /> },
+          { path: 'purchase-order-finance', element: <LazyComponent Component={PurchaseOrderFinance} /> },
+          { path: 'inventory-line-of-credit', element: <LazyComponent Component={InventoryLineOfCredit} /> },
+          { path: 'bridge-loans', element: <LazyComponent Component={BridgeLoans} /> },
+          { path: 'dscr-loans', element: <LazyComponent Component={DSCRLoans} /> },
+          { path: 'construction-loans', element: <LazyComponent Component={ConstructionLoans} /> },
         ],
       },
       {
         path: 'document-collection',
-        Component: DocumentCollection,
+        element: <LazyComponent Component={DocumentCollection} />,
       },
       {
         path: 'lender-compliance',
-        Component: LenderCompliance,
+        element: <LazyComponent Component={LenderCompliance} />,
       },
       {
         path: 'capital-access-map',
-        Component: CapitalAccessMap,
+        element: <LazyComponent Component={CapitalAccessMap} />,
       },
       {
         path: 'lender-compliance/entity-filings',
-        Component: EntityFilings,
+        element: <LazyComponent Component={EntityFilings} />,
       },
       {
         path: 'lender-compliance/entity-filings-user-friendly',
-        Component: EntityFilings,
+        element: <LazyComponent Component={EntityFilings} />,
       },
       {
         path: 'lender-compliance/business-location',
-        Component: BusinessLocation,
+        element: <LazyComponent Component={BusinessLocation} />,
       },
       {
         path: 'lender-compliance/phones-411',
-        Component: Phones411,
+        element: <LazyComponent Component={Phones411} />,
       },
       {
         path: 'lender-compliance/website-email',
-        Component: WebsiteEmail,
+        element: <LazyComponent Component={WebsiteEmail} />,
       },
       {
         path: 'lender-compliance/ein-licenses',
-        Component: EINLicenses,
+        element: <LazyComponent Component={EINLicenses} />,
       },
       {
         path: 'lender-compliance/business-banking',
-        Component: BusinessBanking,
+        element: <LazyComponent Component={BusinessBanking} />,
       },
       {
         path: 'lender-compliance/agencies-naics',
-        Component: AgenciesNAICS,
+        element: <LazyComponent Component={AgenciesNAICS} />,
       },
       {
         path: 'lender-compliance/business-plan',
-        Component: BusinessPlan,
+        element: <LazyComponent Component={BusinessPlan} />,
       },
       {
         path: 'lender-compliance/assets-ucc',
-        Component: AssetsUCC,
+        element: <LazyComponent Component={AssetsUCC} />,
       },
       {
         path: 'lender-compliance/corp-only-facts',
-        Component: CorpOnlyFacts,
+        element: <LazyComponent Component={CorpOnlyFacts} />,
       },
       {
         path: 'lender-compliance/bank-rating',
-        Component: BankRating,
+        element: <LazyComponent Component={BankRating} />,
       },
       {
         path: 'lender-compliance/comparable-credit',
-        Component: ComparableCredit,
+        element: <LazyComponent Component={ComparableCredit} />,
       },
       {
         path: 'lender-compliance/cd-business-loan',
-        Component: CDBusinessLoan,
+        element: <LazyComponent Component={CDBusinessLoan} />,
       },
       {
         path: 'optimize-reporting',
-        Component: OptimizeReporting,
+        element: <LazyComponent Component={OptimizeReporting} />,
       },
       {
         path: 'online-analysis',
-        Component: OnlineAnalysis,
+        element: <LazyComponent Component={OnlineAnalysis} />,
       },
       {
         path: 'building-credit',
-        Component: BuildingCredit,
+        element: <LazyComponent Component={BuildingCredit} />,
       },
       {
         path: 'organize-financials',
-        Component: OrganizeFinancials,
+        element: <LazyComponent Component={OrganizeFinancials} />,
       },
       {
         path: 'become-bankable',
         element: (
-          <GenericPage
-            title="Become Bankable"
-            description="Goal is to ensure larger loans at lower rates and longer terms."
-            icon={Building}
-          />
+          <Suspense fallback={<Loading />}>
+            <GenericPage
+              title="Become Bankable"
+              description="Goal is to ensure larger loans at lower rates and longer terms."
+              icon={Building}
+            />
+          </Suspense>
         ),
       },
       {
@@ -332,30 +295,34 @@ export const router = createBrowserRouter([
       {
         path: 'business-education',
         element: (
-          <GenericPage
-            title="Business Education"
-            description="Learn essential business finance concepts and best practices."
-            icon={GraduationCap}
-          />
+          <Suspense fallback={<Loading />}>
+            <GenericPage
+              title="Business Education"
+              description="Learn essential business finance concepts and best practices."
+              icon={GraduationCap}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'help-desk',
         element: (
-          <GenericPage
-            title="Help Desk"
-            description="Get support and answers to your questions about the system."
-            icon={HelpCircle}
-          />
+          <Suspense fallback={<Loading />}>
+            <GenericPage
+              title="Help Desk"
+              description="Get support and answers to your questions about the system."
+              icon={HelpCircle}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'templates-resources',
-        Component: TemplatesAndResources,
+        element: <LazyComponent Component={TemplatesAndResources} />,
       },
       {
         path: 'templates-resources/:id',
-        Component: ResourceDetail,
+        element: <LazyComponent Component={ResourceDetail} />,
       },
       {
         path: 'foundation-first',
@@ -363,66 +330,78 @@ export const router = createBrowserRouter([
       },
       {
         path: 'foundation-first/dashboard',
-        Component: FoundationFirstDashboard,
+        element: <LazyComponent Component={FoundationFirstDashboard} />,
       },
       {
         path: 'foundation-first/financial-profile',
         element: (
-          <GenericPage
-            title="Financial Profile"
-            description="Manage your personal financial information and track your progress."
-            icon={User}
-          />
+          <Suspense fallback={<Loading />}>
+            <GenericPage
+              title="Financial Profile"
+              description="Manage your personal financial information and track your progress."
+              icon={User}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'foundation-first/income-savings',
         element: (
-          <GenericPage
-            title="Income & Savings"
-            description="Track your income sources and savings goals."
-            icon={DollarSign}
-          />
+          <Suspense fallback={<Loading />}>
+            <GenericPage
+              title="Income & Savings"
+              description="Track your income sources and savings goals."
+              icon={DollarSign}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'foundation-first/assets-debt',
         element: (
-          <GenericPage
-            title="Assets & Debt"
-            description="Manage your assets and liabilities for a complete financial picture."
-            icon={Building}
-          />
+          <Suspense fallback={<Loading />}>
+            <GenericPage
+              title="Assets & Debt"
+              description="Manage your assets and liabilities for a complete financial picture."
+              icon={Building}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'foundation-first/risk-management',
         element: (
-          <GenericPage
-            title="Risk Management"
-            description="Protect your financial future with proper insurance and estate planning."
-            icon={Shield}
-          />
+          <Suspense fallback={<Loading />}>
+            <GenericPage
+              title="Risk Management"
+              description="Protect your financial future with proper insurance and estate planning."
+              icon={Shield}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'foundation-first/retirement-planning',
         element: (
-          <GenericPage
-            title="Retirement Planning"
-            description="Plan for a secure retirement with personalized strategies."
-            icon={TrendingUp}
-          />
+          <Suspense fallback={<Loading />}>
+            <GenericPage
+              title="Retirement Planning"
+              description="Plan for a secure retirement with personalized strategies."
+              icon={TrendingUp}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'foundation-first/settings',
         element: (
-          <GenericPage
-            title="Settings"
-            description="Manage your account settings and preferences."
-            icon={HelpCircle}
-          />
+          <Suspense fallback={<Loading />}>
+            <GenericPage
+              title="Settings"
+              description="Manage your account settings and preferences."
+              icon={HelpCircle}
+            />
+          </Suspense>
         ),
       },
     ],
