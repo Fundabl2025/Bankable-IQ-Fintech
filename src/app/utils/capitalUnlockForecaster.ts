@@ -57,15 +57,22 @@ function scoreToCapitalRange(score: number): { min: number; max: number } {
  * Based on Master Build Spec - bankable items mapped to FICO impact
  */
 function estimateAuditItemImpact(item: AuditItem): number {
+  // Guard against undefined item or title
+  if (!item || !item.title) {
+    return 2; // Default: minor item
+  }
+  
+  const titleLower = item.title.toLowerCase();
+  
   // Critical items (high impact on FICO/funding)
-  const criticalKeywords = ['FICO', 'credit', 'EIN', 'collections', 'derogatory', 'bankruptcy'];
-  if (criticalKeywords.some(k => item.name.toLowerCase().includes(k.toLowerCase()))) {
+  const criticalKeywords = ['fico', 'credit', 'ein', 'collections', 'derogatory', 'bankruptcy'];
+  if (criticalKeywords.some(k => titleLower.includes(k))) {
     return 8; // Each = ~80 points on FundScore
   }
   
   // Major items (medium impact)
-  const majorKeywords = ['bank', 'entity', 'website', 'filing', 'NSF', 'balance'];
-  if (majorKeywords.some(k => item.name.toLowerCase().includes(k.toLowerCase()))) {
+  const majorKeywords = ['bank', 'entity', 'website', 'filing', 'nsf', 'balance'];
+  if (majorKeywords.some(k => titleLower.includes(k))) {
     return 5; // Each = ~50 points
   }
   
@@ -78,15 +85,20 @@ function estimateAuditItemImpact(item: AuditItem): number {
  * User context would normally come from user input, but this is reasonable default
  */
 function estimateDaysToComplete(item: AuditItem): number {
+  // Guard against undefined item or title
+  if (!item || !item.title) {
+    return 10; // Default: 10 days
+  }
+  
   const easierItems = ['website', 'email', 'phone'];
   const mediumItems = ['entity', 'filing', 'bank', 'business plan'];
-  const harderItems = ['credit', 'FICO', 'derogatory', 'collections', 'bankruptcy'];
+  const harderItems = ['credit', 'fico', 'derogatory', 'collections', 'bankruptcy'];
   
-  const name = item.name.toLowerCase();
+  const titleLower = item.title.toLowerCase();
   
-  if (easierItems.some(k => name.includes(k))) return 3;
-  if (mediumItems.some(k => name.includes(k))) return 7;
-  if (harderItems.some(k => name.includes(k))) return 30;
+  if (easierItems.some(k => titleLower.includes(k))) return 3;
+  if (mediumItems.some(k => titleLower.includes(k))) return 7;
+  if (harderItems.some(k => titleLower.includes(k))) return 30;
   
   return 10; // Default: 10 days
 }
@@ -114,7 +126,7 @@ export function generateCapitalUnlockForecast(
       impactScore: impactPoints * 10, // Convert to 0-100 scale
       capitalUnlocked: impactPoints * 5000, // Each point = ~$5k capital
       daysToComplete,
-      reasoning: `Completing "${item.name}" directly improves your ${getCategoryImpact(item.category)}, which lenders weight heavily.`,
+      reasoning: `Completing "${item.title || 'this item'}" directly improves your ${getCategoryImpact(item.category || '')}, which lenders weight heavily.`,
     };
   });
   
@@ -143,7 +155,7 @@ export function generateCapitalUnlockForecast(
       capitalMin: capitalRange.min,
       capitalMax: capitalRange.max,
       description: `After completing ${i + 1} recommended action${i > 0 ? 's' : ''}`,
-      mainActionNeeded: action.auditItem.name,
+      mainActionNeeded: action.auditItem.title || 'Next action',
     });
   }
   
@@ -192,5 +204,5 @@ export function getForecastSummary(forecast: CapitalUnlockForecast): string {
   const firstAction = forecast.topThreeActions[0];
   const firstMilestone = forecast.milestones[0];
   
-  return `By completing "${firstAction.auditItem.name}" in ${firstAction.daysToComplete} days, your funding eligibility could increase to $${firstMilestone.capitalMin.toLocaleString()}-$${firstMilestone.capitalMax.toLocaleString()}.`;
+  return `By completing "${firstAction.auditItem.title || 'this action'}" in ${firstAction.daysToComplete} days, your funding eligibility could increase to $${firstMilestone.capitalMin.toLocaleString()}-$${firstMilestone.capitalMax.toLocaleString()}.`;
 }

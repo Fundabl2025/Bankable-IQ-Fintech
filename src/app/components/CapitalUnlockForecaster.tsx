@@ -101,7 +101,7 @@ export function CapitalUnlockForecaster({ forecast }: Props) {
                     <div className="flex items-center gap-2 mb-1">
                       <Zap className="w-4 h-4 text-amber-500" />
                       <span className="font-medium text-gray-900 text-sm">
-                        {idx + 1}. {action.auditItem.name}
+                        {idx + 1}. {action.auditItem.title || 'Next action'}
                       </span>
                     </div>
                     <p className="text-xs text-gray-600 mb-1">{action.reasoning}</p>
