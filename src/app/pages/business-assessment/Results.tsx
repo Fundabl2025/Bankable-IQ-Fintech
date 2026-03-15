@@ -311,50 +311,103 @@ export function Results() {
                 )}
               </div>
 
-              {/* Quick Stats Grid */}
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(3, 1fr)', 
-                gap: '16px',
-                padding: '24px',
-                background: 'var(--bg-surface-2)',
-                borderRadius: '12px',
-                border: '1px solid var(--border-subtle)'
-              }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
-                    Products Eligible
+              {/* Eligible Products Section */}
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>
+                  You Qualify For:
+                </h3>
+                {eligibleProducts.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {eligibleProducts.slice(0, 5).map((product) => (
+                      <div key={product.id} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '16px',
+                        background: 'var(--bg-surface-2)',
+                        borderRadius: '8px',
+                        border: '1px solid var(--success)',
+                      }}>
+                        <div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                            {product.name}
+                          </div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                            {product.category} | Up to {product.maxAmount} | {product.speed}
+                          </div>
+                        </div>
+                        <div style={{
+                          fontFamily: 'var(--font-body)',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '4px 10px',
+                          borderRadius: '4px',
+                          background: product.confidence === 'High' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+                          color: product.confidence === 'High' ? '#10b981' : '#f59e0b',
+                        }}>
+                          {product.confidence} Confidence
+                        </div>
+                      </div>
+                    ))}
+                    {eligibleProducts.length > 5 && (
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                        +{eligibleProducts.length - 5} more products available
+                      </div>
+                    )}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 700, color: 'var(--success)' }}>
-                    {eligibleProducts.length}
+                ) : (
+                  <div style={{
+                    padding: '20px',
+                    background: 'var(--bg-surface-2)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--warning)',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--warning)', marginBottom: '8px' }}>
+                      No products available yet
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      Complete the actions in "Your Path to Capital" to unlock financing options.
+                    </div>
                   </div>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
-                    of 17 financing types
-                  </div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
-                    Audit Items Done
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 700, color: incompleteItems.length === 0 ? 'var(--success)' : 'var(--warning)' }}>
-                    {auditItems.length - incompleteItems.length}
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
-                    of {auditItems.length} total items
-                  </div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
-                    Score Potential
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 700, color: 'var(--primary)' }}>
-                    +{Math.min(criticalItems.reduce((sum, item) => sum + (item.ficoImpact || 0), 0), 300)}
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
-                    points from critical items
-                  </div>
-                </div>
+                )}
               </div>
+
+              {/* What's Blocking You Section */}
+              {products.filter(p => !p.qualifies).length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>
+                    What's Blocking Other Products:
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {products.filter(p => !p.qualifies).slice(0, 3).map((product) => (
+                      <div key={product.id} style={{
+                        padding: '12px 16px',
+                        background: 'var(--bg-surface-2)',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-subtle)',
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div>
+                            <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                              {product.name}
+                            </div>
+                            <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                              {product.blockers.slice(0, 2).join(' | ')}
+                            </div>
+                          </div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)' }}>
+                            Up to {product.maxAmount}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px' }}>
+                    Fix these blockers to unlock {products.filter(p => !p.qualifies).length} more financing options.
+                  </div>
+                </div>
+              )}
 
               {/* CTA to Path to Capital */}
               <div style={{ 
