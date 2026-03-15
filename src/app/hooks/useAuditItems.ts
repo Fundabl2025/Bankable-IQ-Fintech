@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { supabase } from '../lib/supabase/client'
+import { supabase, isSupabaseConfigured } from '../lib/supabase/client'
 import { AuditItem } from '../utils/businessData'
 
 export function useAuditItems() {
@@ -8,6 +8,11 @@ export function useAuditItems() {
   const [error, setError] = useState<Error | null>(null)
 
   const fetchItems = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setLoading(false)
+      return
+    }
+    
     try {
       setLoading(true)
       
@@ -31,6 +36,10 @@ export function useAuditItems() {
   }, [])
 
   const updateItem = useCallback(async (itemId: string, updates: Partial<AuditItem>) => {
+    if (!isSupabaseConfigured) {
+      throw new Error('Supabase not configured')
+    }
+    
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')

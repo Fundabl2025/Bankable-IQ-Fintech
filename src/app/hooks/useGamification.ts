@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { supabase } from '../lib/supabase/client'
+import { supabase, isSupabaseConfigured } from '../lib/supabase/client'
 import { GamificationData, Achievement, UserStreak } from '../utils/businessData'
 
 export function useGamification() {
@@ -8,6 +8,11 @@ export function useGamification() {
   const [error, setError] = useState<Error | null>(null)
 
   const fetchGamification = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setLoading(false)
+      return
+    }
+    
     try {
       setLoading(true)
       
@@ -50,6 +55,10 @@ export function useGamification() {
   }, [])
 
   const updatePoints = useCallback(async (pointsToAdd: number) => {
+    if (!isSupabaseConfigured) {
+      throw new Error('Supabase not configured')
+    }
+    
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
@@ -86,6 +95,10 @@ export function useGamification() {
   }, [gamification])
 
   const unlockAchievement = useCallback(async (achievement: Achievement) => {
+    if (!isSupabaseConfigured) {
+      throw new Error('Supabase not configured')
+    }
+    
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')

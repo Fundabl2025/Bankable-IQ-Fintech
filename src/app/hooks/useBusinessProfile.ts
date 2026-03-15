@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { supabase } from '../lib/supabase/client'
+import { supabase, isSupabaseConfigured } from '../lib/supabase/client'
 import { BusinessProfile } from '../utils/businessData'
 
 export function useBusinessProfile() {
@@ -8,6 +8,11 @@ export function useBusinessProfile() {
   const [error, setError] = useState<Error | null>(null)
 
   const fetchProfile = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setLoading(false)
+      return
+    }
+    
     try {
       setLoading(true)
       
@@ -35,6 +40,10 @@ export function useBusinessProfile() {
   }, [])
 
   const updateProfile = useCallback(async (updates: Partial<BusinessProfile>) => {
+    if (!isSupabaseConfigured) {
+      throw new Error('Supabase not configured')
+    }
+    
     try {
       setLoading(true)
       
