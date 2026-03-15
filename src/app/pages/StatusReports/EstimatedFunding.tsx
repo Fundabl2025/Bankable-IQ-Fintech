@@ -286,13 +286,6 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
               No personal guarantee required at this tier
             </div>
           </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, color: 'var(--primary)' }}>
-              {fmtRange(current.bizMin, current.bizMax)}
-            </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Available when all business criteria are met
-            </div>
-          </div>
           <div
             style={{
               background: 'var(--bg-surface-2)',
