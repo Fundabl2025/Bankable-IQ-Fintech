@@ -612,7 +612,7 @@ export function Dashboard() {
           {/* CAPITAL UNLOCK FORECASTER — Strategic Differentiator                      */}
           {/* ========================================================================= */}
           <div className="lg:col-span-2">
-            {fundScore > 0 && <CapitalUnlockForecaster forecast={capitalForecast} />}
+            <CapitalUnlockForecaster forecast={capitalForecast} />
           </div>
 
           {/* ========================================================================= */}

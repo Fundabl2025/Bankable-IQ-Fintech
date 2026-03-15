@@ -11,6 +11,40 @@ interface Props {
 export function CapitalUnlockForecaster({ forecast }: Props) {
   const navigate = useNavigate();
 
+  // Show helpful message if no forecast data or score is 0
+  if (!forecast || forecast.currentScore === 0 || forecast.currentFundScore === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-200 p-6"
+      >
+        <div className="flex items-start gap-4">
+          <div className="bg-emerald-100 p-3 rounded-lg flex-shrink-0">
+            <TrendingUp className="w-6 h-6 text-emerald-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-emerald-900 mb-2">
+              Your Path to Capital
+            </h3>
+            <p className="text-sm text-emerald-700 mb-4">
+              Complete your FundScore assessment to see your personalized capital unlock forecast. 
+              We'll show you exactly which actions will unlock the most funding and how long it will take.
+            </p>
+            <Button
+              onClick={() => navigate('/assessment')}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              Take Assessment
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
