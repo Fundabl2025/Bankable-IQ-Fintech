@@ -344,7 +344,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
               Tier Potential (Long-Term)
             </div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-              {fmtMoney(tierLongTerm.bizMax)}
+              {fmtMoney(tierAt180.bizMax)}
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
               Unlocked by addressing all blockers
@@ -362,7 +362,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
           }}
         >
           <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)' }}>
-            <strong style={{ color: '#3b82f6' }}>Your path:</strong> Today you can access {fmtMoney(actualMaxFunding)} from {eligibleProducts.length} product{eligibleProducts.length !== 1 ? 's' : ''}. By completing the actions below, you unlock more products and higher funding tiers—up to {fmtMoney(tierLongTerm.bizMax)} long-term.
+            <strong style={{ color: '#3b82f6' }}>Your path:</strong> Today you can access {fmtMoney(actualMaxFunding)} from {eligibleProducts.length} product{eligibleProducts.length !== 1 ? 's' : ''}. By completing the actions below, you unlock more products and higher funding tiers—up to {fmtMoney(tierAt180.bizMax)} long-term.
           </span>
         </div>
 
