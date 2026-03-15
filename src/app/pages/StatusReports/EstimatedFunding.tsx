@@ -47,9 +47,11 @@ function scoreToBizFunding(score: number): { bizMin: number; bizMax: number; per
 
 function projectScore(currentScore: number, daysOut: number, incompleteItems: AuditItem[]): number {
   // Realistic score gain estimates based on real-world credit & compliance timelines.
-  // Quick wins (EIN, bank account, NAP consistency) can complete in days.
-  // Structural improvements (trade lines, credit history) take 30-90 days to report.
-  // Full fundability (SBA-ready profile, seasoned credit) takes 6-12+ months.
+  // Elon's timeline: Today → 30 → 60 → 90 → 180 days
+  // 30 days: quick wins (EIN, bank account, NAP) report immediately
+  // 60 days: credit cards open, utilization improves, first reporting cycles
+  // 90 days: trade lines established, credit profile strengthening
+  // 180 days: full bankability (3 statement cycles, 3 tradeline cycles, financial statements updated)
   const criticalItems = incompleteItems.filter(i => i.priority === 'critical' || i.priority === 'high');
   const mediumItems   = incompleteItems.filter(i => i.priority === 'medium');
 
@@ -57,15 +59,19 @@ function projectScore(currentScore: number, daysOut: number, incompleteItems: Au
   let mediumCompleted: number;
 
   if (daysOut <= 30) {
-    // 30 days: complete ~1 critical item (only the fastest quick wins report this fast)
+    // 30 days: quick wins only (~1 critical, 2 medium)
     criticalCompleted = Math.min(criticalItems.length, 1);
     mediumCompleted   = Math.min(mediumItems.length, 2);
+  } else if (daysOut <= 60) {
+    // 60 days: adding tradeline/credit improvements (~2 critical, 4 medium)
+    criticalCompleted = Math.min(criticalItems.length, 2);
+    mediumCompleted   = Math.min(mediumItems.length, 4);
   } else if (daysOut <= 90) {
-    // 90 days: complete ~3 critical items + 5 medium (credit reporting cycles take 30-60 days)
-    criticalCompleted = Math.min(criticalItems.length, 3);
-    mediumCompleted   = Math.min(mediumItems.length, 5);
+    // 90 days: significant profile strengthening (~4 critical, 6 medium)
+    criticalCompleted = Math.min(criticalItems.length, 4);
+    mediumCompleted   = Math.min(mediumItems.length, 6);
   } else {
-    // Long-term (180+ days): most items addressable, score approaches ceiling
+    // 180 days: full bankability profile built
     criticalCompleted = criticalItems.length;
     mediumCompleted   = mediumItems.length;
   }
@@ -177,13 +183,13 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
   }
 
   // ── Compute projections ────────────────────────────────────────────────────
-  // Realistic timelines: Today (actual) → 30 days (quick wins) → 90 days (credit cycle)
-  // → Long-Term (full fundability — trade lines seasoned, SBA-ready profile built)
+  // Elon's timeline: Today → 30 → 60 → 90 → 180 days (precise milestones, no ranges)
   const incompleteItems = auditItems.filter(i => i.status !== 'complete');
   const currentScore    = data.fundScore;
   const score30         = projectScore(currentScore, 30,  incompleteItems);
+  const score60         = projectScore(currentScore, 60,  incompleteItems);
   const score90         = projectScore(currentScore, 90,  incompleteItems);
-  const scoreLongTerm   = projectScore(currentScore, 365, incompleteItems); // 12 months = realistic ceiling
+  const score180        = projectScore(currentScore, 180, incompleteItems);
 
   // Get eligible products for comparison - THIS IS ACTUAL FUNDING AVAILABLE TODAY
   const eligibleProducts = products.filter(p => p.qualifies);
@@ -198,15 +204,16 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
   
   // Tier potentials for future projections
   const tierAt30       = scoreToBizFunding(score30);
+  const tierAt60       = scoreToBizFunding(score60);
   const tierAt90       = scoreToBizFunding(score90);
-  const tierLongTerm   = scoreToBizFunding(scoreLongTerm);
+  const tierAt180      = scoreToBizFunding(score180);
 
   // Today shows ACTUAL eligible funding, future shows projected tier potential
   const snapshots: FundingSnapshot[] = [
     {
       label: 'Today',
       projectedScore: currentScore,
-      bizMin: actualMaxFunding > 0 ? Math.round(actualMaxFunding * 0.5) : 0, // Range from ~50% to max
+      bizMin: actualMaxFunding > 0 ? Math.round(actualMaxFunding * 0.5) : 0,
       bizMax: actualMaxFunding,
       personalMin: actualMaxFunding > 0 ? Math.round(actualMaxFunding * 0.75) : 0,
       personalMax: actualMaxFunding > 0 ? Math.round(actualMaxFunding * 1.25) : 0,
@@ -218,8 +225,16 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
       label: '30 Days',
       projectedScore: score30,
       ...tierAt30,
-      color: '#0ea5e9',
-      border: '#38bdf8',
+      color: '#3b82f6',
+      border: '#60a5fa',
+      isCurrent: false,
+    },
+    {
+      label: '60 Days',
+      projectedScore: score60,
+      ...tierAt60,
+      color: '#06b6d4',
+      border: '#22d3ee',
       isCurrent: false,
     },
     {
@@ -231,9 +246,9 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
       isCurrent: false,
     },
     {
-      label: 'Long-Term',
-      projectedScore: scoreLongTerm,
-      ...tierLongTerm,
+      label: '180 Days',
+      projectedScore: score180,
+      ...tierAt180,
       color: '#8b5cf6',
       border: '#a78bfa',
       isCurrent: false,
@@ -241,7 +256,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
   ];
 
   const topActions = getTopActions(incompleteItems, actualMaxFunding);
-  const totalPotentialUplift = tierLongTerm.bizMax - actualMaxFunding;
+  const totalPotentialUplift = tierAt180.bizMax - actualMaxFunding;
 
   return (
     <div style={{ background: 'var(--bg-base)', padding: '32px 24px', maxWidth: '820px', margin: '0 auto' }}>
@@ -383,7 +398,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
           Your Capital Growth Path
         </h2>
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 20px 0' }}>
-          Projected funding eligibility as you complete audit items and improve your FundScore. Quick wins impact your score in 30 days; structural improvements (trade lines, credit seasoning) take 90 days+.
+          Projected funding eligibility as you complete audit items and improve your FundScore. Timeline: Today (current) → 30 days (quick wins) → 60 days (credit cycle) → 90 days (strong progress) → 180 days (full bankability).
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>

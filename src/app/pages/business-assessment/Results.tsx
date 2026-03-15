@@ -3,14 +3,68 @@
 // Complete score reveal with products, actions, and comprehensive insights
 // ════════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
-import { motion, useSpring } from 'motion/react';
-import { UnifiedAnswers, ExtendedResultsOutput } from './types';
-import { computeScore, getBand, computeExtendedResults } from './engine';
-import { evaluateProducts } from './productEligibility';
-import { getAllAuditItems, AuditItem } from '../../utils/businessData';
-import { EstimatedFunding } from '../StatusReports/EstimatedFunding';
+// ════════════════════════════════════════════════════════════════════════════════
+// Status Badge System - Per Elon's vision
+// Maps FundScore + Bankable Score to clear status progression
+// ════════════════════════════════════════════════════════════════════════════════
+
+interface StatusInfo {
+  status: 'Unprepared' | 'Fundable' | 'Progressing' | 'Bankable' | 'Elite';
+  bankableScore: number;
+  bankableThreshold: number;
+  pointsToBankable: number;
+  statusColor: string;
+  statusBgColor: string;
+  capitalTier: string;
+}
+
+function computeStatus(extendedResults: ExtendedResultsOutput): StatusInfo {
+  const bankableScore = extendedResults.sbssScore || 0;
+  const bankableThreshold = 160;
+  const pointsToBankable = Math.max(0, bankableThreshold - bankableScore);
+
+  let status: 'Unprepared' | 'Fundable' | 'Progressing' | 'Bankable' | 'Elite';
+  let statusColor: string;
+  let statusBgColor: string;
+  let capitalTier: string;
+
+  if (bankableScore < 80) {
+    status = 'Unprepared';
+    statusColor = '#ef4444';
+    statusBgColor = 'rgba(239,68,68,0.1)';
+    capitalTier = 'Tier 0 - Preparing Foundation';
+  } else if (bankableScore < 160) {
+    status = 'Fundable';
+    statusColor = '#f97316';
+    statusBgColor = 'rgba(249,115,22,0.1)';
+    capitalTier = 'Tier 1 - Alternative Capital';
+  } else if (bankableScore < 190) {
+    status = 'Progressing';
+    statusColor = '#eab308';
+    statusBgColor = 'rgba(234,179,8,0.1)';
+    capitalTier = 'Tier 2 - Growing Bankability';
+  } else if (bankableScore < 210) {
+    status = 'Bankable';
+    statusColor = '#10b981';
+    statusBgColor = 'rgba(16,185,129,0.1)';
+    capitalTier = 'Tier 3 - Bank Capital Eligible';
+  } else {
+    status = 'Elite';
+    statusColor = '#8b5cf6';
+    statusBgColor = 'rgba(139,92,246,0.1)';
+    capitalTier = 'Tier 4 - Elite Borrower';
+  }
+
+  return {
+    status,
+    bankableScore,
+    bankableThreshold,
+    pointsToBankable,
+    statusColor,
+    statusBgColor,
+    capitalTier,
+  };
+}
 
 export function Results() {
   const navigate = useNavigate();
@@ -144,6 +198,116 @@ export function Results() {
           >
             {band.name}
           </motion.div>
+
+          {/* Status Badge Section - Per Elon's vision */}
+          {extendedResults && (() => {
+            const statusInfo = computeStatus(extendedResults);
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '16px',
+                  marginBottom: '32px',
+                  maxWidth: '500px',
+                  margin: '0 auto 32px auto',
+                }}
+              >
+                {/* Status Badge */}
+                <div
+                  style={{
+                    padding: '16px',
+                    background: statusInfo.statusBgColor,
+                    borderRadius: '8px',
+                    border: `2px solid ${statusInfo.statusColor}`,
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>
+                    Status
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, color: statusInfo.statusColor }}>
+                    {statusInfo.status}
+                  </div>
+                </div>
+
+                {/* Capital Tier */}
+                <div
+                  style={{
+                    padding: '16px',
+                    background: 'var(--bg-surface-2)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-subtle)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>
+                    Capital Access
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {statusInfo.capitalTier}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })()}
+
+          {/* Bankable Score Progress - Distance to Bankable */}
+          {extendedResults && (() => {
+            const statusInfo = computeStatus(extendedResults);
+            return (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+                style={{
+                  padding: '16px',
+                  background: 'var(--bg-surface-2)',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-subtle)',
+                  marginBottom: '24px',
+                  maxWidth: '600px',
+                  margin: '0 auto 24px auto',
+                }}
+              >
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      Bankable Score
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: statusInfo.bankableScore >= statusInfo.bankableThreshold ? 'var(--success)' : 'var(--warning)' }}>
+                      {statusInfo.bankableScore} / {statusInfo.bankableThreshold}
+                    </div>
+                  </div>
+                  <div style={{
+                    width: '100%',
+                    height: '8px',
+                    background: 'var(--bg-surface-1)',
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                  }}>
+                    <div
+                      style={{
+                        width: `${Math.min(100, (statusInfo.bankableScore / statusInfo.bankableThreshold) * 100)}%`,
+                        height: '100%',
+                        background: statusInfo.bankableScore >= statusInfo.bankableThreshold ? 'var(--success)' : 'var(--primary)',
+                        transition: 'width 0.6s ease-out',
+                      }}
+                    />
+                  </div>
+                </div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                  {statusInfo.pointsToBankable === 0 
+                    ? '✓ Bankable threshold reached!'
+                    : `${statusInfo.pointsToBankable} points to Bankable`
+                  }
+                </div>
+              </motion.div>
+            );
+          })()}
 
           {/* Bankable Score */}
           <motion.div
