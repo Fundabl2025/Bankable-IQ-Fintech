@@ -5,9 +5,15 @@
 
 import { motion } from 'motion/react';
 import { 
-  Shield, TrendingUp, AlertTriangle, Zap, ArrowRight, 
-  CheckCircle, Clock, Target, DollarSign, Lock, Unlock,
-  ChevronRight, AlertCircle, Building2, CreditCard
+  BarChart3, 
+  DollarSign, 
+  TrendingUp,
+  AlertCircle, 
+  CheckCircle2, 
+  Zap, 
+  ArrowRight,
+  Clock,
+  Target
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
@@ -287,7 +293,213 @@ export function Dashboard() {
         )}
 
         {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* 5 HERO CARDS - 2x2 Grid + Full Width Timeline                          */}
+        {/* CORE VALUE PROP: Fundable vs Bankable - The Capital Cost Narrative     */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {hasAssessment && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.5 }}
+            className="mb-8"
+            style={{
+              background: 'var(--bg-surface-1)',
+              border: '2px solid var(--primary)',
+              borderRadius: '2px',
+              padding: '28px',
+            }}
+          >
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ 
+                fontFamily: 'var(--font-body)', 
+                fontSize: '12px', 
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                color: 'var(--muted-foreground)',
+                marginBottom: '8px'
+              }}>
+                Capital Access Path
+              </div>
+              <h2 style={{ 
+                fontFamily: 'var(--font-display)',
+                fontSize: '24px',
+                fontWeight: 700,
+                color: 'var(--foreground)',
+                lineHeight: 1.2
+              }}>
+                Move from expensive to bank capital
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Current: Fundable Capital */}
+              <div style={{
+                padding: '20px',
+                background: 'var(--bg-surface-2)',
+                borderRadius: '2px',
+                border: '1px solid var(--border)',
+              }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ 
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    color: 'var(--muted-foreground)',
+                    marginBottom: '4px'
+                  }}>
+                    Today: Fundable
+                  </div>
+                  <div style={{ 
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '20px',
+                    fontWeight: 700,
+                    color: 'var(--foreground)'
+                  }}>
+                    $50K-$250K
+                  </div>
+                </div>
+                <div style={{
+                  padding: '12px',
+                  background: 'rgba(239,68,68,0.1)',
+                  borderRadius: '2px',
+                  border: '1px solid rgba(239,68,68,0.2)',
+                  marginBottom: '12px'
+                }}>
+                  <div style={{ 
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    color: '#ef4444'
+                  }}>
+                    35%+ APR
+                  </div>
+                  <div style={{ 
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '12px',
+                    color: 'var(--muted-foreground)',
+                    marginTop: '4px'
+                  }}>
+                    MCA, factoring, credit cards
+                  </div>
+                </div>
+                <div style={{ 
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '12px',
+                  color: 'var(--muted-foreground)',
+                  lineHeight: 1.5
+                }}>
+                  Your current funding options. Fast approval, high cost.
+                </div>
+              </div>
+
+              {/* Arrow/Progression */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <div style={{ textAlign: 'center' }}>
+                  <TrendingUp style={{ 
+                    color: 'var(--primary)',
+                    width: 32,
+                    height: 32,
+                    margin: '0 auto 8px'
+                  }} />
+                  <div style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: 'var(--muted-foreground)',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    90-180 days
+                  </div>
+                </div>
+              </div>
+
+              {/* Future: Bankable Capital */}
+              <div style={{
+                padding: '20px',
+                background: 'var(--bg-surface-2)',
+                borderRadius: '2px',
+                border: '1px solid var(--border)',
+              }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ 
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    color: 'var(--muted-foreground)',
+                    marginBottom: '4px'
+                  }}>
+                    Potential: Bankable
+                  </div>
+                  <div style={{ 
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '20px',
+                    fontWeight: 700,
+                    color: 'var(--primary)'
+                  }}>
+                    $250K-$1M+
+                  </div>
+                </div>
+                <div style={{
+                  padding: '12px',
+                  background: 'rgba(16,185,129,0.1)',
+                  borderRadius: '2px',
+                  border: '1px solid rgba(16,185,129,0.2)',
+                  marginBottom: '12px'
+                }}>
+                  <div style={{ 
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    color: '#10b981'
+                  }}>
+                    12-15% APR
+                  </div>
+                  <div style={{ 
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '12px',
+                    color: 'var(--muted-foreground)',
+                    marginTop: '4px'
+                  }}>
+                    SBA, bank loans, equipment
+                  </div>
+                </div>
+                <div style={{ 
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '12px',
+                  color: 'var(--muted-foreground)',
+                  lineHeight: 1.5
+                }}>
+                  Institutional capital. Lower cost, longer terms, larger amounts.
+                </div>
+              </div>
+            </div>
+
+            {/* Savings calculation */}
+            <div style={{
+              marginTop: '20px',
+              padding: '16px',
+              background: 'rgba(138,184,32,0.1)',
+              borderRadius: '2px',
+              border: '1px solid rgba(138,184,32,0.2)'
+            }}>
+              <div style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '13px',
+                color: 'var(--foreground)',
+                lineHeight: 1.6
+              }}>
+                <strong>On a $250K loan over 5 years:</strong> Expensive capital = $112,500 interest. Bank capital = $37,500 interest. <strong style={{ color: 'var(--primary)' }}>Your potential savings: $75,000</strong>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* ══════════════════════════════════════════════════════════════════════ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           
