@@ -268,7 +268,6 @@ export function Results() {
             </button>
           ))}
         </div>
-        </div>
 
         {/* Tab Content */}
         {activeTab === 'overview' && (
