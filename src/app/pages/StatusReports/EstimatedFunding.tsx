@@ -322,7 +322,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
           }}
         >
           <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)' }}>
-            <strong style={{ color: '#3b82f6' }}>Note:</strong> "Business Only" means financing without requiring your personal guarantee. If you currently qualify for "Personal Guarantee Line" (in Your FundScore tab), you can use personal credit to unlock capital faster. As you improve your business metrics, you'll unlock pure business-backed financing.
+            <strong style={{ color: '#3b82f6' }}>How it works:</strong> You can access $150K immediately using your personal credit (Personal Guarantee Line). Your tier unlocks up to $500K when financed on business fundamentals alone—no personal guarantee needed. This is your path from startup (personal-backed) to established business (business-backed).
           </span>
         </div>
         <div

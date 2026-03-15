@@ -163,16 +163,36 @@ export function Results() {
             }}
           >
             <div style={{ maxWidth: '600px', textAlign: 'left' }}>
-              <div style={{ 
-                fontFamily: 'var(--font-body)', 
-                fontSize: '13px', 
-                color: 'var(--text-secondary)', 
-                lineHeight: 1.6 
-              }}>
-                Your FundScore determines how much capital you can access and at what terms. 
-                The "Your Path to Capital" tab shows exactly what actions will unlock more funding — 
-                entrepreneurs who follow the roadmap typically increase their eligible funding by 3-5x within 90 days.
-              </div>
+            <div style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '12px',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.6,
+              marginBottom: '16px',
+              padding: '12px 14px',
+              background: 'rgba(59,130,246,0.08)',
+              borderRadius: '6px',
+              border: '1px solid rgba(59,130,246,0.2)',
+              display: 'none' // Hide the old description
+            }}>
+              Your FundScore determines how much capital you can access and at what terms. 
+              The "Your Path to Capital" tab shows exactly what actions will unlock more funding — 
+              entrepreneurs who follow the roadmap typically increase their eligible funding by 3-5x within 90 days.
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '13px',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.7,
+              marginBottom: '16px',
+              padding: '14px 16px',
+              background: 'rgba(59,130,246,0.08)',
+              borderRadius: '6px',
+              border: '1px solid rgba(59,130,246,0.2)'
+            }}>
+              <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>Why This Information Matters</strong>
+              Most entrepreneurs apply for funding blind—lenders know their underwriting thresholds, you don't. This creates massive information asymmetry in capital markets. Your FundScore reveals what lenders see. The "Your Path to Capital" tab translates that into a clear economic incentive: entrepreneurs who follow the roadmap typically unlock 3-5x more capital within 90 days.
+            </div>
               <div style={{ 
                 display: 'flex', 
                 gap: '24px', 
