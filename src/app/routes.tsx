@@ -4,6 +4,9 @@ import { RootLayout } from './layout/RootLayout';
 import { Shield, TrendingUp, Building, HelpCircle, User, DollarSign, GraduationCap } from 'lucide-react';
 
 // Lazy load all page components
+const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const LoginPage = lazy(() => import('./pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
+const SignupPage = lazy(() => import('./pages/auth/SignupPage').then(m => ({ default: m.SignupPage })));
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const FoundationFirstDashboard = lazy(() => import('./pages/FoundationFirst/Dashboard').then(m => ({ default: m.Dashboard })));
 const IntegrateReports = lazy(() => import('./pages/IntegrateReports').then(m => ({ default: m.IntegrateReports })));
@@ -79,14 +82,25 @@ export const router = createBrowserRouter([
     path: 'fundscore-assessment',
     element: <Navigate to="/business-assessment" replace />,
   },
+  // Public landing page (no sidebar/layout)
+  {
+    path: '/',
+    element: <LazyComponent Component={LandingPage} />,
+  },
+  // Auth pages (no sidebar/layout)
+  {
+    path: '/login',
+    element: <LazyComponent Component={LoginPage} />,
+  },
+  {
+    path: '/signup',
+    element: <LazyComponent Component={SignupPage} />,
+  },
+  // App routes with RootLayout (sidebar, topnav)
   {
     path: '/',
     Component: RootLayout,
     children: [
-      {
-        index: true,
-        element: <LazyComponent Component={Dashboard} />,
-      },
       {
         path: 'dashboard',
         element: <LazyComponent Component={Dashboard} />,
