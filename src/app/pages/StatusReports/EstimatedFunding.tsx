@@ -455,7 +455,10 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
                   marginBottom: '6px',
                 }}
               >
-                $75K - $150K
+                {formatCurrency(
+                  Math.round(data.fundingRange.businessOnlyMin * 1.5),
+                  Math.round(data.fundingRange.businessOnlyMax * 2)
+                )}
               </div>
               <div
                 style={{
@@ -465,7 +468,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
                   color: 'var(--text-muted)',
                 }}
               >
-                Projected FundScore: 750+
+                Projected FundScore: {Math.min(data.fundScore + 100, 1000)}+
               </div>
             </div>
 
@@ -499,7 +502,10 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
                   marginBottom: '6px',
                 }}
               >
-                $150K - $400K
+                {formatCurrency(
+                  Math.round(data.fundingRange.businessOnlyMin * 3),
+                  Math.round(data.fundingRange.businessOnlyMax * 5)
+                )}
               </div>
               <div
                 style={{
@@ -509,7 +515,56 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
                   color: 'var(--text-muted)',
                 }}
               >
-                Projected FundScore: 850+
+                Projected FundScore: {Math.min(data.fundScore + 200, 1000)}+
+              </div>
+            </div>
+          </div>
+
+          {/* What Actions Unlock Capital */}
+          <div
+            style={{
+              marginTop: '20px',
+              padding: '16px',
+              background: 'white',
+              borderRadius: '6px',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: '#10b981',
+                marginBottom: '12px',
+              }}
+            >
+              Top Actions That Unlock Capital:
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  1. Complete Lender Compliance items
+                </span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: '12px', fontWeight: 600, color: '#10b981' }}>
+                  +$25K-$50K
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  2. Add business tradelines (Net-30 accounts)
+                </span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: '12px', fontWeight: 600, color: '#10b981' }}>
+                  +$30K-$75K
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  3. Improve personal credit utilization below 30%
+                </span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: '12px', fontWeight: 600, color: '#10b981' }}>
+                  +$50K-$100K
+                </span>
               </div>
             </div>
           </div>
@@ -532,7 +587,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
                 margin: 0,
               }}
             >
-              <strong>💡 Tip:</strong> Completing audit items from "Lender Compliance" and "Building Credit" categories has the highest impact on unlocking capital.
+              These projections are based on typical improvement rates. Your actual results may vary based on starting position and execution speed.
             </p>
           </div>
         </div>

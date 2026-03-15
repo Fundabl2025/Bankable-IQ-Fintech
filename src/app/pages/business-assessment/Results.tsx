@@ -186,7 +186,7 @@ export function Results() {
                 color: 'var(--text-secondary)', 
                 lineHeight: 1.6 
               }}>
-                Your FundScore™ is a comprehensive 0-100 rating that measures your business's fundability across six critical dimensions. 
+                Your FundScore™ is a comprehensive 0-1000 rating that measures your business's fundability across six critical dimensions. 
                 A higher score means you qualify for more financing options, better terms, and faster approvals. 
                 Think of it like a FICO score, but specifically for business financing access.
               </div>
@@ -589,7 +589,7 @@ export function Results() {
                   lineHeight: 1.6,
                 }}
               >
-                Based on your FundScore™ of <strong style={{ color: 'var(--primary)' }}>{result.score}/100</strong>, you qualify for <strong style={{ color: 'var(--success)' }}>{eligibleProducts.length} of 17</strong> financing products. 
+                Based on your FundScore™ of <strong style={{ color: 'var(--primary)' }}>{result.score}/1000</strong>, you qualify for <strong style={{ color: 'var(--success)' }}>{eligibleProducts.length} of 17</strong> financing products. 
                 Below is your complete funding landscape—products you're eligible for now, plus those you can unlock by improving specific areas.
               </p>
 
@@ -748,7 +748,7 @@ export function Results() {
                             color: 'var(--text-primary)',
                           }}
                         >
-                          {product.minScore}/100
+                          {product.minScore}/1000
                         </div>
                       </div>
                     </div>
