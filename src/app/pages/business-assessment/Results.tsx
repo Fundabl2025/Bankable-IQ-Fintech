@@ -318,9 +318,12 @@ export function Results() {
 
               {/* Eligible Products Section */}
               <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>
-                  You Qualify For:
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                  Products You Qualify For Today
                 </h3>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                  Based on your complete profile (credit, revenue, business age, etc.)
+                </p>
                 {eligibleProducts.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {eligibleProducts.slice(0, 5).map((product) => (

@@ -5,11 +5,12 @@
 // ════════════════════════════════════════════════════════════════════════════════
 
 import { Download, TrendingUp, ArrowRight, CheckCircle, AlertCircle, Zap } from 'lucide-react';
-import { ExtendedResultsOutput } from '../business-assessment/types';
+import { ExtendedResultsOutput, UnifiedAnswers } from '../business-assessment/types';
 import { useEffect, useState } from 'react';
 import { computeExtendedResults } from '../business-assessment/engine';
 import { useNavigate } from 'react-router';
 import { getAllAuditItems, AuditItem } from '../../utils/businessData';
+import { evaluateProducts, Product } from '../business-assessment/productEligibility';
 
 interface EstimatedFundingProps {
   data?: ExtendedResultsOutput;
@@ -107,21 +108,40 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
   const navigate = useNavigate();
   const [data, setData] = useState<ExtendedResultsOutput | null>(propData || null);
   const [auditItems, setAuditItems] = useState<AuditItem[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [rawAssessment, setRawAssessment] = useState<UnifiedAnswers | null>(null);
 
   useEffect(() => {
     if (!propData) {
       try {
         const saved = localStorage.getItem('unified_assessment');
         if (saved) {
-          const assessmentData = JSON.parse(saved);
+          const assessmentData = JSON.parse(saved) as UnifiedAnswers;
           const extended = computeExtendedResults(assessmentData);
           setData(extended);
+          setRawAssessment(assessmentData);
+          // Evaluate products with raw assessment data
+          const prods = evaluateProducts(assessmentData, extended.fundScore);
+          setProducts(prods);
         } else {
           navigate('/business-assessment');
         }
       } catch (error) {
         console.error('Error loading assessment:', error);
         navigate('/business-assessment');
+      }
+    } else {
+      // If propData is provided, try to load raw assessment for product evaluation
+      try {
+        const saved = localStorage.getItem('unified_assessment');
+        if (saved) {
+          const assessmentData = JSON.parse(saved) as UnifiedAnswers;
+          setRawAssessment(assessmentData);
+          const prods = evaluateProducts(assessmentData, propData.fundScore);
+          setProducts(prods);
+        }
+      } catch (error) {
+        console.error('Error loading assessment for products:', error);
       }
     }
 
@@ -149,6 +169,9 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
   const at30     = scoreToBizFunding(score30);
   const at90     = scoreToBizFunding(score90);
   const at180    = scoreToBizFunding(score180);
+
+  // Get eligible products for comparison
+  const eligibleProducts = products.filter(p => p.qualifies);
 
   const snapshots: FundingSnapshot[] = [
     {
@@ -282,18 +305,45 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
           </div>
         </div>
 
-        {/* Note about actual vs potential */}
+        {/* Actual vs Potential comparison */}
         <div
           style={{
-            marginTop: '12px', padding: '10px 14px',
-            background: 'rgba(245,158,11,0.08)',
-            border: '1px solid rgba(245,158,11,0.2)',
-            borderRadius: '6px',
+            marginTop: '12px', padding: '14px 16px',
+            background: 'var(--bg-surface-2)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '8px',
           }}
         >
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)' }}>
-            <strong style={{ color: '#f59e0b' }}>Note:</strong> These ranges show your tier's maximum potential. Actual eligibility depends on meeting specific product requirements. Check the "Your FundScore" tab to see which products you currently qualify for.
-          </span>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Tier Potential vs. Actual Eligibility
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+            <div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)' }}>Tier Potential</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                Up to {fmtMoney(current.bizMax)}
+              </div>
+            </div>
+            <ArrowRight style={{ width: '16px', height: '16px', color: 'var(--text-muted)' }} />
+            <div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)' }}>You Qualify For</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, color: eligibleProducts.length > 0 ? 'var(--success)' : 'var(--warning)' }}>
+                {eligibleProducts.length > 0 
+                  ? fmtMoney(Math.max(...eligibleProducts.map(p => {
+                      const amt = p.maxAmount.replace(/[$,KM+]/g, '');
+                      return amt.includes('.') ? parseFloat(amt) * 1000000 : parseInt(amt) * 1000;
+                    })))
+                  : '$0'
+                }
+              </div>
+            </div>
+          </div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
+            {eligibleProducts.length > 0 
+              ? `Currently eligible for ${eligibleProducts.length} of 17 products. Address blockers to unlock more.`
+              : 'No products available yet. Complete actions below to unlock funding.'
+            }
+          </div>
         </div>
 
         {totalPotentialUplift > 0 && (
