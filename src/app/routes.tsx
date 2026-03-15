@@ -1,83 +1,60 @@
-import { createBrowserRouter, Navigate, redirect } from 'react-router';
+import { createBrowserRouter, Navigate, redirect, Suspense } from 'react-router';
+import { lazy } from 'react';
 import { RootLayout } from './layout/RootLayout';
-import { Dashboard } from './pages/Dashboard';
-import { Dashboard as FoundationFirstDashboard } from './pages/FoundationFirst/Dashboard';
-import { IntegrateReports } from './pages/IntegrateReports';
-import { StatusReports } from './pages/StatusReports';
-import { BankableStatus } from './pages/StatusReports/BankableStatus';
-import { BusinessFICO } from './pages/StatusReports/BusinessFICO';
-import { EstimatedFunding } from './pages/StatusReports/EstimatedFunding';
-import { OwnersCredit } from './pages/StatusReports/OwnersCredit';
-import { AccessFunding as AccessFundingPage } from './pages/AccessFundingMain';
-import { BusinessCreditCards } from './pages/AccessFunding/BusinessCreditCards';
-import { BusinessCreditLine } from './pages/AccessFunding/BusinessCreditLine';
-import { BusinessTermLoan } from './pages/AccessFunding/BusinessTermLoan';
-import { CreditUnionLoans } from './pages/AccessFunding/CreditUnionLoans';
-import { EquipmentFinancing } from './pages/AccessFunding/EquipmentFinancing';
-import { MerchantAdvance } from './pages/AccessFunding/MerchantAdvance';
-import { PersonalCreditCards } from './pages/AccessFunding/PersonalCreditCards';
-import { ReceivableFactoring } from './pages/AccessFunding/ReceivableFactoring';
-import { RevenueBasedLoan } from './pages/AccessFunding/RevenueBasedLoan';
-import { WorkingCapitalLoans } from './pages/AccessFunding/WorkingCapitalLoans';
-import { SBABusinessLoan } from './pages/AccessFunding/SBABusinessLoan';
-import { AccountsReceivableFinance } from './pages/AccessFunding/AccountsReceivableFinance';
-import { PurchaseOrderFinance } from './pages/AccessFunding/PurchaseOrderFinance';
-import { InventoryLineOfCredit } from './pages/AccessFunding/InventoryLineOfCredit';
-import { BridgeLoans } from './pages/AccessFunding/BridgeLoans';
-import { DSCRLoans } from './pages/AccessFunding/DSCRLoans';
-import { ConstructionLoans } from './pages/AccessFunding/ConstructionLoans';
-import { RedirectToAccountsReceivableFinance } from './pages/RedirectToAccountsReceivableFinance';
-import { DocumentCollection } from './pages/DocumentCollection';
-import { LenderCompliance } from './pages/LenderCompliance';
-import {
-  BusinessLocation,
-  Phones411,
-  WebsiteEmail,
-  EINLicenses,
-  BusinessBanking,
-  AgenciesNAICS,
-  BusinessPlan,
-  AssetsUCC,
-  CorpOnlyFacts,
-  BankRating,
-  ComparableCredit,
-  CDBusinessLoan
-} from './pages/LenderCompliance/index';
-import { EntityFilings } from './pages/LenderCompliance/EntityFilings';
-import { BuildingCredit } from './pages/BuildingCredit';
-import { OptimizeReporting } from './pages/OptimizeReporting';
-import { OnlineAnalysis } from './pages/OnlineAnalysis';
-import { OrganizeFinancials } from './pages/OrganizeFinancials';
-import { GenericPage } from './pages/GenericPage';
-// OLD BSS IMPORTS - Keep for backward compatibility temporarily
-import { Step1 } from './pages/BusinessSuccessScan/Step1';
-import { Step2 } from './pages/BusinessSuccessScan/Step2';
-import { Step3 } from './pages/BusinessSuccessScan/Step3';
-import { TransitionScreen } from './pages/BusinessSuccessScan/TransitionScreen';
-import { IntegratedAssessment } from './pages/BusinessSuccessScan/IntegratedAssessment';
-import { Results as OldResults } from './pages/BusinessSuccessScan/Results_NEW';
-// NEW UNIFIED ASSESSMENT
-import UnifiedAssessment from './pages/business-assessment/UnifiedAssessment';
-import { Results as UnifiedResults } from './pages/business-assessment/Results';
-import { MyBusinessProfile } from './pages/MyBusinessProfile';
-import { Settings } from './pages/Settings';
-import { TemplatesAndResources } from './pages/TemplatesAndResources';
-import { ResourceDetail } from './pages/ResourceDetail';
-import { CapitalAccessMap } from './pages/CapitalAccessMap';
-// FundScoreAssessment deprecated - redirects to Unified Assessment
-import {
-  FolderOpen,
-  Shield,
-  TrendingUp,
-  LineChart,
-  CreditCard,
-  Briefcase,
-  Building,
-  GraduationCap,
-  HelpCircle,
-  User,
-  DollarSign
-} from 'lucide-react';
+
+// Lazy load all page components to reduce initial bundle and Vite scan time
+const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const FoundationFirstDashboard = lazy(() => import('./pages/FoundationFirst/Dashboard').then(m => ({ default: m.Dashboard })));
+const IntegrateReports = lazy(() => import('./pages/IntegrateReports').then(m => ({ default: m.IntegrateReports })));
+const StatusReports = lazy(() => import('./pages/StatusReports').then(m => ({ default: m.StatusReports })));
+const BankableStatus = lazy(() => import('./pages/StatusReports/BankableStatus').then(m => ({ default: m.BankableStatus })));
+const BusinessFICO = lazy(() => import('./pages/StatusReports/BusinessFICO').then(m => ({ default: m.BusinessFICO })));
+const EstimatedFunding = lazy(() => import('./pages/StatusReports/EstimatedFunding').then(m => ({ default: m.EstimatedFunding })));
+const OwnersCredit = lazy(() => import('./pages/StatusReports/OwnersCredit').then(m => ({ default: m.OwnersCredit })));
+const AccessFundingPage = lazy(() => import('./pages/AccessFundingMain').then(m => ({ default: m.AccessFunding })));
+const BusinessCreditCards = lazy(() => import('./pages/AccessFunding/BusinessCreditCards').then(m => ({ default: m.BusinessCreditCards })));
+const BusinessCreditLine = lazy(() => import('./pages/AccessFunding/BusinessCreditLine').then(m => ({ default: m.BusinessCreditLine })));
+const BusinessTermLoan = lazy(() => import('./pages/AccessFunding/BusinessTermLoan').then(m => ({ default: m.BusinessTermLoan })));
+const CreditUnionLoans = lazy(() => import('./pages/AccessFunding/CreditUnionLoans').then(m => ({ default: m.CreditUnionLoans })));
+const EquipmentFinancing = lazy(() => import('./pages/AccessFunding/EquipmentFinancing').then(m => ({ default: m.EquipmentFinancing })));
+const MerchantAdvance = lazy(() => import('./pages/AccessFunding/MerchantAdvance').then(m => ({ default: m.MerchantAdvance })));
+const PersonalCreditCards = lazy(() => import('./pages/AccessFunding/PersonalCreditCards').then(m => ({ default: m.PersonalCreditCards })));
+const ReceivableFactoring = lazy(() => import('./pages/AccessFunding/ReceivableFactoring').then(m => ({ default: m.ReceivableFactoring })));
+const RevenueBasedLoan = lazy(() => import('./pages/AccessFunding/RevenueBasedLoan').then(m => ({ default: m.RevenueBasedLoan })));
+const WorkingCapitalLoans = lazy(() => import('./pages/AccessFunding/WorkingCapitalLoans').then(m => ({ default: m.WorkingCapitalLoans })));
+const SBABusinessLoan = lazy(() => import('./pages/AccessFunding/SBABusinessLoan').then(m => ({ default: m.SBABusinessLoan })));
+const AccountsReceivableFinance = lazy(() => import('./pages/AccessFunding/AccountsReceivableFinance').then(m => ({ default: m.AccountsReceivableFinance })));
+const PurchaseOrderFinance = lazy(() => import('./pages/AccessFunding/PurchaseOrderFinance').then(m => ({ default: m.PurchaseOrderFinance })));
+const InventoryLineOfCredit = lazy(() => import('./pages/AccessFunding/InventoryLineOfCredit').then(m => ({ default: m.InventoryLineOfCredit })));
+const BridgeLoans = lazy(() => import('./pages/AccessFunding/BridgeLoans').then(m => ({ default: m.BridgeLoans })));
+const DSCRLoans = lazy(() => import('./pages/AccessFunding/DSCRLoans').then(m => ({ default: m.DSCRLoans })));
+const ConstructionLoans = lazy(() => import('./pages/AccessFunding/ConstructionLoans').then(m => ({ default: m.ConstructionLoans })));
+const DocumentCollection = lazy(() => import('./pages/DocumentCollection').then(m => ({ default: m.DocumentCollection })));
+const LenderCompliance = lazy(() => import('./pages/LenderCompliance').then(m => ({ default: m.LenderCompliance })));
+const BuildingCredit = lazy(() => import('./pages/BuildingCredit').then(m => ({ default: m.BuildingCredit })));
+const OptimizeReporting = lazy(() => import('./pages/OptimizeReporting').then(m => ({ default: m.OptimizeReporting })));
+const OnlineAnalysis = lazy(() => import('./pages/OnlineAnalysis').then(m => ({ default: m.OnlineAnalysis })));
+const OrganizeFinancials = lazy(() => import('./pages/OrganizeFinancials').then(m => ({ default: m.OrganizeFinancials })));
+const GenericPage = lazy(() => import('./pages/GenericPage').then(m => ({ default: m.GenericPage })));
+const Step1 = lazy(() => import('./pages/BusinessSuccessScan/Step1').then(m => ({ default: m.Step1 })));
+const Step2 = lazy(() => import('./pages/BusinessSuccessScan/Step2').then(m => ({ default: m.Step2 })));
+const Step3 = lazy(() => import('./pages/BusinessSuccessScan/Step3').then(m => ({ default: m.Step3 })));
+const TransitionScreen = lazy(() => import('./pages/BusinessSuccessScan/TransitionScreen').then(m => ({ default: m.TransitionScreen })));
+const IntegratedAssessment = lazy(() => import('./pages/BusinessSuccessScan/IntegratedAssessment').then(m => ({ default: m.IntegratedAssessment })));
+const OldResults = lazy(() => import('./pages/BusinessSuccessScan/Results_NEW').then(m => ({ default: m.Results })));
+const UnifiedAssessment = lazy(() => import('./pages/business-assessment/UnifiedAssessment').then(m => ({ default: m.default })));
+const UnifiedResults = lazy(() => import('./pages/business-assessment/Results').then(m => ({ default: m.Results })));
+const MyBusinessProfile = lazy(() => import('./pages/MyBusinessProfile').then(m => ({ default: m.MyBusinessProfile })));
+const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
+const TemplatesAndResources = lazy(() => import('./pages/TemplatesAndResources').then(m => ({ default: m.TemplatesAndResources })));
+const ResourceDetail = lazy(() => import('./pages/ResourceDetail').then(m => ({ default: m.ResourceDetail })));
+const CapitalAccessMap = lazy(() => import('./pages/CapitalAccessMap').then(m => ({ default: m.CapitalAccessMap })));
+const RedirectToAccountsReceivableFinance = lazy(() => import('./pages/RedirectToAccountsReceivableFinance').then(m => ({ default: m.RedirectToAccountsReceivableFinance })));
+const EntityFilings = lazy(() => import('./pages/LenderCompliance/EntityFilings').then(m => ({ default: m.EntityFilings })));
+
+// Loading fallback component
+const LoadingFallback = () => <div>Loading...</div>;
+
 
 export const router = createBrowserRouter([
   {

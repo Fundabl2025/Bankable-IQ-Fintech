@@ -15,6 +15,8 @@ import {
 } from '../utils/businessData';
 import { getPreQualifiedPrograms, getTotalPreQualifiedAmount } from '../utils/fundingEligibility';
 import { getDataItem } from '../lib/data-adapter';
+import { CapitalUnlockForecaster } from '../components/CapitalUnlockForecaster';
+import { generateCapitalUnlockForecast } from '../utils/capitalUnlockForecaster';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -113,6 +115,10 @@ export function Dashboard() {
   // Calculate items completed across all categories
   const allItems = getAllAuditItems();
   const totalCompleted = allItems.filter(item => item.status === 'complete').length;
+
+  // Generate Capital Unlock Forecast - THE STRATEGIC DIFFERENTIATOR
+  const completedItemIds = allItems.filter(item => item.status === 'complete').map(i => i.id);
+  const capitalForecast = generateCapitalUnlockForecast(fundScore, completedItemIds, allItems);
 
   return (
     <div 
@@ -600,6 +606,13 @@ export function Dashboard() {
               </div>
             </motion.div>
 
+          </div>
+
+          {/* ========================================================================= */}
+          {/* CAPITAL UNLOCK FORECASTER — Strategic Differentiator                      */}
+          {/* ========================================================================= */}
+          <div className="lg:col-span-2">
+            {fundScore > 0 && <CapitalUnlockForecaster forecast={capitalForecast} />}
           </div>
 
           {/* ========================================================================= */}

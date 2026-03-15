@@ -409,53 +409,56 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
 // HELPER: Funding Range Lookup
 // ────────────────────────────────────────────────────────────────────────────────
 function getFundingRange(score: number): ExtendedResultsOutput['fundingRange'] {
-  if (score >= 90) {
+  // Score is 0-1000, not 0-100. Convert to 0-100 band for lookup
+  const normalizedScore = score / 10; // 0-1000 → 0-100
+  
+  if (normalizedScore >= 90) {
     return {
-      currentBand: '90 to 100',
+      currentBand: '900 to 1000',
       businessOnlyMin: 80000,
       businessOnlyMax: 100000,
       personalAndBusinessMin: 90000,
       personalAndBusinessMax: 120000,
-      scoreRangeLabel: '90 to 100',
+      scoreRangeLabel: '900 to 1000',
     };
   }
-  if (score >= 80) {
+  if (normalizedScore >= 80) {
     return {
-      currentBand: '80 to 89',
+      currentBand: '800 to 899',
       businessOnlyMin: 60000,
       businessOnlyMax: 80000,
       personalAndBusinessMin: 70000,
       personalAndBusinessMax: 100000,
-      scoreRangeLabel: '80 to 89',
+      scoreRangeLabel: '800 to 899',
     };
   }
-  if (score >= 70) {
+  if (normalizedScore >= 70) {
     return {
-      currentBand: '70 to 79',
+      currentBand: '700 to 799',
       businessOnlyMin: 40000,
       businessOnlyMax: 60000,
       personalAndBusinessMin: 50000,
       personalAndBusinessMax: 80000,
-      scoreRangeLabel: '70 to 79',
+      scoreRangeLabel: '700 to 799',
     };
   }
-  if (score >= 60) {
+  if (normalizedScore >= 60) {
     return {
-      currentBand: '60 to 69',
+      currentBand: '600 to 699',
       businessOnlyMin: 20000,
       businessOnlyMax: 40000,
       personalAndBusinessMin: 30000,
       personalAndBusinessMax: 60000,
-      scoreRangeLabel: '60 to 69',
+      scoreRangeLabel: '600 to 699',
     };
   }
   return {
-    currentBand: 'Below 60',
+    currentBand: 'Below 600',
     businessOnlyMin: 0,
     businessOnlyMax: 0,
     personalAndBusinessMin: 0,
     personalAndBusinessMax: 0,
-    scoreRangeLabel: 'Below 60',
+    scoreRangeLabel: 'Below 600',
   };
 }
 
