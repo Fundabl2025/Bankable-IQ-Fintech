@@ -239,17 +239,17 @@ export function LandingPage() {
         backdropFilter: 'blur(8px)',
         borderBottom: '1px solid var(--border)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: 'var(--foreground)' }}>
-            FUND
-          </span>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: 'var(--primary)' }}>
-            READY
-          </span>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 800, color: 'var(--primary)' }}>
-            ™
-          </span>
-        </div>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
+          <img 
+            src="/images/fundready-logo.png" 
+            alt="FundReady" 
+            style={{ 
+              height: '36px',
+              width: 'auto',
+              objectFit: 'contain',
+            }} 
+          />
+        </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
           <Link 
             to="/login" 

@@ -165,28 +165,19 @@ export function Sidebar() {
       }}
     >
       {/* Logo/Brand Section */}
-      <div className="p-6 border-b flex-shrink-0" style={{ borderColor: 'var(--sidebar-border)' }}>
-        <div className="flex items-center gap-2 mb-2">
-          <div>
-            <h1 
-              className="text-[20px] tracking-tight leading-none"
-              style={{ fontFamily: 'var(--font-display)', fontWeight: 800 }}
-            >
-              <span style={{ color: 'var(--foreground)' }}>FUND</span>
-              <span style={{ color: 'var(--primary)' }}>READY</span>
-            </h1>
-            <p 
-              className="text-[9px] uppercase tracking-[0.2em] mt-1"
-              style={{ 
-                fontFamily: 'var(--font-body)', 
-                fontWeight: 400,
-                color: 'var(--muted-foreground)'
-              }}
-            >
-              Funding Platform
-            </p>
-          </div>
-        </div>
+      <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--sidebar-border)' }}>
+        <Link to="/" style={{ display: 'block', textDecoration: 'none' }}>
+          <img 
+            src="/images/fundready-logo.png" 
+            alt="FundReady - Unlocking Your Potential" 
+            style={{ 
+              width: '100%', 
+              maxWidth: '180px',
+              height: 'auto',
+              objectFit: 'contain',
+            }} 
+          />
+        </Link>
       </div>
       
       {/* Navigation */}
