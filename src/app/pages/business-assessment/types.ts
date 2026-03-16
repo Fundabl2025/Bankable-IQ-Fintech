@@ -39,9 +39,9 @@ export interface UnifiedAnswers {
   
   // Q_F7: NSFs & Assets
   nsfCount: '0' | '1_2' | '3_5' | '5plus' | '';
-  arBalance: number;
-  equipmentValue: number;
-  poBalance: number;
+  arBalance: 'none' | 'under_10k' | '10k_50k' | '50k_250k' | 'over_250k' | '';
+  equipmentValue: 'none' | 'under_10k' | '10k_50k' | '50k_250k' | 'over_250k' | '';
+  poBalance: 'none' | 'under_10k' | '10k_50k' | '50k_250k' | 'over_250k' | '';
   ownsProperty: 'yes' | 'no' | 'planning' | '';
   propertyData?: {
     count: number;
@@ -231,9 +231,9 @@ export function getDefaultAnswers(): UnifiedAnswers {
     bankAge: '',
     avgDailyBalance: '',
     nsfCount: '',
-    arBalance: 0,
-    equipmentValue: 0,
-    poBalance: 0,
+    arBalance: '', // FIXED: Changed from 0 to empty string (matching new type)
+    equipmentValue: '', // FIXED: Changed from 0 to empty string (matching new type)
+    poBalance: '', // FIXED: Changed from 0 to empty string (matching new type)
     ownsProperty: '',
     constructionPlan: '',
     experian: 680,

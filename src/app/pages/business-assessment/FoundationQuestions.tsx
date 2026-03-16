@@ -1229,174 +1229,183 @@ function QuestionF7({ data, updateData, onNext, onBack, currentQuestionNumber, t
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* Accounts Receivable */}
+          {/* Accounts Receivable - BUTTON SELECT */}
           <div>
             <label
               style={{
                 display: 'block',
                 fontFamily: 'var(--font-body)',
                 fontSize: '13px',
-                fontWeight: 400,
-                color: 'var(--text-secondary)',
-                marginBottom: '6px',
+                fontWeight: 500,
+                color: 'var(--text-primary)',
+                marginBottom: '12px',
               }}
             >
               Amount Owed to You by Other Businesses
             </label>
-            <div
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '24px',
-                fontWeight: 700,
-                color: 'var(--primary)',
-                marginBottom: '12px',
-              }}
-            >
-              {formatCurrency(data.arBalance || 0)}
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="20000000"
-              step="50000"
-              value={data.arBalance || 0}
-              onChange={(e) => updateData({ arBalance: parseInt(e.target.value) })}
-              style={{
-                width: '100%',
-                height: '6px',
-                borderRadius: '3px',
-                background: 'var(--bg-surface-3)',
-                cursor: 'pointer',
-              }}
-            />
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontFamily: 'var(--font-body)',
-                fontSize: '10px',
-                color: 'var(--text-muted)',
-                marginTop: '6px',
-              }}
-            >
-              <span>$0</span>
-              <span>$20M</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {[
+                { value: 'none', label: 'None / Not applicable' },
+                { value: 'under_10k', label: 'Under $10,000' },
+                { value: '10k_50k', label: '$10,000 - $50,000' },
+                { value: '50k_250k', label: '$50,000 - $250,000' },
+                { value: 'over_250k', label: 'Over $250,000' },
+              ].map((option) => (
+                <motion.button
+                  key={option.value}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => updateData({ arBalance: option.value as any })}
+                  style={{
+                    background: '#131510',
+                    border: data.arBalance === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
+                    color: data.arBalance === option.value ? '#8ab820' : '#e4e8d8',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e: any) => {
+                    if (data.arBalance !== option.value) {
+                      e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
+                    }
+                  }}
+                  onMouseLeave={(e: any) => {
+                    if (data.arBalance !== option.value) {
+                      e.currentTarget.style.borderColor = '#6b7258';
+                    }
+                  }}
+                >
+                  {option.label}
+                </motion.button>
+              ))}
             </div>
           </div>
 
-          {/* Equipment Value */}
+          {/* Equipment Value - BUTTON SELECT */}
           <div>
             <label
               style={{
                 display: 'block',
                 fontFamily: 'var(--font-body)',
                 fontSize: '13px',
-                fontWeight: 400,
-                color: 'var(--text-secondary)',
-                marginBottom: '6px',
+                fontWeight: 500,
+                color: 'var(--text-primary)',
+                marginBottom: '12px',
               }}
             >
               Total Value of Equipment Owned Outright
             </label>
-            <div
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '24px',
-                fontWeight: 700,
-                color: 'var(--primary)',
-                marginBottom: '12px',
-              }}
-            >
-              {formatCurrency(data.equipmentValue || 0)}
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="20000000"
-              step="50000"
-              value={data.equipmentValue || 0}
-              onChange={(e) => updateData({ equipmentValue: parseInt(e.target.value) })}
-              style={{
-                width: '100%',
-                height: '6px',
-                borderRadius: '3px',
-                background: 'var(--bg-surface-3)',
-                cursor: 'pointer',
-              }}
-            />
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontFamily: 'var(--font-body)',
-                fontSize: '10px',
-                color: 'var(--text-muted)',
-                marginTop: '6px',
-              }}
-            >
-              <span>$0</span>
-              <span>$20M</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {[
+                { value: 'none', label: 'None / No equipment' },
+                { value: 'under_10k', label: 'Under $10,000' },
+                { value: '10k_50k', label: '$10,000 - $50,000' },
+                { value: '50k_250k', label: '$50,000 - $250,000' },
+                { value: 'over_250k', label: 'Over $250,000' },
+              ].map((option) => (
+                <motion.button
+                  key={option.value}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => updateData({ equipmentValue: option.value as any })}
+                  style={{
+                    background: '#131510',
+                    border: data.equipmentValue === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
+                    color: data.equipmentValue === option.value ? '#8ab820' : '#e4e8d8',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e: any) => {
+                    if (data.equipmentValue !== option.value) {
+                      e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
+                    }
+                  }}
+                  onMouseLeave={(e: any) => {
+                    if (data.equipmentValue !== option.value) {
+                      e.currentTarget.style.borderColor = '#6b7258';
+                    }
+                  }}
+                >
+                  {option.label}
+                </motion.button>
+              ))}
             </div>
           </div>
 
-          {/* Purchase Orders */}
+          {/* Purchase Orders - BUTTON SELECT */}
           <div>
             <label
               style={{
                 display: 'block',
                 fontFamily: 'var(--font-body)',
                 fontSize: '13px',
-                fontWeight: 400,
-                color: 'var(--text-secondary)',
-                marginBottom: '6px',
+                fontWeight: 500,
+                color: 'var(--text-primary)',
+                marginBottom: '12px',
               }}
             >
               Current Amount of Purchase Orders
             </label>
-            <div
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '24px',
-                fontWeight: 700,
-                color: 'var(--primary)',
-                marginBottom: '12px',
-              }}
-            >
-              {formatCurrency(data.poBalance || 0)}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {[
+                { value: 'none', label: 'None / No open POs' },
+                { value: 'under_10k', label: 'Under $10,000' },
+                { value: '10k_50k', label: '$10,000 - $50,000' },
+                { value: '50k_250k', label: '$50,000 - $250,000' },
+                { value: 'over_250k', label: 'Over $250,000' },
+              ].map((option) => (
+                <motion.button
+                  key={option.value}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => updateData({ poBalance: option.value as any })}
+                  style={{
+                    background: '#131510',
+                    border: data.poBalance === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
+                    color: data.poBalance === option.value ? '#8ab820' : '#e4e8d8',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e: any) => {
+                    if (data.poBalance !== option.value) {
+                      e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
+                    }
+                  }}
+                  onMouseLeave={(e: any) => {
+                    if (data.poBalance !== option.value) {
+                      e.currentTarget.style.borderColor = '#6b7258';
+                    }
+                  }}
+                >
+                  {option.label}
+                </motion.button>
+              ))}
             </div>
-            <input
-              type="range"
-              min="0"
-              max="20000000"
-              step="50000"
-              value={data.poBalance || 0}
-              onChange={(e) => updateData({ poBalance: parseInt(e.target.value) })}
-              style={{
-                width: '100%',
-                height: '6px',
-                borderRadius: '3px',
-                background: 'var(--bg-surface-3)',
-                cursor: 'pointer',
-              }}
-            />
             <div
               style={{
-                display: 'flex',
-                justifyContent: 'space-between',
+                marginTop: '12px',
                 fontFamily: 'var(--font-body)',
-                fontSize: '10px',
-                color: 'var(--text-muted)',
-                marginTop: '6px',
-              }}
-            >
-              <span>$0</span>
-              <span>$20M</span>
-            </div>
-            <div
-              style={{
-                marginTop: '6px',
-                fontFamily: 'var(--font-body)',
-                fontSize: '11px',
+                fontSize: '12px',
                 color: 'var(--text-muted)',
                 fontStyle: 'italic',
               }}
@@ -1673,51 +1682,54 @@ function QuestionF9({ data, updateData, onNext, onBack, currentQuestionNumber, t
             fontSize: '14px',
             fontWeight: 500,
             color: 'var(--text-primary)',
-            marginBottom: '8px',
+            marginBottom: '12px',
           }}
         >
           Credit Utilization
         </label>
-        <div
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '32px',
-            fontWeight: 700,
-            color: data.utilization > 30 ? '#c89020' : 'var(--primary)',
-            marginBottom: '12px',
-          }}
-        >
-          {data.utilization}%
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {[
+            { value: 'under_10', label: 'Under 10%' },
+            { value: '10_30', label: '10% - 30%' },
+            { value: '30_50', label: '30% - 50%' },
+            { value: '50_75', label: '50% - 75%' },
+            { value: 'over_75', label: 'Over 75%' },
+          ].map((option) => (
+            <motion.button
+              key={option.value}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => updateData({ utilization: option.value as any })}
+              style={{
+                background: '#131510',
+                border: data.utilization === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
+                color: data.utilization === option.value ? '#8ab820' : '#e4e8d8',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                fontFamily: 'var(--font-body)',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                textAlign: 'left',
+                width: '100%',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e: any) => {
+                if (data.utilization !== option.value) {
+                  e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
+                }
+              }}
+              onMouseLeave={(e: any) => {
+                if (data.utilization !== option.value) {
+                  e.currentTarget.style.borderColor = '#6b7258';
+                }
+              }}
+            >
+              {option.label}
+            </motion.button>
+          ))}
         </div>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          value={data.utilization || 30}
-          onChange={(e) => updateData({ utilization: parseInt(e.target.value) })}
-          style={{
-            width: '100%',
-            height: '8px',
-            borderRadius: '4px',
-            background: 'var(--bg-surface-3)',
-            cursor: 'pointer',
-          }}
-        />
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontFamily: 'var(--font-body)',
-            fontSize: '11px',
-            color: 'var(--text-muted)',
-            marginTop: '8px',
-          }}
-        >
-          <span>0%</span>
-          <span>100%</span>
-        </div>
-        {data.utilization > 30 && (
+        {data.utilization && (data.utilization === '50_75' || data.utilization === 'over_75') && (
           <div
             style={{
               marginTop: '12px',

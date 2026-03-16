@@ -42,9 +42,9 @@ export const DEMO_ASSESSMENT_DATA: UnifiedAnswers = {
 
   // Q_F7: NSFs & Assets
   nsfCount: '0', // Changed from 'zero' to match new type
-  arBalance: 45000,
-  equipmentValue: 25000,
-  poBalance: 0,
+  arBalance: '50k_250k', // FIXED: Changed from 45000 to categorical
+  equipmentValue: '10k_50k', // FIXED: Changed from 25000 to categorical
+  poBalance: 'none', // FIXED: Changed from 0 to categorical
   ownsProperty: 'no',
   constructionPlan: 'no',
 

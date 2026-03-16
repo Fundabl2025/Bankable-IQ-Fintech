@@ -397,6 +397,35 @@ function calculateBankableScore(data: UnifiedAnswers): number {
   const financialScore = Math.min(90, revenuePoints + bankPoints + bankAgePoints);
 
   // ══════════════════════════════════════════════════════════════════════════
+  // ASSET VALUES (SUPPLEMENTAL SCORING)
+  // arBalance, equipmentValue, poBalance now categorical for eligibility check
+  // ══════════════════════════════════════════════════════════════════════════
+  
+  // Accounts Receivable scoring - unlocks invoice factoring at 'over_250k'
+  let arPoints = 0;
+  if (data.arBalance === 'over_250k') arPoints = 20; // Full points + unlocks factoring
+  else if (data.arBalance === '50k_250k') arPoints = 12;
+  else if (data.arBalance === '10k_50k') arPoints = 6;
+  else if (data.arBalance === 'under_10k') arPoints = 2;
+  else arPoints = 0; // 'none' or empty
+  
+  // Equipment Value scoring - unlocks equipment financing at '50k_250k' or 'over_250k'
+  let equipmentPoints = 0;
+  if (data.equipmentValue === 'over_250k') equipmentPoints = 20; // Full points
+  else if (data.equipmentValue === '50k_250k') equipmentPoints = 18; // Unlocks equipment financing
+  else if (data.equipmentValue === '10k_50k') equipmentPoints = 10;
+  else if (data.equipmentValue === 'under_10k') equipmentPoints = 3;
+  else equipmentPoints = 0; // 'none' or empty
+  
+  // Purchase Orders scoring - unlocks PO financing at '50k_250k' or 'over_250k'
+  let poPoints = 0;
+  if (data.poBalance === 'over_250k') poPoints = 20; // Full points
+  else if (data.poBalance === '50k_250k') poPoints = 18; // Unlocks PO financing
+  else if (data.poBalance === '10k_50k') poPoints = 10;
+  else if (data.poBalance === 'under_10k') poPoints = 3;
+  else poPoints = 0; // 'none' or empty
+
+  // ══════════════════════════════════════════════════════════════════════════
   // COMPONENT 3: BUSINESS PROFILE (20% = 60 max points)
   // ══════════════════════════════════════════════════════════════════════════
   
@@ -511,9 +540,9 @@ export function calculatePartialScore(partialData: Partial<UnifiedAnswers>): num
     bankAge: '',
     avgDailyBalance: '',
     nsfCount: '',
-    arBalance: 0,
-    equipmentValue: 0,
-    poBalance: 0,
+    arBalance: '', // FIXED: Changed from 0 to empty string
+    equipmentValue: '', // FIXED: Changed from 0 to empty string
+    poBalance: '', // FIXED: Changed from 0 to empty string
     ownsProperty: '',
     constructionPlan: '',
     experian: 680,
@@ -642,7 +671,7 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
   };
 }
 
-// ────────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────���──────────────────────────────
 // HELPER: Funding Range Lookup
 // Aligned with Elon's strategic notes: ranges should reflect real capital unlock potential
 // Reference: "$80K → $250K → $1.4M" trajectory mentioned in strategic review
