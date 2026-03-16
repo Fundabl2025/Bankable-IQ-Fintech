@@ -44,27 +44,27 @@ function getSeverityInfo(severity: 'hard_blocker' | 'suppressor' | 'optimization
       return {
         label: 'Hard Blocker',
         description: 'Auto-decline. Must fix before ANY funding.',
-        color: '#ef4444',
-        bgColor: 'rgba(239,68,68,0.1)',
-        borderColor: 'rgba(239,68,68,0.3)',
+        color: 'var(--destructive)',
+        bgColor: 'var(--destructive-bg)',
+        borderColor: 'var(--destructive-border)',
         icon: AlertTriangle,
       };
     case 'suppressor':
       return {
         label: 'Suppressor',
         description: 'Limits options and amounts. Can still get some funding.',
-        color: '#f59e0b',
-        bgColor: 'rgba(245,158,11,0.1)',
-        borderColor: 'rgba(245,158,11,0.3)',
+        color: 'var(--warning)',
+        bgColor: 'var(--warning-bg)',
+        borderColor: 'var(--warning-border)',
         icon: AlertCircle,
       };
     case 'optimization':
       return {
         label: 'Optimization',
         description: 'Improves terms and rates. Not required but helps.',
-        color: '#8ab820',
-        bgColor: 'rgba(138,184,32,0.1)',
-        borderColor: 'rgba(138,184,32,0.3)',
+        color: 'var(--primary)',
+        bgColor: 'var(--primary-bg)',
+        borderColor: 'var(--primary-border)',
         icon: TrendingUp,
       };
   }
@@ -194,7 +194,7 @@ export default function DenialDiagnosis() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
         style={{
-          background: 'var(--bg-surface-1)',
+          background: 'var(--surface-1)',
           border: isBankable ? '2px solid var(--primary)' : '2px solid var(--border)',
           borderRadius: '2px',
           padding: '24px',
@@ -276,7 +276,7 @@ export default function DenialDiagnosis() {
               fontFamily: 'var(--font-display)',
               fontSize: '36px',
               fontWeight: 700,
-              color: isBankable ? 'var(--primary)' : '#ef4444',
+              color: isBankable ? 'var(--primary)' : 'var(--destructive)',
             }}>
               {isBankable ? 'Qualified' : `${distanceToThreshold} pts`}
             </div>
@@ -344,14 +344,14 @@ export default function DenialDiagnosis() {
           </div>
           <div style={{
             height: '8px',
-            background: 'var(--bg-surface-2)',
+            background: 'var(--surface-2)',
             borderRadius: '4px',
             overflow: 'hidden',
           }}>
             <div style={{
               height: '100%',
               width: `${Math.min(100, (sbssScore / 160) * 100)}%`,
-              background: isBankable ? 'var(--primary)' : 'linear-gradient(90deg, #ef4444, #f59e0b)',
+              background: isBankable ? 'var(--primary)' : 'linear-gradient(90deg, var(--destructive), var(--warning))',
               transition: 'width 0.5s ease',
             }} />
           </div>
@@ -402,7 +402,7 @@ export default function DenialDiagnosis() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             style={{
-              background: 'rgba(138,184,32,0.1)',
+              background: 'var(--primary-bg)',
               border: '2px solid var(--primary)',
               borderRadius: '2px',
               padding: '32px',
@@ -466,7 +466,7 @@ export default function DenialDiagnosis() {
           style={{
             marginTop: '32px',
             padding: '24px',
-            background: 'var(--bg-surface-1)',
+            background: 'var(--surface-1)',
             border: '1px solid var(--border)',
             borderRadius: '2px',
           }}
@@ -605,7 +605,7 @@ function IssueSection({
           <div
             key={item.id}
             style={{
-              background: 'var(--bg-surface-1)',
+              background: 'var(--surface-1)',
               border: `1px solid ${severityInfo.borderColor}`,
               borderRadius: '2px',
               padding: '16px 20px',
