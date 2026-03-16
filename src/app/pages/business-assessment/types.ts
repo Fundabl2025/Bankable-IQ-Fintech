@@ -115,8 +115,11 @@ export interface Field {
 
 export interface ScoreResult {
   score: number;
-  dimAvg: Record<'C' | 'D' | 'F' | 'B' | 'S' | 'N', number>;
-  bankableScore: number;
+  // New dimension codes aligned with Elon's spec:
+  // P = Personal Credit (20%), B = Business Profile (10%), F = Financial (25%)
+  // C = Compliance (20%), S = Stability (15%), N = File Strength (10%)
+  dimAvg: Record<'P' | 'B' | 'F' | 'C' | 'S' | 'N', number>;
+  bankableScore: number; // SBSS score 0-300, 160 = bankable threshold
   napScore: number;
 }
 
@@ -124,9 +127,9 @@ export interface ScoreResult {
 export interface ExtendedResultsOutput {
   // Core scores (existing)
   fundScore: number;
-  bankableScore: number;
+  bankableScore: number; // SBSS 0-300 scale, 160 = bankable
   napScore: number;
-  dimAvg: Record<'C' | 'D' | 'F' | 'B' | 'S' | 'N', number>;
+  dimAvg: Record<'P' | 'B' | 'F' | 'C' | 'S' | 'N', number>;
 
   // Report metadata
   ownerName: string;
@@ -190,13 +193,14 @@ export interface ExtendedResultsOutput {
   }>;
 }
 
+// Aligned with Elon's Rule Logic Spec
 export const DIMENSION_INFO = {
-  C: { name: 'Credit Profile', color: '#c89020', weight: 0.28 },
-  D: { name: 'Documentation', color: '#8ab820', weight: 0.22 },
-  F: { name: 'Cash Flow', color: '#38a880', weight: 0.20 },
-  B: { name: 'Banking Behavior', color: '#a0a020', weight: 0.13 },
-  S: { name: 'Business Structure', color: '#c8f040', weight: 0.10 },
-  N: { name: 'Narrative Strength', color: '#b04428', weight: 0.07 },
+  P: { name: 'Personal Credit', color: '#c89020', weight: 0.20 },
+  B: { name: 'Business Profile', color: '#8ab820', weight: 0.10 },
+  F: { name: 'Financial Health', color: '#38a880', weight: 0.25 },
+  C: { name: 'Compliance', color: '#a0a020', weight: 0.20 },
+  S: { name: 'Stability', color: '#c8f040', weight: 0.15 },
+  N: { name: 'File Strength', color: '#b04428', weight: 0.10 },
 } as const;
 
 export const SECTION_NAMES = [
