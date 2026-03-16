@@ -55,50 +55,49 @@ export function UnifiedAssessment() {
     const businessAgeMonths = data.bankAge !== '0_6mo'; // More than 6 months
     const businessNotNew = data.startDate?.year && (new Date().getFullYear() - data.startDate.year > 0);
     
-    // COMPREHENSIVE DEBUG LOGGING
-    console.log(`[v0] shouldShowReadinessQuestion(${readinessIdx})`);
-    console.log(`    data.bankAccount=${data.bankAccount}, hasBusinessBankAccount=${hasBusinessBankAccount}`);
-    console.log(`    data.noDerogItems=${data.noDerogItems}, hasNegativeItems=${hasNegativeItems}`);
-    console.log(`    data.bankAge=${data.bankAge}, businessAgeMonths=${businessAgeMonths}`);
-    console.log(`    data.monthlyRevenue=${data.monthlyRevenue}`);
+    // DEBUG: Log only when checking conditional questions (reduce verbosity)
+    const isConditionalQ = [2, 3, 7, 20, 21, 1, 4, 5, 15, 16, 17].includes(readinessIdx);
+    if (isConditionalQ) {
+      console.log(`[v0] Q_R${readinessIdx + 1}: bankAccount=${data.bankAccount}, noDerogItems=${data.noDerogItems}, bankAge=${data.bankAge}`);
+    }
     
     // BANKING CONDITIONALS (indices 2, 3, 7, 20, 21)
     if ((readinessIdx === 2 || readinessIdx === 3 || readinessIdx === 20 || readinessIdx === 21) && !hasBusinessBankAccount) {
-      console.log(`    → HIDDEN: Banking question, hasBusinessBankAccount=${hasBusinessBankAccount}`);
+      if (isConditionalQ) console.log(`    → HIDDEN (no bank account)`);
       return false;
     }
     // Q_R8 additionally requires 6+ months of bank history
     if (readinessIdx === 7 && (!hasBusinessBankAccount || !businessAgeMonths)) {
-      console.log(`    → HIDDEN: Bank balance trending requires 6+ months. hasBank=${hasBusinessBankAccount}, 6+mo=${businessAgeMonths}`);
+      if (isConditionalQ) console.log(`    → HIDDEN (bank age < 6mo)`);
       return false;
     }
     
     // REVENUE & FINANCIAL CONDITIONALS
     // Q_R2 (index 1): P&L only if business not brand new
     if (readinessIdx === 1 && !businessNotNew) {
-      console.log(`    → HIDDEN: P&L question, businessNotNew=${businessNotNew}`);
+      if (isConditionalQ) console.log(`    → HIDDEN (business too new)`);
       return false;
     }
     // Q_R5 (index 4): Revenue trend only if 6+ months history
     if (readinessIdx === 4 && !businessAgeMonths) {
-      console.log(`    → HIDDEN: Revenue trend requires 6+ months. businessAgeMonths=${businessAgeMonths}`);
+      if (isConditionalQ) console.log(`    → HIDDEN (bank age < 6mo)`);
       return false;
     }
     // Q_R6 (index 5): Profit margin only if revenue >= $5k/month
     if (readinessIdx === 5 && data.monthlyRevenue === 'under_5k') {
-      console.log(`    → HIDDEN: Profit margin only if revenue >= $5k. monthlyRevenue=${data.monthlyRevenue}`);
+      if (isConditionalQ) console.log(`    → HIDDEN (revenue under $5k)`);
       return false;
     }
     
     // DEROGATORY CONDITIONALS (indices 15, 16, 17)
     // Q_R16, Q_R17, Q_R18 only show if user said "Yes, I have some" to Q_R15
     if ((readinessIdx === 15 || readinessIdx === 16 || readinessIdx === 17) && !hasNegativeItems) {
-      console.log(`    → HIDDEN: Derogatory question, hasNegativeItems=${hasNegativeItems} (data.noDerogItems=${data.noDerogItems})`);
+      if (isConditionalQ) console.log(`    → HIDDEN (no negative items)`);
       return false;
     }
     
     // All other readiness questions show by default
-    console.log(`    → SHOWN`);
+    if (isConditionalQ) console.log(`    → SHOWN`);
     return true;
   };
   
@@ -216,6 +215,7 @@ export function UnifiedAssessment() {
             onBack={handleBack}
             currentQuestionNumber={currentQuestion + 1}
             totalQuestions={totalQuestions}
+            shouldShowReadinessQuestion={shouldShowReadinessQuestion}
           />
         )}
 
@@ -342,11 +342,11 @@ function LiveScoreBar({ score }: { score: number }) {
 // READINESS QUESTION
 // ════════════════════════════════════════════════════════════════════════════════
 
-function ReadinessQuestion({ index, data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions }: any) {
+function ReadinessQuestion({ index, data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions, shouldShowReadinessQuestion }: any) {
   const question = READINESS_QUESTIONS[index];
   const selectedAnswer = data.readinessAnswers[index];
 
-  // Conditional logic to hide questions based on user answers
+  // Conditional logic to hide questions based on user answers (use passed prop)
   const shouldShowQuestion = (): boolean => {
     return shouldShowReadinessQuestion(index);
   };
