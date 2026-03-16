@@ -37,7 +37,7 @@ import { getFoundationFirstData } from '../utils/foundationFirstData';
 
 // Business Success module items
 const businessMenuItems = [
-  { path: '/business-success-scan/step-1', label: 'Business Success Scan', icon: ClipboardCheck, badge: 'Start' },
+  { path: '/business-assessment', label: 'Business Success Scan', icon: ClipboardCheck, badge: 'Start', isAssessment: true },
   { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/app/denial-diagnosis', label: 'Denial Diagnosis', icon: AlertTriangle },
   { 
@@ -152,6 +152,20 @@ export function Sidebar() {
 
   const toggleExpanded = (path: string) => {
     setExpandedItem(expandedItem === path ? null : path);
+  };
+
+  // Handle Business Success Scan navigation - check if assessment already exists
+  const handleAssessmentClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const assessmentData = localStorage.getItem('unified_assessment');
+    
+    if (assessmentData) {
+      // Assessment exists - navigate to results page instead
+      e.preventDefault();
+      navigate('/business-assessment/results');
+    } else {
+      // No assessment - proceed to new assessment
+      navigate('/business-assessment');
+    }
   };
 
   return (
@@ -321,6 +335,7 @@ export function Sidebar() {
                           >
                             <Link
                               to={item.path}
+                              onClick={item.isAssessment ? handleAssessmentClick : undefined}
                               className="flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-200 relative"
                               style={{
                                 backgroundColor: isActive ? 'var(--sidebar-accent-hover)' : 'transparent',
