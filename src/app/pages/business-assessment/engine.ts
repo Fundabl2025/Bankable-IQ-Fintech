@@ -46,22 +46,24 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
 
   // ── P1: PERSONAL CREDIT SCORE (FICO composite from 3 bureaus) ──────────────
   const creditScores = [
-    data.experian || 680,
-    data.transunion || 680,
-    data.equifax || 680,
-  ].sort((a, b) => a - b);
-  const composite = creditScores[1]; // Middle score
+    data.experian || 0,
+    data.transunion || 0,
+    data.equifax || 0,
+  ].filter(s => s > 0).sort((a, b) => a - b);
+  const composite = creditScores.length > 0 ? creditScores[Math.floor(creditScores.length / 2)] : 0;
 
   if (composite >= 740) buckets.P.push(1.0);
   else if (composite >= 700) buckets.P.push(0.78);
   else if (composite >= 650) buckets.P.push(0.6);
   else if (composite >= 620) buckets.P.push(0.4);
   else if (composite >= 580) buckets.P.push(0.2);
-  else buckets.P.push(0.05);
+  else if (composite > 0) buckets.P.push(0.05);
+  else buckets.P.push(0.0); // No credit score provided
 
   // ── P2: CREDIT UTILIZATION ──────────────────────────────────────────────────
-  const utilization = data.utilization || 30;
-  if (utilization < 20) buckets.P.push(1.0);
+  const utilization = data.utilization || 0;
+  if (utilization === 0) buckets.P.push(0.0); // No data provided
+  else if (utilization < 20) buckets.P.push(1.0);
   else if (utilization <= 30) buckets.P.push(0.75);
   else if (utilization <= 50) buckets.P.push(0.45);
   else buckets.P.push(0.1);
@@ -293,8 +295,10 @@ function calculateBankableScore(data: UnifiedAnswers): number {
   // ══════════════════════════════════════════════════════════════════════════
   // COMPONENT 1: PERSONAL CREDIT (35% = 105 max points)
   // ══════════════════════════════════════════════════════════════════════════
-  const composite = [data.experian || 680, data.transunion || 680, data.equifax || 680]
-    .sort((a, b) => a - b)[1];
+  const creditScores = [data.experian || 0, data.transunion || 0, data.equifax || 0]
+    .filter(s => s > 0)
+    .sort((a, b) => a - b);
+  const composite = creditScores.length > 0 ? creditScores[Math.floor(creditScores.length / 2)] : 0;
   
   // FICO score contribution (0-60 points)
   let ficoPoints = 0;
@@ -305,12 +309,14 @@ function calculateBankableScore(data: UnifiedAnswers): number {
   else if (composite >= 660) ficoPoints = 30;
   else if (composite >= 640) ficoPoints = 22;
   else if (composite >= 620) ficoPoints = 15;
-  else ficoPoints = 5;
+  else if (composite > 0) ficoPoints = 5;
+  else ficoPoints = 0; // No score provided
 
   // Utilization contribution (0-25 points)
-  const utilization = data.utilization || 30;
+  const utilization = data.utilization || 0;
   let utilPoints = 0;
-  if (utilization < 10) utilPoints = 25;
+  if (utilization === 0) utilPoints = 0; // No data provided
+  else if (utilization < 10) utilPoints = 25;
   else if (utilization <= 20) utilPoints = 22;
   else if (utilization <= 30) utilPoints = 18;
   else if (utilization <= 50) utilPoints = 10;
@@ -514,11 +520,11 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
   
   // Composite FICO
   const creditScores = [
-    data.experian || 680,
-    data.transunion || 680,
-    data.equifax || 680,
-  ].sort((a, b) => a - b);
-  const composite = creditScores[1]; // Middle score
+    data.experian || 0,
+    data.transunion || 0,
+    data.equifax || 0,
+  ].filter(s => s > 0).sort((a, b) => a - b);
+  const composite = creditScores.length > 0 ? creditScores[Math.floor(creditScores.length / 2)] : 0;
 
   // Report metadata
   const ownerName = `${data.ownerFirstName} ${data.ownerLastName}`.trim() || 'Business Owner';
@@ -612,7 +618,7 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
 // HELPER: Funding Range Lookup
 // Aligned with Elon's strategic notes: ranges should reflect real capital unlock potential
 // Reference: "$80K → $250K → $1.4M" trajectory mentioned in strategic review
-// ────────────────────────────────────────────────────────────────────────────────
+// ─────────────���──────────────────────────────────────────────────────────────────
 function getFundingRange(score: number): ExtendedResultsOutput['fundingRange'] {
   // Score is 0-1000
   if (score >= 900) {
@@ -752,7 +758,8 @@ function computeContingencies(data: UnifiedAnswers): ExtendedResultsOutput['cont
 // HELPER: Bankable Items (20 items)
 // ────────────────────────────────────────────────────────────────────────────────
 function computeBankableItems(data: UnifiedAnswers): ExtendedResultsOutput['bankableItems'] {
-  const composite = [data.experian || 680, data.transunion || 680, data.equifax || 680].sort((a, b) => a - b)[1];
+  const creditScores = [data.experian || 0, data.transunion || 0, data.equifax || 0].filter(s => s > 0).sort((a, b) => a - b);
+  const composite = creditScores.length > 0 ? creditScores[Math.floor(creditScores.length / 2)] : 0;
   const goodStanding = data.readinessAnswers[8] === 0; // Q_R9 index 8, option A = "Yes, all filings current"
   const sbssScore = calculateBankableScore(data); // Get computed SBSS score (0-300)
 
