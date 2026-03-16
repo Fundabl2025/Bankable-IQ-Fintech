@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { useAuth } from '../../contexts/AuthContext';
+import { migrateLocalDataToSupabase } from '../../lib/data-adapter';
 import { Eye, EyeOff, AlertCircle, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
 
 export function SignupPage() {
@@ -39,6 +40,17 @@ export function SignupPage() {
 
     try {
       await signUp(email, password);
+      
+      // Migrate any localStorage data to Supabase
+      try {
+        console.log('[v0] Migrating localStorage data to Supabase...');
+        await migrateLocalDataToSupabase();
+        console.log('[v0] Migration complete');
+      } catch (migrationError) {
+        console.warn('[v0] Data migration failed, but account creation succeeded:', migrationError);
+        // Don't show migration error to user - account was created successfully
+      }
+      
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || 'Failed to create account. Please try again.');

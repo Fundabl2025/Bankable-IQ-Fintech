@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { useAuth } from '../../contexts/AuthContext';
+import { migrateLocalDataToSupabase } from '../../lib/data-adapter';
 import { Eye, EyeOff, AlertCircle, ArrowRight, Loader2, Zap } from 'lucide-react';
 import { seedDemoData } from '../../utils/demoData';
 
@@ -27,6 +28,17 @@ export function LoginPage() {
 
     try {
       await signIn(email, password);
+      
+      // Attempt to migrate any localStorage data to Supabase
+      try {
+        console.log('[v0] Login: Migrating localStorage data to Supabase...');
+        await migrateLocalDataToSupabase();
+        console.log('[v0] Login: Migration complete');
+      } catch (migrationError) {
+        console.warn('[v0] Login: Data migration failed, but login succeeded:', migrationError);
+        // Don't block navigation - sign-in was successful
+      }
+      
       navigate('/app/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to sign in. Please try again.');
