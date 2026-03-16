@@ -24,6 +24,24 @@ const WEIGHTS = {
   N: 0.10, // File Strength (biz credit, tradelines, inquiries)
 };
 
+// ════════════════════════════════════════════════════════════════════════════════
+// HELPER FUNCTIONS
+// ════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Convert categorical credit score ranges to numeric equivalents
+ * Used throughout engine for score calculation and comparisons
+ */
+function mapCreditScore(category: string): number {
+  if (category === 'exceptional') return 850; // 800-850
+  if (category === 'very_good') return 770; // 740-799
+  if (category === 'good') return 700; // 670-739
+  if (category === 'fair') return 620; // 580-669
+  if (category === 'poor') return 550; // 300-579
+  if (category === 'unknown') return 580; // Treat as fair with slight penalty
+  return 0; // No score provided
+}
+
 /**
  * Compute complete FundScore from unified assessment data
  * Returns score (0-1000) + dimension averages + Bankable Score + NAP Score
@@ -45,17 +63,7 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
   // ══════════════════════════════════════════════════════════════════════════════
 
   // ── P1: PERSONAL CREDIT SCORE (FICO composite from 3 bureaus) ──────────────
-  // FIXED: Convert categorical score ranges to numeric equivalents for calculation
-  const mapCreditScore = (category: string): number => {
-    if (category === 'exceptional') return 850; // 800-850
-    if (category === 'very_good') return 770; // 740-799
-    if (category === 'good') return 700; // 670-739
-    if (category === 'fair') return 620; // 580-669
-    if (category === 'poor') return 550; // 300-579
-    if (category === 'unknown') return 580; // Treat as fair with slight penalty
-    return 0; // No score provided
-  };
-  
+  // FIXED: Using module-level mapCreditScore function
   const creditScores = [
     mapCreditScore(data.experian || ''),
     mapCreditScore(data.transunion || ''),
@@ -741,7 +749,7 @@ function getFundingRange(score: number): ExtendedResultsOutput['fundingRange'] {
   };
 }
 
-// ────────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────��───────────
 // HELPER: Time in Business
 // ────────────────────────────────────────────────────────────────────────────────
 function calculateTimeInBusiness(year: number, month: number): string {
