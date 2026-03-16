@@ -93,7 +93,8 @@ export default function DenialDiagnosis() {
   const [optimizations, setOptimizations] = useState<DiagnosisItem[]>([]);
   const [hasAssessment, setHasAssessment] = useState(false);
 
-  useEffect(() => {
+  // Centralized data loading function
+  const loadDiagnosisData = () => {
     // Load assessment data
     const stored = localStorage.getItem('unified_assessment');
     if (stored) {
@@ -140,6 +141,25 @@ export default function DenialDiagnosis() {
     setHardBlockers(blockers);
     setSuppressors(supps);
     setOptimizations(opts);
+  };
+
+  useEffect(() => {
+    // Initial load
+    loadDiagnosisData();
+
+    // Listen for data changes from other parts of the app
+    const handleStorageChange = () => loadDiagnosisData();
+    const handleFundscoreUpdate = () => loadDiagnosisData();
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('fundscoreUpdated', handleFundscoreUpdate);
+    window.addEventListener('auditItemUpdated', handleFundscoreUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('fundscoreUpdated', handleFundscoreUpdate);
+      window.removeEventListener('auditItemUpdated', handleFundscoreUpdate);
+    };
   }, []);
 
   const totalBlockerPoints = hardBlockers.reduce((sum, item) => sum + item.ficoImpact, 0);
