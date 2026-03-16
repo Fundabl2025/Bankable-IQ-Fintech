@@ -32,8 +32,8 @@ export const DEMO_ASSESSMENT_DATA: UnifiedAnswers = {
   websiteUrl: 'https://acmeconsulting.com',
 
   // Q_F5: Revenue & CC Sales
-  monthlyRevenue: 35000,
-  ccSales: 8000,
+  monthlyRevenue: '40k_100k', // Changed from 35000 to categorical
+  ccSales: '5k_15k', // Changed from 8000 to categorical
 
   // Q_F6: Banking
   bankAccount: 'dedicated',
@@ -41,7 +41,7 @@ export const DEMO_ASSESSMENT_DATA: UnifiedAnswers = {
   avgDailyBalance: '10k_25k',
 
   // Q_F7: NSFs & Assets
-  nsfCount: 'zero',
+  nsfCount: '0', // Changed from 'zero' to match new type
   arBalance: 45000,
   equipmentValue: 25000,
   poBalance: 0,

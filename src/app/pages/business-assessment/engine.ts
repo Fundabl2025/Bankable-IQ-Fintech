@@ -226,7 +226,7 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
   // ══════════════════════════════════════════════════════════════════════════════
   // PART 2: READINESS ANSWERS → DIMENSION BUCKETS
   // Map old dimension codes to new ones for readiness questions
-  // ══════════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════��══════════════════
 
   const dimMap: Record<string, string> = {
     'C': 'P', // Old Credit → Personal
@@ -358,16 +358,14 @@ function calculateBankableScore(data: UnifiedAnswers): number {
   // ══════════════════════════════════════════════════════════════════════════
   // COMPONENT 2: FINANCIAL HEALTH (30% = 90 max points)
   // ══════════════════════════════════════════════════════════════════════════
-  const revenue = data.monthlyRevenue || 0;
   
-  // Revenue contribution (0-40 points)
+  // Revenue contribution (0-40 points) - now categorical
   let revenuePoints = 0;
-  if (revenue >= 50000) revenuePoints = 40;
-  else if (revenue >= 25000) revenuePoints = 32;
-  else if (revenue >= 15000) revenuePoints = 25;
-  else if (revenue >= 10000) revenuePoints = 18;
-  else if (revenue >= 5000) revenuePoints = 10;
-  else revenuePoints = 3;
+  if (data.monthlyRevenue === 'over_100k') revenuePoints = 40;
+  else if (data.monthlyRevenue === '40k_100k') revenuePoints = 32;
+  else if (data.monthlyRevenue === '15k_40k') revenuePoints = 25;
+  else if (data.monthlyRevenue === '5k_15k') revenuePoints = 10;
+  else if (data.monthlyRevenue === 'under_5k') revenuePoints = 3;
 
   // Bank rating (0-30 points)
   let bankPoints = 0;
@@ -500,8 +498,8 @@ export function calculatePartialScore(partialData: Partial<UnifiedAnswers>): num
     industry: '',
     hasEIN: false,
     hasWebsite: false,
-    monthlyRevenue: 0,
-    ccSales: 0,
+    monthlyRevenue: '',
+    ccSales: '',
     bankAccount: '',
     bankAge: '',
     avgDailyBalance: '',
@@ -779,7 +777,7 @@ function computeContingencies(data: UnifiedAnswers): ExtendedResultsOutput['cont
 
 // ────────────────────────────────────────────────────────────────────────────────
 // HELPER: Bankable Items (20 items)
-// ────────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────��─────────────────────────────────────────
 function computeBankableItems(data: UnifiedAnswers): ExtendedResultsOutput['bankableItems'] {
   const creditScores = [data.experian || 0, data.transunion || 0, data.equifax || 0].filter(s => s > 0).sort((a, b) => a - b);
   const composite = creditScores.length > 0 ? creditScores[Math.floor(creditScores.length / 2)] : 0;
@@ -817,7 +815,7 @@ function computeBankableItems(data: UnifiedAnswers): ExtendedResultsOutput['bank
     { name: 'Business Credit', status: (data.bizCreditFile === 'paydex_80plus' ? 'pass' : 'fail') as const },
     { name: 'Reporting Tradelines', status: (data.bizCreditFile === 'paydex_80plus' ? 'pass' : 'fail') as const },
     { name: 'Detailed Reports', status: (data.bizCreditFile !== 'none' ? 'pass' : 'fail') as const },
-    { name: 'Business Revenue', status: ((data.monthlyRevenue || 0) >= 10000 ? 'pass' : 'fail') as const },
+    { name: 'Business Revenue', status: ((['15k_40k', '40k_100k', 'over_100k'].includes(data.monthlyRevenue)) ? 'pass' : 'fail') as const },
     { name: 'Business Type', status: (data.entityType !== 'sole_prop' ? 'pass' : 'fail') as const },
     { name: 'Business Name', status: (!!data.businessName ? 'pass' : 'fail') as const },
     { name: 'Business Location', status: (data.hasEIN ? 'pass' : 'fail') as const },
@@ -855,8 +853,8 @@ function computeSBSSSections(data: UnifiedAnswers, composite: number, bankableSc
       section: 'Business Revenue',
       percentage: '30%',
       status: 
-        (data.monthlyRevenue || 0) > 15000 && data.nsfCount === 'zero' && data.bankAccount === 'dedicated' ? 'pass' :
-        (data.monthlyRevenue || 0) > 5000 || data.bankAccount === 'dedicated' ? 'partial' :
+        (['40k_100k', 'over_100k'].includes(data.monthlyRevenue) && data.nsfCount === '0' && data.bankAccount === 'dedicated') ? 'pass' :
+        (['5k_15k', '15k_40k', '40k_100k', 'over_100k'].includes(data.monthlyRevenue) || data.bankAccount === 'dedicated') ? 'partial' :
         'fail',
       description: 'Business bank rating, revenue, debt ratio',
     },

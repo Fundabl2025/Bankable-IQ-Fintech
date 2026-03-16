@@ -20,15 +20,33 @@ export interface Product {
 }
 
 export function evaluateProducts(data: UnifiedAnswers, score: number): Product[] {
-  const monthlyRev = data.monthlyRevenue || 0;
-  const ccSales = data.ccSales || 0;
+  // Convert categorical revenue values to numeric for comparison
+  const revenueMap: Record<string, number> = {
+    'under_5k': 2500,
+    '5k_15k': 10000,
+    '15k_40k': 27500,
+    '40k_100k': 70000,
+    'over_100k': 125000,
+  };
+  const monthlyRev = revenueMap[data.monthlyRevenue] || 0;
+  
+  // Convert categorical CC sales values to numeric for comparison
+  const ccSalesMap: Record<string, number> = {
+    'no_cards': 0,
+    'under_5k': 2500,
+    '5k_15k': 10000,
+    '15k_50k': 32500,
+    'over_50k': 75000,
+  };
+  const ccSales = ccSalesMap[data.ccSales] || 0;
+  
   const creditScore = Math.min(data.experian || 680, data.transunion || 680, data.equifax || 680); // Middle score
   const businessAge = calculateBusinessAge(data.startDate.year, data.startDate.month);
   const hasEIN = data.hasEIN === true;
   const hasDedicatedBank = data.bankAccount === 'dedicated';
   const bankAge = data.bankAge;
   const nsfCount = data.nsfCount;
-  const hasBankruptcy = data.hasBankruptcy === true;
+  const hasBankruptcy = data.hasBankruptcy === 'recent' || data.hasBankruptcy === 'aging';
   const hasJudgments = data.hasJudgments === true;
 
   const products: Product[] = [];

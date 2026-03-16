@@ -30,7 +30,7 @@ export interface UnifiedAnswers {
   
   // Q_F5: Revenue & CC Sales
   monthlyRevenue: 'under_5k' | '5k_15k' | '15k_40k' | '40k_100k' | 'over_100k' | '';
-  ccSales: number;
+  ccSales: 'no_cards' | 'under_5k' | '5k_15k' | '15k_50k' | 'over_50k' | '';
   
   // Q_F6: Banking (3 sub-fields)
   bankAccount: 'dedicated' | 'personal' | 'none' | '';
@@ -226,7 +226,7 @@ export function getDefaultAnswers(): UnifiedAnswers {
     hasEIN: false,
     hasWebsite: false,
     monthlyRevenue: '', // FIXED: was 0, now empty string (matching type)
-    ccSales: 0,
+    ccSales: '', // FIXED: was 0, now empty string (matching type)
     bankAccount: '',
     bankAge: '',
     avgDailyBalance: '',
