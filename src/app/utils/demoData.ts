@@ -116,6 +116,10 @@ export function seedDemoData(): void {
   try {
     console.log('[v0] seedDemoData: Starting...');
     
+    // Set demo mode flag to bypass auth protection
+    localStorage.setItem('fundready_demo_mode', 'true');
+    console.log('[v0] Set demo mode flag');
+    
     // Save unified assessment data
     const assessmentJSON = JSON.stringify(DEMO_ASSESSMENT_DATA);
     localStorage.setItem('unified_assessment', assessmentJSON);
@@ -165,6 +169,7 @@ export function clearDemoData(): void {
   localStorage.removeItem('unified_assessment');
   localStorage.removeItem('fundready_business_profile');
   localStorage.removeItem('auditItems');
+  localStorage.removeItem('fundready_demo_mode');
   window.dispatchEvent(new Event('fundscoreUpdated'));
   window.dispatchEvent(new Event('storage'));
 }

@@ -15,6 +15,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading, isConfigured } = useAuth();
   const location = useLocation();
 
+  // Check for demo mode flag in localStorage
+  const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('fundready_demo_mode') === 'true';
+
   // Show loading while checking auth
   if (loading) {
     return (
@@ -55,6 +58,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // If Supabase is not configured, allow access (development mode)
   // This lets users explore the app without auth in local dev
   if (!isConfigured) {
+    return <>{children}</>;
+  }
+
+  // If in demo mode, allow access without authentication
+  if (isDemoMode) {
     return <>{children}</>;
   }
 
