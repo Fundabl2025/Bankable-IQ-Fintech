@@ -146,10 +146,13 @@ export function Dashboard() {
   const [bankableScore, setBankableScore] = useState(0);
   const [scoreBand, setScoreBand] = useState({ name: 'Not Assessed', color: '#64748b' });
   const [hasAssessment, setHasAssessment] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Force re-render when data changes
 
   // Load scores from unified_assessment (same source as Results page)
   useEffect(() => {
     const loadScores = () => {
+      // Increment refresh key to force recalculation of audit items
+      setRefreshKey(prev => prev + 1);
       try {
         const stored = localStorage.getItem('unified_assessment');
         if (stored) {
@@ -164,15 +167,9 @@ export function Dashboard() {
           setBankableScore(extendedResults.sbssScore || Math.round(scoreResult.score * 0.18));
           setScoreBand(band);
           setHasAssessment(true);
-          
-          console.log('[v0] Dashboard loaded scores:', { 
-            fundScore: scoreResult.score, 
-            bankableScore: extendedResults.sbssScore,
-            band: band.name 
-          });
         }
       } catch (error) {
-        console.error('[v0] Error loading scores:', error);
+        console.error('Error loading scores:', error);
       }
     };
     loadScores();
@@ -180,14 +177,17 @@ export function Dashboard() {
     // Listen for updates
     const handleUpdate = () => loadScores();
     window.addEventListener('fundscoreUpdated', handleUpdate);
+    window.addEventListener('auditItemUpdated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       window.removeEventListener('fundscoreUpdated', handleUpdate);
+      window.removeEventListener('auditItemUpdated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
 
   // Get audit items for blockers/actions (using severity classification)
+  // These are calculated fresh on each render, which means they update when state changes trigger re-render
   const allItems = getAllAuditItems();
   const incompleteItems = allItems.filter(i => i.status !== 'complete');
   

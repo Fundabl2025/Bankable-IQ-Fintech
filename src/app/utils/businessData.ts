@@ -845,6 +845,11 @@ export function updateAuditItem(id: string, updates: Partial<AuditItem>): void {
       lastUpdated: new Date().toISOString(),
     };
     saveAuditItems(items);
+    
+    // Dispatch event to notify all listening components
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('auditItemUpdated', { detail: { id, updates } }));
+    }
   }
 }
 
