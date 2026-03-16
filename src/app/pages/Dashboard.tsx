@@ -1105,7 +1105,7 @@ export function Dashboard() {
           className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5"
         >
           {[
-            { label: 'Items Complete', value: `${progress.completedItems}/${progress.totalItems}`, icon: CheckCircle2, color: 'var(--success)' },
+            { label: 'Items Complete', value: `${progress.completed}/${progress.total}`, icon: CheckCircle2, color: 'var(--success)' },
             { label: 'Overall Progress', value: `${progress.percentage}%`, icon: TrendingUp, color: 'var(--primary)' },
             { label: 'Hard Blockers', value: hardBlockers.length.toString(), icon: AlertTriangle, color: hardBlockers.length > 0 ? 'var(--destructive)' : 'var(--success)' },
             { label: 'Days to Bankable', value: distanceToBankable > 0 ? '~60' : '0', icon: Clock, color: 'var(--muted-foreground)' },
