@@ -1508,7 +1508,6 @@ function QuestionF8({ data, updateData, onNext, onBack, currentQuestionNumber, t
       </div>
 
       {/* TransUnion */}
-      {/* Revenue Options */}
       <div style={{ marginBottom: '24px' }}>
         <label
           style={{
@@ -1517,110 +1516,22 @@ function QuestionF8({ data, updateData, onNext, onBack, currentQuestionNumber, t
             fontSize: '14px',
             fontWeight: 500,
             color: 'var(--text-primary)',
-            marginBottom: '12px',
+            marginBottom: '8px',
           }}
         >
-          Average Gross Monthly Revenue
+          TransUnion
         </label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {[
-            { value: 'under_5k', label: 'Under $5,000' },
-            { value: '5k_15k', label: '$5,000 - $15,000' },
-            { value: '15k_40k', label: '$15,000 - $40,000' },
-            { value: '40k_100k', label: '$40,000 - $100,000' },
-            { value: 'over_100k', label: 'Over $100,000' },
-          ].map((option) => (
-            <motion.button
-              key={option.value}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => updateData({ monthlyRevenue: option.value as any })}
-              style={{
-                background: data.monthlyRevenue === option.value ? '#131510' : '#131510',
-                border: data.monthlyRevenue === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
-                color: data.monthlyRevenue === option.value ? '#8ab820' : '#e4e8d8',
-                borderRadius: '8px',
-                padding: '12px 16px',
-                fontFamily: 'var(--font-body)',
-                fontSize: '14px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e: any) => {
-                if (data.monthlyRevenue !== option.value) {
-                  e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
-                }
-              }}
-              onMouseLeave={(e: any) => {
-                if (data.monthlyRevenue !== option.value) {
-                  e.currentTarget.style.borderColor = '#6b7258';
-                }
-              }}
-            >
-              {option.label}
-            </motion.button>
-          ))}
-        </div>
-      </div>
-
-      {/* Credit Card Sales Options */}
-      <div style={{ marginBottom: '8px' }}>
-        <label
+        <div
           style={{
-            display: 'block',
-            fontFamily: 'var(--font-body)',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-display)',
+            fontSize: '28px',
+            fontWeight: 700,
+            color: 'var(--primary)',
             marginBottom: '12px',
           }}
         >
-          Total Monthly Credit Card Sales
-        </label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {[
-            { value: 'no_cards', label: 'I do not accept credit cards' },
-            { value: 'under_5k', label: 'Under $5,000' },
-            { value: '5k_15k', label: '$5,000 - $15,000' },
-            { value: '15k_50k', label: '$15,000 - $50,000' },
-            { value: 'over_50k', label: 'Over $50,000' },
-          ].map((option) => (
-            <motion.button
-              key={option.value}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => updateData({ ccSales: option.value as any })}
-              style={{
-                background: data.ccSales === option.value ? '#131510' : '#131510',
-                border: data.ccSales === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
-                color: data.ccSales === option.value ? '#8ab820' : '#e4e8d8',
-                borderRadius: '8px',
-                padding: '12px 16px',
-                fontFamily: 'var(--font-body)',
-                fontSize: '14px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e: any) => {
-                if (data.ccSales !== option.value) {
-                  e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
-                }
-              }}
-              onMouseLeave={(e: any) => {
-                if (data.ccSales !== option.value) {
-                  e.currentTarget.style.borderColor = '#6b7258';
-                }
-              }}
-            >
-              {option.label}
-            </motion.button>
-          ))}
+          {data.transunion}
         </div>
-      </div>
         <input
           type="range"
           min="300"
