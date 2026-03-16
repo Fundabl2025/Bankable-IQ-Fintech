@@ -58,13 +58,13 @@ export const DEMO_ASSESSMENT_DATA: UnifiedAnswers = {
   personalIncome: '75_125k',
 
   // Q_F10: Bankruptcy & Derogatories (clean)
-  hasBankruptcy: false,
+  hasBankruptcy: '',
   hasJudgments: false,
-  hasCollections: false,
+  hasCollections: '',
   hasChargeoffs: false,
   hasLatePay: false,
-  hasTaxLiens: false,
-  noDerogItems: true,
+  hasTaxLiens: '',
+  noDerogItems: 'true', // FIXED: Changed from boolean true to string 'true'
 
   // Q_F11: Business Credit & Inquiries
   bizCreditFile: 'below_80',
