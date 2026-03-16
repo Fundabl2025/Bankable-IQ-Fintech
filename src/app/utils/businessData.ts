@@ -86,6 +86,14 @@ export interface AuditItem {
   status: 'complete' | 'incomplete' | 'in-progress';
   ficoImpact: number; // Points toward 160 FICO SBSS
   priority: 'critical' | 'high' | 'medium' | 'low';
+  // Severity classification per Elon's Rule Logic Spec:
+  // - hard_blocker: Auto-decline. Must fix before ANY funding (no entity, recent BK, FICO<620)
+  // - suppressor: Limits options/amounts. Can still get some funding (late pays, low revenue)
+  // - optimization: Improves terms. Not required but helps rates/amounts (tradelines, utilization)
+  severity: 'hard_blocker' | 'suppressor' | 'optimization';
+  // Fix metadata for Denial Diagnosis page
+  fixAction?: string; // What user needs to do to fix
+  fixTimeline?: '7d' | '30d' | '60d' | '90d'; // Estimated time to fix
   completedDate?: string;
   lastUpdated?: string;
   source?: 'scan' | 'manual' | 'automated'; // How it was marked complete
@@ -174,6 +182,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 45,
           priority: 'critical',
+          severity: 'hard_blocker',
+          fixAction: 'File LLC or Corporation with your state Secretary of State',
+          fixTimeline: '7d',
           moduleId: 'entity-filings',
           taskId: 'task-1'
         },
@@ -183,8 +194,11 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           description: 'Verify business name has no trademark conflicts',
           category: 'lender-compliance',
           status: 'incomplete',
-          ficoImpact: 0, // Risk prevention, no FICO impact
+          ficoImpact: 0,
           priority: 'high',
+          severity: 'optimization',
+          fixAction: 'Search USPTO database and resolve any conflicts',
+          fixTimeline: '30d',
           moduleId: 'entity-filings',
           taskId: 'task-2'
         },
@@ -196,6 +210,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 25,
           priority: 'critical',
+          severity: 'hard_blocker',
+          fixAction: 'Pay any outstanding fees and file annual reports with Secretary of State',
+          fixTimeline: '7d',
           moduleId: 'entity-filings',
           taskId: 'task-3'
         },
@@ -205,8 +222,11 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           description: 'Ensure business name contains no auto-decline terms',
           category: 'lender-compliance',
           status: 'incomplete',
-          ficoImpact: 0, // Risk prevention, no FICO impact
+          ficoImpact: 0,
           priority: 'low',
+          severity: 'optimization',
+          fixAction: 'Review name for trigger words and file DBA if needed',
+          fixTimeline: '30d',
           moduleId: 'entity-filings',
           taskId: 'task-4'
         },
@@ -220,6 +240,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 5,
           priority: 'critical',
+          severity: 'suppressor',
+          fixAction: 'Register business address with USPS as commercial location',
+          fixTimeline: '7d',
           moduleId: 'business-location'
         },
         
@@ -232,6 +255,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 5,
           priority: 'critical',
+          severity: 'suppressor',
+          fixAction: 'Set up dedicated business phone and register with 411 directory',
+          fixTimeline: '7d',
           moduleId: 'phones-411'
         },
         
@@ -244,6 +270,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 3,
           priority: 'high',
+          severity: 'suppressor',
+          fixAction: 'Create professional website with consistent NAP information',
+          fixTimeline: '30d',
           moduleId: 'website-email'
         },
         {
@@ -254,6 +283,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 2,
           priority: 'high',
+          severity: 'suppressor',
+          fixAction: 'Set up email using your business domain (e.g., you@yourbusiness.com)',
+          fixTimeline: '7d',
           moduleId: 'website-email'
         },
         
@@ -266,6 +298,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 3,
           priority: 'critical',
+          severity: 'suppressor',
+          fixAction: 'Apply for EIN online at IRS.gov (free, instant)',
+          fixTimeline: '7d',
           moduleId: 'ein-licenses'
         },
         {
@@ -276,6 +311,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 2,
           priority: 'high',
+          severity: 'optimization',
+          fixAction: 'Obtain required business licenses from city/county',
+          fixTimeline: '30d',
           moduleId: 'ein-licenses'
         },
         
@@ -288,6 +326,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 5,
           priority: 'critical',
+          severity: 'hard_blocker',
+          fixAction: 'Open dedicated business checking account at bank or credit union',
+          fixTimeline: '7d',
           moduleId: 'business-banking'
         },
         
@@ -300,6 +341,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 3,
           priority: 'medium',
+          severity: 'optimization',
+          fixAction: 'Identify correct NAICS code and register with SBA',
+          fixTimeline: '7d',
           moduleId: 'agencies-naics'
         },
         
@@ -312,6 +356,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 2,
           priority: 'low',
+          severity: 'optimization',
+          fixAction: 'Create formal business plan with financials and projections',
+          fixTimeline: '30d',
           moduleId: 'business-plan'
         },
         
@@ -324,6 +371,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 3,
           priority: 'medium',
+          severity: 'optimization',
+          fixAction: 'Create asset inventory with valuations',
+          fixTimeline: '30d',
           moduleId: 'assets-ucc'
         },
         
@@ -336,6 +386,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 2,
           priority: 'low',
+          severity: 'optimization',
+          fixAction: 'Prepare and maintain corporate governance documents',
+          fixTimeline: '30d',
           moduleId: 'corp-only-facts'
         },
         
@@ -348,6 +401,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 3,
           priority: 'medium',
+          severity: 'suppressor',
+          fixAction: 'Maintain positive balance history and avoid NSFs for 90 days',
+          fixTimeline: '90d',
           moduleId: 'bank-rating'
         },
         
@@ -360,6 +416,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 2,
           priority: 'medium',
+          severity: 'optimization',
+          fixAction: 'Gather trade references from vendors and suppliers',
+          fixTimeline: '30d',
           moduleId: 'comparable-credit'
         },
         
@@ -372,6 +431,9 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           status: 'incomplete',
           ficoImpact: 2,
           priority: 'low',
+          severity: 'optimization',
+          fixAction: 'Open CD-secured credit line to build business credit history',
+          fixTimeline: '60d',
           moduleId: 'cd-business-loan'
         },
       ]
@@ -395,7 +457,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'credit-agencies',
           status: 'incomplete',
           ficoImpact: 8,
-          priority: 'critical'
+          priority: 'critical',
+          severity: 'suppressor',
+          fixAction: 'Apply for free D-U-N-S number at dnb.com',
+          fixTimeline: '30d'
         },
         {
           id: 'experian-profile',
@@ -404,7 +469,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'credit-agencies',
           status: 'incomplete',
           ficoImpact: 6,
-          priority: 'high'
+          priority: 'high',
+          severity: 'suppressor',
+          fixAction: 'Establish Experian business credit profile',
+          fixTimeline: '60d'
         },
         {
           id: 'equifax-profile',
@@ -413,7 +481,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'credit-agencies',
           status: 'incomplete',
           ficoImpact: 6,
-          priority: 'high'
+          priority: 'high',
+          severity: 'suppressor',
+          fixAction: 'Establish Equifax business credit profile',
+          fixTimeline: '60d'
         },
         {
           id: 'credit-monitoring',
@@ -422,7 +493,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'credit-agencies',
           status: 'incomplete',
           ficoImpact: 5,
-          priority: 'medium'
+          priority: 'medium',
+          severity: 'optimization',
+          fixAction: 'Set up monitoring with Nav, CreditSignal, or similar service',
+          fixTimeline: '7d'
         },
       ]
     },
@@ -445,7 +519,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'owners-credibility',
           status: 'incomplete',
           ficoImpact: 10,
-          priority: 'critical'
+          priority: 'critical',
+          severity: 'hard_blocker',
+          fixAction: 'Pay down balances, dispute errors, become authorized user on aged accounts',
+          fixTimeline: '90d'
         },
         {
           id: 'clean-credit-history',
@@ -454,7 +531,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'owners-credibility',
           status: 'incomplete',
           ficoImpact: 5,
-          priority: 'high'
+          priority: 'high',
+          severity: 'hard_blocker',
+          fixAction: 'Pay or negotiate settlements on collections, wait for BK to age out',
+          fixTimeline: '90d'
         },
       ]
     },
@@ -477,7 +557,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'business-setup',
           status: 'incomplete',
           ficoImpact: 8,
-          priority: 'high'
+          priority: 'high',
+          severity: 'suppressor',
+          fixAction: 'Continue operations; consider shelf company for faster access',
+          fixTimeline: '90d'
         },
         {
           id: 'business-revenue',
@@ -486,7 +569,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'business-setup',
           status: 'incomplete',
           ficoImpact: 7,
-          priority: 'high'
+          priority: 'high',
+          severity: 'suppressor',
+          fixAction: 'Increase sales, ensure all revenue flows through business bank account',
+          fixTimeline: '90d'
         },
       ]
     },
@@ -509,7 +595,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'business-credibility',
           status: 'incomplete',
           ficoImpact: 5,
-          priority: 'high'
+          priority: 'high',
+          severity: 'optimization',
+          fixAction: 'Create and verify Google Business Profile',
+          fixTimeline: '7d'
         },
         {
           id: 'social-media-presence',
@@ -518,7 +607,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'business-credibility',
           status: 'incomplete',
           ficoImpact: 3,
-          priority: 'medium'
+          priority: 'medium',
+          severity: 'optimization',
+          fixAction: 'Create professional LinkedIn company page and Facebook business page',
+          fixTimeline: '7d'
         },
         {
           id: 'positive-reviews',
@@ -527,7 +619,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'business-credibility',
           status: 'incomplete',
           ficoImpact: 4,
-          priority: 'medium'
+          priority: 'medium',
+          severity: 'optimization',
+          fixAction: 'Request reviews from satisfied customers',
+          fixTimeline: '30d'
         },
         {
           id: 'nap-consistency',
@@ -536,7 +631,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'business-credibility',
           status: 'incomplete',
           ficoImpact: 3,
-          priority: 'high'
+          priority: 'high',
+          severity: 'suppressor',
+          fixAction: 'Audit and correct NAP across all directories and platforms',
+          fixTimeline: '30d'
         },
       ]
     },
@@ -559,7 +657,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'business-credit',
           status: 'incomplete',
           ficoImpact: 5,
-          priority: 'high'
+          priority: 'high',
+          severity: 'optimization',
+          fixAction: 'Open accounts with Uline, Quill, Grainger, or similar net-30 vendors',
+          fixTimeline: '60d'
         },
         {
           id: 'business-credit-cards',
@@ -568,7 +669,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'business-credit',
           status: 'incomplete',
           ficoImpact: 5,
-          priority: 'high'
+          priority: 'high',
+          severity: 'optimization',
+          fixAction: 'Apply for business credit cards that report to bureaus',
+          fixTimeline: '30d'
         },
         {
           id: 'payment-history',
@@ -577,7 +681,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'business-credit',
           status: 'incomplete',
           ficoImpact: 5,
-          priority: 'critical'
+          priority: 'critical',
+          severity: 'suppressor',
+          fixAction: 'Set up autopay on all business credit accounts',
+          fixTimeline: '7d'
         },
       ]
     },
@@ -600,7 +707,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'business-documentation',
           status: 'incomplete',
           ficoImpact: 3,
-          priority: 'medium'
+          priority: 'medium',
+          severity: 'optimization',
+          fixAction: 'Prepare current P&L and Balance Sheet using accounting software',
+          fixTimeline: '30d'
         },
         {
           id: 'business-insurance',
@@ -609,7 +719,10 @@ export function getDefaultAuditCategories(): AuditCategory[] {
           category: 'business-documentation',
           status: 'incomplete',
           ficoImpact: 2,
-          priority: 'medium'
+          priority: 'medium',
+          severity: 'optimization',
+          fixAction: 'Obtain general liability insurance from a commercial provider',
+          fixTimeline: '7d'
         },
       ]
     },
@@ -677,18 +790,39 @@ export function updateBusinessProfile(updates: Partial<BusinessProfile>): void {
 }
 
 export function getAllAuditItems(): AuditItem[] {
+  // Always start with default items (which have all the severity/fix metadata)
+  const categories = getDefaultAuditCategories();
+  const defaultItems = categories.flatMap(cat => cat.items);
+  
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.AUDIT_ITEMS);
     if (stored) {
-      return JSON.parse(stored);
+      const storedData = JSON.parse(stored);
+      
+      // If stored is a full array, use it but merge with defaults to get any new fields
+      if (Array.isArray(storedData)) {
+        return storedData.map(storedItem => {
+          const defaultItem = defaultItems.find(d => d.id === storedItem.id);
+          return defaultItem ? { ...defaultItem, ...storedItem } : storedItem;
+        });
+      }
+      
+      // If stored is a partial map of statuses (from demo data), merge with defaults
+      if (typeof storedData === 'object') {
+        return defaultItems.map(item => {
+          const storedUpdate = storedData[item.id];
+          if (storedUpdate) {
+            return { ...item, ...storedUpdate };
+          }
+          return item;
+        });
+      }
     }
   } catch (error) {
     console.error('Error loading audit items:', error);
   }
   
-  // Return default items from all categories
-  const categories = getDefaultAuditCategories();
-  return categories.flatMap(cat => cat.items);
+  return defaultItems;
 }
 
 export function saveAuditItems(items: AuditItem[]): void {

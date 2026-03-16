@@ -47,6 +47,7 @@ const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.S
 const TemplatesAndResources = lazy(() => import('./pages/TemplatesAndResources').then(m => ({ default: m.TemplatesAndResources })));
 const ResourceDetail = lazy(() => import('./pages/ResourceDetail').then(m => ({ default: m.ResourceDetail })));
 const CapitalAccessMap = lazy(() => import('./pages/CapitalAccessMap').then(m => ({ default: m.CapitalAccessMap })));
+const DenialDiagnosis = lazy(() => import('./pages/DenialDiagnosis'));
 const EntityFilings = lazy(() => import('./pages/LenderCompliance/EntityFilings').then(m => ({ default: m.EntityFilings })));
 
 // LenderCompliance sub-pages
@@ -112,6 +113,10 @@ export const router = createBrowserRouter([
       {
         path: 'capital-dashboard',
         element: <LazyComponent Component={Dashboard} />,
+      },
+      {
+        path: 'denial-diagnosis',
+        element: <LazyComponent Component={DenialDiagnosis} />,
       },
       {
         path: 'business-success-scan',

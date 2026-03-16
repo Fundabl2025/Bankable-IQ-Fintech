@@ -29,7 +29,8 @@ import {
   Target,
   Settings,
   CheckCircle,
-  XCircle
+  XCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { getPreQualifiedPrograms, isProgramPathPreQualified } from '../utils/fundingEligibility';
 import { getFoundationFirstData } from '../utils/foundationFirstData';
@@ -38,6 +39,7 @@ import { getFoundationFirstData } from '../utils/foundationFirstData';
 const businessMenuItems = [
   { path: '/business-success-scan/step-1', label: 'Business Success Scan', icon: ClipboardCheck, badge: 'Start' },
   { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/app/denial-diagnosis', label: 'Denial Diagnosis', icon: AlertTriangle },
   { 
     path: '/app/access-funding', 
     label: 'Access Funding', 

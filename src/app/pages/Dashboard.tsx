@@ -17,7 +17,7 @@ import {
   Target,
   ChevronRight
 } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useNavigate, Link } from 'react-router';
 import { useState, useEffect } from 'react';
 import { 
   getBusinessProfile, 
@@ -807,6 +807,31 @@ export function Dashboard() {
                 </div>
               )}
             </div>
+
+            {/* View All Link */}
+            <Link
+              to="/app/denial-diagnosis"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '10px',
+                marginTop: '16px',
+                border: '1px solid var(--border)',
+                borderRadius: '2px',
+                fontFamily: 'var(--font-display)',
+                fontSize: '11px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                color: 'var(--muted-foreground)',
+                textDecoration: 'none',
+              }}
+            >
+              View Full Diagnosis
+              <ChevronRight style={{ width: 14, height: 14 }} />
+            </Link>
           </motion.div>
 
           {/* ─────────────────────────────────────────────────────────────────── */}

@@ -96,6 +96,20 @@ export const DEMO_ASSESSMENT_DATA: UnifiedAnswers = {
 };
 
 /**
+ * Demo audit item statuses
+ * Marks some items as complete to show realistic progress
+ */
+const DEMO_COMPLETED_ITEMS = [
+  // These are complete for Acme Consulting
+  'entity-formation', // LLC formed
+  'ein-number', // Has EIN
+  'business-bank-account', // Has bank account
+  'business-website', // Has website
+  'business-email', // Has email
+  'personal-fico-680', // Good credit score (712+)
+];
+
+/**
  * Seed demo data into localStorage
  */
 export function seedDemoData(): void {
@@ -110,6 +124,19 @@ export function seedDemoData(): void {
     entityType: DEMO_ASSESSMENT_DATA.entityType,
   }));
 
+  // Seed audit item completion status
+  const completedItems: Record<string, { status: 'complete'; completedDate: string }> = {};
+  const today = new Date().toISOString();
+  
+  DEMO_COMPLETED_ITEMS.forEach(id => {
+    completedItems[id] = {
+      status: 'complete',
+      completedDate: today,
+    };
+  });
+  
+  localStorage.setItem('auditItems', JSON.stringify(completedItems));
+
   // Dispatch event to notify components
   window.dispatchEvent(new Event('fundscoreUpdated'));
   window.dispatchEvent(new Event('storage'));
@@ -121,6 +148,7 @@ export function seedDemoData(): void {
 export function clearDemoData(): void {
   localStorage.removeItem('unified_assessment');
   localStorage.removeItem('fundready_business_profile');
+  localStorage.removeItem('auditItems');
   window.dispatchEvent(new Event('fundscoreUpdated'));
   window.dispatchEvent(new Event('storage'));
 }
