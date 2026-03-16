@@ -4,7 +4,6 @@
  */
 
 import { isSupabaseConfigured, supabase } from './supabase/client'
-import { useAuth } from '../contexts/AuthContext'
 
 /**
  * Get current user from Supabase Auth

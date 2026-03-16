@@ -104,53 +104,6 @@ export const router = createBrowserRouter([
         path: 'denial-diagnosis',
         element: <LazyComponent Component={DenialDiagnosis} />,
       },
-  // Auth pages (no sidebar/layout)
-  {
-    path: '/login',
-    element: <LazyComponent Component={LoginPage} />,
-  },
-  {
-    path: '/signup',
-    element: <LazyComponent Component={SignupPage} />,
-  },
-  // Public assessment routes (no auth required - lead generation)
-  {
-    path: '/business-assessment',
-    element: <LazyComponent Component={UnifiedAssessment} />,
-  },
-  {
-    path: '/business-assessment/results',
-    element: <LazyComponent Component={UnifiedResults} />,
-  },
-  // Legacy route redirects
-  {
-    path: '/app/business-success-scan',
-    element: <Navigate to="/business-assessment" replace />,
-  },
-  {
-    path: '/app/business-success-scan/step-1',
-    element: <Navigate to="/business-assessment" replace />,
-  },
-  {
-    path: '/app/business-success-scan/step-2',
-    element: <Navigate to="/business-assessment" replace />,
-  },
-  {
-    path: '/app/business-success-scan/step-3',
-    element: <Navigate to="/business-assessment" replace />,
-  },
-  {
-    path: '/app/business-success-scan/fundscore',
-    element: <Navigate to="/business-assessment" replace />,
-  },
-  {
-    path: '/app/business-success-scan/assessment',
-    element: <Navigate to="/business-assessment" replace />,
-  },
-  {
-    path: '/app/business-success-scan/results',
-    element: <Navigate to="/business-assessment/results" replace />,
-  },
       {
         path: 'integrate-reports',
         element: <LazyComponent Component={IntegrateReports} />,
@@ -425,5 +378,33 @@ export const router = createBrowserRouter([
         ),
       },
     ],
+  },
+  // Auth pages (no sidebar/layout)
+  {
+    path: '/login',
+    element: <LazyComponent Component={LoginPage} />,
+  },
+  {
+    path: '/signup',
+    element: <LazyComponent Component={SignupPage} />,
+  },
+  // Public assessment routes (no auth required - lead generation)
+  {
+    path: '/business-assessment',
+    element: <LazyComponent Component={UnifiedAssessment} />,
+  },
+  {
+    path: '/business-assessment/results',
+    element: <LazyComponent Component={UnifiedResults} />,
+  },
+  // Landing page
+  {
+    path: '/',
+    element: <LazyComponent Component={LandingPage} />,
+  },
+  // Catch all - redirect to landing
+  {
+    path: '*',
+    element: <Navigate to="/" replace />,
   },
 ]);
