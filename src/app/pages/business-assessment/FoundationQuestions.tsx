@@ -1484,7 +1484,7 @@ function QuestionF8({ data, updateData, onNext, onBack, currentQuestionNumber, t
         totalQuestions={totalQuestions}
       />
 
-      {/* Experian */}
+      {/* Experian - BUTTON SELECT */}
       <div style={{ marginBottom: '24px' }}>
         <label
           style={{
@@ -1493,40 +1493,57 @@ function QuestionF8({ data, updateData, onNext, onBack, currentQuestionNumber, t
             fontSize: '14px',
             fontWeight: 500,
             color: 'var(--text-primary)',
-            marginBottom: '8px',
+            marginBottom: '12px',
           }}
         >
           Experian
         </label>
-        <div
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '28px',
-            fontWeight: 700,
-            color: 'var(--primary)',
-            marginBottom: '12px',
-          }}
-        >
-          {data.experian}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {[
+            { value: 'exceptional', label: 'Exceptional (800-850)' },
+            { value: 'very_good', label: 'Very Good (740-799)' },
+            { value: 'good', label: 'Good (670-739)' },
+            { value: 'fair', label: 'Fair (580-669)' },
+            { value: 'poor', label: 'Poor (300-579)' },
+            { value: 'unknown', label: 'I don\'t know my score' },
+          ].map((option) => (
+            <motion.button
+              key={option.value}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => updateData({ experian: option.value as any })}
+              style={{
+                background: '#131510',
+                border: data.experian === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
+                color: data.experian === option.value ? '#8ab820' : '#e4e8d8',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                fontFamily: 'var(--font-body)',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                textAlign: 'left',
+                width: '100%',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e: any) => {
+                if (data.experian !== option.value) {
+                  e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
+                }
+              }}
+              onMouseLeave={(e: any) => {
+                if (data.experian !== option.value) {
+                  e.currentTarget.style.borderColor = '#6b7258';
+                }
+              }}
+            >
+              {option.label}
+            </motion.button>
+          ))}
         </div>
-        <input
-          type="range"
-          min="300"
-          max="850"
-          step="5"
-          value={data.experian || 680}
-          onChange={(e) => updateData({ experian: parseInt(e.target.value) })}
-          style={{
-            width: '100%',
-            height: '8px',
-            borderRadius: '4px',
-            background: 'var(--bg-surface-3)',
-            cursor: 'pointer',
-          }}
-        />
       </div>
 
-      {/* TransUnion */}
+      {/* TransUnion - BUTTON SELECT */}
       <div style={{ marginBottom: '24px' }}>
         <label
           style={{
@@ -1535,40 +1552,57 @@ function QuestionF8({ data, updateData, onNext, onBack, currentQuestionNumber, t
             fontSize: '14px',
             fontWeight: 500,
             color: 'var(--text-primary)',
-            marginBottom: '8px',
+            marginBottom: '12px',
           }}
         >
           TransUnion
         </label>
-        <div
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '28px',
-            fontWeight: 700,
-            color: 'var(--primary)',
-            marginBottom: '12px',
-          }}
-        >
-          {data.transunion}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {[
+            { value: 'exceptional', label: 'Exceptional (800-850)' },
+            { value: 'very_good', label: 'Very Good (740-799)' },
+            { value: 'good', label: 'Good (670-739)' },
+            { value: 'fair', label: 'Fair (580-669)' },
+            { value: 'poor', label: 'Poor (300-579)' },
+            { value: 'unknown', label: 'I don\'t know my score' },
+          ].map((option) => (
+            <motion.button
+              key={option.value}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => updateData({ transunion: option.value as any })}
+              style={{
+                background: '#131510',
+                border: data.transunion === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
+                color: data.transunion === option.value ? '#8ab820' : '#e4e8d8',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                fontFamily: 'var(--font-body)',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                textAlign: 'left',
+                width: '100%',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e: any) => {
+                if (data.transunion !== option.value) {
+                  e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
+                }
+              }}
+              onMouseLeave={(e: any) => {
+                if (data.transunion !== option.value) {
+                  e.currentTarget.style.borderColor = '#6b7258';
+                }
+              }}
+            >
+              {option.label}
+            </motion.button>
+          ))}
         </div>
-        <input
-          type="range"
-          min="300"
-          max="850"
-          step="5"
-          value={data.transunion || 680}
-          onChange={(e) => updateData({ transunion: parseInt(e.target.value) })}
-          style={{
-            width: '100%',
-            height: '8px',
-            borderRadius: '4px',
-            background: 'var(--bg-surface-3)',
-            cursor: 'pointer',
-          }}
-        />
       </div>
 
-      {/* Equifax */}
+      {/* Equifax - BUTTON SELECT */}
       <div style={{ marginBottom: '24px' }}>
         <label
           style={{
@@ -1577,37 +1611,54 @@ function QuestionF8({ data, updateData, onNext, onBack, currentQuestionNumber, t
             fontSize: '14px',
             fontWeight: 500,
             color: 'var(--text-primary)',
-            marginBottom: '8px',
+            marginBottom: '12px',
           }}
         >
           Equifax
         </label>
-        <div
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '28px',
-            fontWeight: 700,
-            color: 'var(--primary)',
-            marginBottom: '12px',
-          }}
-        >
-          {data.equifax}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {[
+            { value: 'exceptional', label: 'Exceptional (800-850)' },
+            { value: 'very_good', label: 'Very Good (740-799)' },
+            { value: 'good', label: 'Good (670-739)' },
+            { value: 'fair', label: 'Fair (580-669)' },
+            { value: 'poor', label: 'Poor (300-579)' },
+            { value: 'unknown', label: 'I don\'t know my score' },
+          ].map((option) => (
+            <motion.button
+              key={option.value}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => updateData({ equifax: option.value as any })}
+              style={{
+                background: '#131510',
+                border: data.equifax === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
+                color: data.equifax === option.value ? '#8ab820' : '#e4e8d8',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                fontFamily: 'var(--font-body)',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                textAlign: 'left',
+                width: '100%',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e: any) => {
+                if (data.equifax !== option.value) {
+                  e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
+                }
+              }}
+              onMouseLeave={(e: any) => {
+                if (data.equifax !== option.value) {
+                  e.currentTarget.style.borderColor = '#6b7258';
+                }
+              }}
+            >
+              {option.label}
+            </motion.button>
+          ))}
         </div>
-        <input
-          type="range"
-          min="300"
-          max="850"
-          step="5"
-          value={data.equifax || 680}
-          onChange={(e) => updateData({ equifax: parseInt(e.target.value) })}
-          style={{
-            width: '100%',
-            height: '8px',
-            borderRadius: '4px',
-            background: 'var(--bg-surface-3)',
-            cursor: 'pointer',
-          }}
-        />
       </div>
 
       {/* Composite Score */}

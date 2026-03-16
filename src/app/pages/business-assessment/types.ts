@@ -52,10 +52,10 @@ export interface UnifiedAnswers {
   constructionPlan: 'yes' | 'no' | 'later' | '';
   constructionBudget?: number;
   
-  // Q_F8: Personal Credit (3 bureaus)
-  experian: number;
-  transunion: number;
-  equifax: number;
+  // Q_F8: Personal Credit (3 bureaus) - FIXED: Changed from number to categorical
+  experian: 'exceptional' | 'very_good' | 'good' | 'fair' | 'poor' | 'unknown' | '';
+  transunion: 'exceptional' | 'very_good' | 'good' | 'fair' | 'poor' | 'unknown' | '';
+  equifax: 'exceptional' | 'very_good' | 'good' | 'fair' | 'poor' | 'unknown' | '';
   
   // Q_F9: Utilization & Income
   utilization: 'under_10' | '10_30' | '30_50' | '50_75' | 'over_75' | '';
@@ -236,9 +236,9 @@ export function getDefaultAnswers(): UnifiedAnswers {
     poBalance: '', // FIXED: Changed from 0 to empty string (matching new type)
     ownsProperty: '',
     constructionPlan: '',
-    experian: 680,
-    transunion: 680,
-    equifax: 680,
+    experian: '', // FIXED: Changed from 680 to empty string (matching new categorical type)
+    transunion: '', // FIXED: Changed from 680 to empty string (matching new categorical type)
+    equifax: '', // FIXED: Changed from 680 to empty string (matching new categorical type)
     utilization: '', // FIXED: was 30, now empty string (matching type)
     personalIncome: '',
     hasBankruptcy: '', // FIXED: was false (boolean), now empty string (matching type)

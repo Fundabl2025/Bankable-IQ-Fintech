@@ -21,7 +21,18 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
   const actions: Action[] = [];
   let priority = 1;
 
-  const creditScore = Math.min(data.experian || 680, data.transunion || 680, data.equifax || 680);
+  // Map credit score categories to numeric equivalents
+  const mapCreditScore = (category: string): number => {
+    if (category === 'exceptional') return 850; // 800-850
+    if (category === 'very_good') return 770; // 740-799
+    if (category === 'good') return 700; // 670-739
+    if (category === 'fair') return 620; // 580-669
+    if (category === 'poor') return 550; // 300-579
+    if (category === 'unknown') return 580; // Treat as fair with slight penalty
+    return 0; // No score provided
+  };
+
+  const creditScore = Math.min(mapCreditScore(data.experian || ''), mapCreditScore(data.transunion || ''), mapCreditScore(data.equifax || ''));
   const businessAge = calculateBusinessAge(data.startDate.year, data.startDate.month);
 
   // ──────────────────────────────────────────────────────────────────────────────

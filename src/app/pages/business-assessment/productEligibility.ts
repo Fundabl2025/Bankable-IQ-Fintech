@@ -20,6 +20,17 @@ export interface Product {
 }
 
 export function evaluateProducts(data: UnifiedAnswers, score: number): Product[] {
+  // Map credit score categories to numeric equivalents
+  const mapCreditScore = (category: string): number => {
+    if (category === 'exceptional') return 850; // 800-850
+    if (category === 'very_good') return 770; // 740-799
+    if (category === 'good') return 700; // 670-739
+    if (category === 'fair') return 620; // 580-669
+    if (category === 'poor') return 550; // 300-579
+    if (category === 'unknown') return 580; // Treat as fair with slight penalty
+    return 0; // No score provided
+  };
+
   // Convert categorical revenue values to numeric for comparison
   const revenueMap: Record<string, number> = {
     'under_5k': 2500,
@@ -40,7 +51,7 @@ export function evaluateProducts(data: UnifiedAnswers, score: number): Product[]
   };
   const ccSales = ccSalesMap[data.ccSales] || 0;
   
-  const creditScore = Math.min(data.experian || 680, data.transunion || 680, data.equifax || 680); // Middle score
+  const creditScore = Math.min(mapCreditScore(data.experian || ''), mapCreditScore(data.transunion || ''), mapCreditScore(data.equifax || '')); // Lowest score (most conservative)
   const businessAge = calculateBusinessAge(data.startDate.year, data.startDate.month);
   const hasEIN = data.hasEIN === true;
   const hasDedicatedBank = data.bankAccount === 'dedicated';

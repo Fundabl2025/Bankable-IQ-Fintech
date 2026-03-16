@@ -45,11 +45,23 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
   // ══════════════════════════════════════════════════════════════════════════════
 
   // ── P1: PERSONAL CREDIT SCORE (FICO composite from 3 bureaus) ──────────────
+  // FIXED: Convert categorical score ranges to numeric equivalents for calculation
+  const mapCreditScore = (category: string): number => {
+    if (category === 'exceptional') return 850; // 800-850
+    if (category === 'very_good') return 770; // 740-799
+    if (category === 'good') return 700; // 670-739
+    if (category === 'fair') return 620; // 580-669
+    if (category === 'poor') return 550; // 300-579
+    if (category === 'unknown') return 580; // Treat as fair with slight penalty
+    return 0; // No score provided
+  };
+  
   const creditScores = [
-    data.experian || 0,
-    data.transunion || 0,
-    data.equifax || 0,
+    mapCreditScore(data.experian || ''),
+    mapCreditScore(data.transunion || ''),
+    mapCreditScore(data.equifax || ''),
   ].filter(s => s > 0).sort((a, b) => a - b);
+  
   const composite = creditScores.length > 0 ? creditScores[Math.floor(creditScores.length / 2)] : 0;
 
   if (composite >= 740) buckets.P.push(1.0);
@@ -320,7 +332,7 @@ function calculateBankableScore(data: UnifiedAnswers): number {
   // ══════════════════════════════════════════════════════════════════════════
   // COMPONENT 1: PERSONAL CREDIT (35% = 105 max points)
   // ══════════════════════════════════════════════════════════════════════════
-  const creditScores = [data.experian || 0, data.transunion || 0, data.equifax || 0]
+  const creditScores = [mapCreditScore(data.experian || ''), mapCreditScore(data.transunion || ''), mapCreditScore(data.equifax || '')]
     .filter(s => s > 0)
     .sort((a, b) => a - b);
   const composite = creditScores.length > 0 ? creditScores[Math.floor(creditScores.length / 2)] : 0;
@@ -545,9 +557,9 @@ export function calculatePartialScore(partialData: Partial<UnifiedAnswers>): num
     poBalance: '', // FIXED: Changed from 0 to empty string
     ownsProperty: '',
     constructionPlan: '',
-    experian: 680,
-    transunion: 680,
-    equifax: 680,
+    experian: '', // FIXED: Changed from 680 to empty string
+    transunion: '', // FIXED: Changed from 680 to empty string
+    equifax: '', // FIXED: Changed from 680 to empty string
     utilization: 30,
     personalIncome: '',
     hasBankruptcy: false,
@@ -618,9 +630,9 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
 
   const ownerStatus = {
     name: ownerName,
-    experian: data.experian || 680,
-    transunion: data.transunion || 680,
-    equifax: data.equifax || 680,
+    experian: mapCreditScore(data.experian || ''), // FIXED: Use mapping function
+    transunion: mapCreditScore(data.transunion || ''), // FIXED: Use mapping function
+    equifax: mapCreditScore(data.equifax || ''), // FIXED: Use mapping function
     inquiries3mo: inquiryData.mo3,
     inquiries6mo: inquiryData.mo6,
     inquiries12mo: inquiryData.mo12,
@@ -744,7 +756,7 @@ function calculateTimeInBusiness(year: number, month: number): string {
   return `${months}m`;
 }
 
-// ────────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────���────────────────────────────────────
 // HELPER: Contingencies
 // ────────────────────────────────────────────────────────────────────────────────
 function computeContingencies(data: UnifiedAnswers): ExtendedResultsOutput['contingencies'] {
@@ -815,7 +827,7 @@ function computeContingencies(data: UnifiedAnswers): ExtendedResultsOutput['cont
 // HELPER: Bankable Items (20 items)
 // ─────────────────────────��────────────��─────────────────────────────────────────
 function computeBankableItems(data: UnifiedAnswers): ExtendedResultsOutput['bankableItems'] {
-  const creditScores = [data.experian || 0, data.transunion || 0, data.equifax || 0].filter(s => s > 0).sort((a, b) => a - b);
+  const creditScores = [mapCreditScore(data.experian || ''), mapCreditScore(data.transunion || ''), mapCreditScore(data.equifax || '')].filter(s => s > 0).sort((a, b) => a - b);
   const composite = creditScores.length > 0 ? creditScores[Math.floor(creditScores.length / 2)] : 0;
   const goodStanding = data.readinessAnswers[8] === 0; // Q_R9 index 8, option A = "Yes, all filings current"
   const sbssScore = calculateBankableScore(data); // Get computed SBSS score (0-300)
@@ -874,7 +886,7 @@ function computeBankableItems(data: UnifiedAnswers): ExtendedResultsOutput['bank
 
 // ────────────────────────────────────────────────────────────────────────────────
 // HELPER: SBSS Sections
-// ────────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────���─────────────────────────────
 function computeSBSSSections(data: UnifiedAnswers, composite: number, bankableScore: number): ExtendedResultsOutput['sbssSections'] {
   const goodStanding = data.readinessAnswers[8] === 0;
 

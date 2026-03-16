@@ -48,13 +48,13 @@ export const DEMO_ASSESSMENT_DATA: UnifiedAnswers = {
   ownsProperty: 'no',
   constructionPlan: 'no',
 
-  // Q_F8: Personal Credit (good scores)
-  experian: 712,
-  transunion: 705,
-  equifax: 718,
+  // Q_F8: Personal Credit (good scores) - FIXED: Changed from numeric to categorical
+  experian: 'very_good', // Equivalent to 770 (740-799 range)
+  transunion: 'very_good', // Equivalent to 770 (740-799 range)
+  equifax: 'good', // Equivalent to 700 (670-739 range)
 
   // Q_F9: Utilization & Income
-  utilization: 28,
+  utilization: '30_50', // FIXED: Changed from 28 (numeric) to categorical
   personalIncome: '75_125k',
 
   // Q_F10: Bankruptcy & Derogatories (clean)
