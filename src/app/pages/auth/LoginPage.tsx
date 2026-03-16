@@ -7,7 +7,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Eye, EyeOff, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ArrowRight, Loader2, Zap } from 'lucide-react';
+import { seedDemoData } from '../../utils/demoData';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -32,6 +33,12 @@ export function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Demo login bypasses auth and seeds pre-filled assessment data
+  const handleDemoLogin = () => {
+    seedDemoData();
+    navigate('/app/dashboard');
   };
 
   return (
@@ -313,6 +320,61 @@ export function LoginPage() {
             >
               Forgot your password?
             </Link>
+          </div>
+
+          {/* Demo Mode Button */}
+          <div style={{
+            marginTop: '32px',
+            padding: '20px',
+            background: 'var(--surface-2)',
+            border: '1px dashed var(--border)',
+            borderRadius: '0',
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '11px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: 'var(--muted-foreground)',
+              marginBottom: '12px',
+            }}>
+              Development Mode
+            </div>
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: 'transparent',
+                color: 'var(--primary)',
+                fontFamily: 'var(--font-display)',
+                fontSize: '13px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                border: '1px solid var(--primary)',
+                borderRadius: '0',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+              }}
+            >
+              <Zap style={{ width: '16px', height: '16px' }} />
+              Enter Demo Mode
+            </button>
+            <p style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '11px',
+              color: 'var(--muted-foreground)',
+              marginTop: '10px',
+              lineHeight: 1.5,
+            }}>
+              Skip auth and load pre-filled assessment data for "Acme Consulting LLC" (FundScore ~700, SBSS ~160)
+            </p>
           </div>
         </motion.div>
       </div>
