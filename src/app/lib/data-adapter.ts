@@ -18,6 +18,23 @@ async function getCurrentUser() {
 }
 
 /**
+ * Parse assessment data to extract fund_score and bankable_score
+ */
+function parseScoresFromAssessment(assessmentJson: string): { fund_score: number; bankable_score: number } {
+  try {
+    const data = JSON.parse(assessmentJson)
+    // These will be added by the Results page when it calculates scores
+    // For now, return defaults - they'll be updated when Results page saves
+    return {
+      fund_score: data.fund_score || 0,
+      bankable_score: data.bankable_score || 0,
+    }
+  } catch {
+    return { fund_score: 0, bankable_score: 0 }
+  }
+}
+
+/**
  * Always save to localStorage
  * If user is logged in and Supabase is configured, also save to business_profiles.assessment_data
  */
@@ -31,12 +48,16 @@ export async function setDataItem(key: string, value: string): Promise<void> {
     try {
       const user = await getCurrentUser()
       if (user) {
+        const { fund_score, bankable_score } = parseScoresFromAssessment(value)
+        
         await supabase
           .from('business_profiles')
           .upsert(
             {
               user_id: user.id,
               assessment_data: value,
+              fund_score,
+              bankable_score,
               updated_at: new Date().toISOString(),
             },
             { onConflict: 'user_id' }
@@ -101,14 +122,18 @@ export async function migrateLocalDataToSupabase(): Promise<void> {
 
     console.log('[FundReady] Migrating data to Supabase for user:', user.id)
 
-    // Save assessment data to business_profiles.assessment_data
+    // Save assessment data to business_profiles.assessment_data with scores
     if (assessmentData) {
+      const { fund_score, bankable_score } = parseScoresFromAssessment(assessmentData)
+      
       await supabase
         .from('business_profiles')
         .upsert(
           {
             user_id: user.id,
             assessment_data: assessmentData,
+            fund_score,
+            bankable_score,
             updated_at: new Date().toISOString(),
           },
           { onConflict: 'user_id' }
@@ -144,7 +169,14 @@ export async function migrateLocalDataToSupabase(): Promise<void> {
 }
 
 /**
- * Clear all localStorage data for this user
+ * Clear assessment data from localStorage
+ */
+export async function clearLocalData(): Promise<void> {
+  localStorage.removeItem('unified_assessment')
+}
+
+/**
+ * Remove a data item from localStorage
  */
 export async function removeDataItem(key: string): Promise<void> {
   localStorage.removeItem(key)

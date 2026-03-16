@@ -25,6 +25,8 @@ import {
   getOverallProgress 
 } from '../utils/businessData';
 import { computeScore, getBand, computeExtendedResults } from './business-assessment/engine';
+import { getDataItem } from '../lib/data-adapter';
+import { useAuth } from '../contexts/AuthContext';
 import type { UnifiedAnswers } from './business-assessment/types';
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -142,21 +144,32 @@ function formatMoney(amount: number): string {
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [fundScore, setFundScore] = useState(0);
   const [bankableScore, setBankableScore] = useState(0);
   const [scoreBand, setScoreBand] = useState({ name: 'Not Assessed', color: '#64748b' });
   const [hasAssessment, setHasAssessment] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // Force re-render when data changes
 
-  // Load scores from unified_assessment (same source as Results page)
+  // Load scores from Supabase (if logged in) or localStorage
   useEffect(() => {
-    const loadScores = () => {
+    const loadScores = async () => {
       // Increment refresh key to force recalculation of audit items
       setRefreshKey(prev => prev + 1);
       try {
-        const stored = localStorage.getItem('unified_assessment');
-        if (stored) {
-          const assessmentData = JSON.parse(stored) as UnifiedAnswers;
+        // Try to load from Supabase first if user is logged in
+        let assessmentJson = null;
+        
+        if (user) {
+          assessmentJson = await getDataItem('unified_assessment');
+          console.log('[v0] Dashboard: Loaded from Supabase/localStorage:', !!assessmentJson);
+        } else {
+          assessmentJson = localStorage.getItem('unified_assessment');
+          console.log('[v0] Dashboard: No user, loaded from localStorage:', !!assessmentJson);
+        }
+        
+        if (assessmentJson) {
+          const assessmentData = JSON.parse(assessmentJson) as UnifiedAnswers;
           
           // Use the same engine as Results page for consistent scoring
           const scoreResult = computeScore(assessmentData);
@@ -172,6 +185,7 @@ export function Dashboard() {
         console.error('Error loading scores:', error);
       }
     };
+    
     loadScores();
 
     // Listen for updates
@@ -184,7 +198,7 @@ export function Dashboard() {
       window.removeEventListener('auditItemUpdated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
-  }, []);
+  }, [user]);
 
   // Get audit items for blockers/actions (using severity classification)
   // These are calculated fresh on each render, which means they update when state changes trigger re-render

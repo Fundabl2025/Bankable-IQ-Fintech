@@ -12,7 +12,7 @@ import { evaluateProducts } from './productEligibility';
 import { getAllAuditItems, AuditItem } from '../../utils/businessData';
 import { EstimatedFunding } from '../StatusReports/EstimatedFunding';
 import { useAuth } from '../../contexts/AuthContext';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Check, AlertCircle } from 'lucide-react';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // Helper Functions for Dynamic Data Mapping
@@ -201,6 +201,50 @@ export function Results() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)', padding: '40px 24px' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        {/* ═══════════════════════════════════════════════════════════════════════ */}
+        {/* SAVE STATUS INDICATOR */}
+        {/* ═══════════════════════════════════════════════════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '24px',
+            fontSize: '12px',
+            fontFamily: 'var(--font-body)',
+          }}
+        >
+          {user ? (
+            <>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: 'var(--success)',
+              }} />
+              <span style={{ color: 'var(--success)' }}>
+                <Check size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                Results saved to your account
+              </span>
+            </>
+          ) : (
+            <>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: 'var(--warning)',
+              }} />
+              <span style={{ color: 'var(--warning)' }}>
+                <AlertCircle size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                Results not saved — create account to save
+              </span>
+            </>
+          )}
+        </motion.div>
+
         {/* ═══════════════════════════════════════════════════════════════════════ */}
         {/* SECTION 1: SCORE HERO */}
         {/* ═══════════════════════════════════════════════════════════════════════ */}
