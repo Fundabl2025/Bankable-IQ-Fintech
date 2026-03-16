@@ -45,10 +45,67 @@ export function UnifiedAssessment() {
     setData(prev => ({ ...prev, ...updates }));
   };
 
-  // Navigation handlers
+  // Navigation handlers with conditional question logic
+  const getApplicableQuestionCount = (upToIndex: number): number => {
+    // Count how many questions from 0 to upToIndex are actually applicable
+    let count = 0;
+    const hasBusinessBankAccount = data.bankAccount === 'dedicated' || data.bankAccount === 'personal';
+    const hasNegativeItems = data.readinessAnswers[14] === 1;
+    
+    for (let i = 0; i <= upToIndex && i < 33; i++) {
+      if (i < 10) {
+        // Foundation questions always count
+        count++;
+      } else {
+        const readinessIdx = i - 10;
+        let shouldCount = true;
+        
+        // Check banking conditionals (readiness indices 2, 3, 7, 20, 21)
+        if ((readinessIdx === 2 || readinessIdx === 3 || readinessIdx === 7 || readinessIdx === 20 || readinessIdx === 21) && !hasBusinessBankAccount) {
+          shouldCount = false;
+        }
+        
+        // Check derogatory conditionals (readiness indices 15, 16, 17)
+        if ((readinessIdx === 15 || readinessIdx === 16 || readinessIdx === 17) && !hasNegativeItems) {
+          shouldCount = false;
+        }
+        
+        if (shouldCount) count++;
+      }
+    }
+    return count;
+  };
+  
   const handleNext = () => {
-    if (currentQuestion < 32) {
-      setCurrentQuestion(currentQuestion + 1);
+    let nextQuestion = currentQuestion + 1;
+    
+    // Skip to next applicable question
+    while (nextQuestion < 33) {
+      const isFoundation = nextQuestion < 10;
+      const readinessIdx = nextQuestion - 10;
+      const hasBusinessBankAccount = data.bankAccount === 'dedicated' || data.bankAccount === 'personal';
+      const hasNegativeItems = data.readinessAnswers[14] === 1;
+      
+      let shouldShow = true;
+      
+      if (!isFoundation) {
+        // Check banking conditionals
+        if ((readinessIdx === 2 || readinessIdx === 3 || readinessIdx === 7 || readinessIdx === 20 || readinessIdx === 21) && !hasBusinessBankAccount) {
+          shouldShow = false;
+        }
+        
+        // Check derogatory conditionals
+        if ((readinessIdx === 15 || readinessIdx === 16 || readinessIdx === 17) && !hasNegativeItems) {
+          shouldShow = false;
+        }
+      }
+      
+      if (shouldShow) break;
+      nextQuestion++;
+    }
+    
+    if (nextQuestion < 33) {
+      setCurrentQuestion(nextQuestion);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       // All done - show loading and navigate to results
@@ -60,8 +117,35 @@ export function UnifiedAssessment() {
   };
 
   const handleBack = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
+    let prevQuestion = currentQuestion - 1;
+    
+    // Skip back to previous applicable question
+    while (prevQuestion >= 0) {
+      const isFoundation = prevQuestion < 10;
+      const readinessIdx = prevQuestion - 10;
+      const hasBusinessBankAccount = data.bankAccount === 'dedicated' || data.bankAccount === 'personal';
+      const hasNegativeItems = data.readinessAnswers[14] === 1;
+      
+      let shouldShow = true;
+      
+      if (!isFoundation) {
+        // Check banking conditionals
+        if ((readinessIdx === 2 || readinessIdx === 3 || readinessIdx === 7 || readinessIdx === 20 || readinessIdx === 21) && !hasBusinessBankAccount) {
+          shouldShow = false;
+        }
+        
+        // Check derogatory conditionals
+        if ((readinessIdx === 15 || readinessIdx === 16 || readinessIdx === 17) && !hasNegativeItems) {
+          shouldShow = false;
+        }
+      }
+      
+      if (shouldShow) break;
+      prevQuestion--;
+    }
+    
+    if (prevQuestion >= 0) {
+      setCurrentQuestion(prevQuestion);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -236,26 +320,37 @@ function ReadinessQuestion({ index, data, updateData, onNext, onBack, currentQue
 
   // Conditional logic to hide questions based on user answers
   const shouldShowQuestion = (): boolean => {
-    // Q_R14 (utilization) - always show
-    // Q_R15 (noDerogItems) - always show
-    // Q_R16 (hasBankruptcy) - only show if user said "Yes, I have some" to Q_R15
+    // Banking-related questions - only show if user has a business bank account
+    const hasBusinessBankAccount = data.bankAccount === 'dedicated' || data.bankAccount === 'personal';
+    
+    // Q_R3 (index 2) - Bank statements months - only if has business account
+    if (index === 2 && !hasBusinessBankAccount) return false;
+    
+    // Q_R4 (index 3) - Revenue alignment (tax vs bank) - only if has business account
+    if (index === 3 && !hasBusinessBankAccount) return false;
+    
+    // Q_R8 (index 7) - Bank balance trending - only if has business account
+    if (index === 7 && !hasBusinessBankAccount) return false;
+    
+    // Q_R21 (index 20) - Average Daily Balance - only if has business account
+    if (index === 20 && !hasBusinessBankAccount) return false;
+    
+    // Q_R22 (index 21) - NSF/Overdraft count - only if has business account
+    if (index === 21 && !hasBusinessBankAccount) return false;
+    
+    // Derogatory items section - only show bankruptcy/collections/tax liens if user said "Yes, I have some"
+    // This means readinessAnswers[14] (Q_R15: noDerogItems) === 1 (which is the "Yes, I have some" option)
+    
+    // Q_R16 (index 15) - Bankruptcy - only show if has negative items (readinessAnswers[14] === 1)
     if (index === 15 && data.readinessAnswers[14] !== 1) return false;
     
-    // Q_R17 (hasCollections) - only if noDerogItems === 'false'
+    // Q_R17 (index 16) - Collections - only show if has negative items
     if (index === 16 && data.readinessAnswers[14] !== 1) return false;
     
-    // Q_R18 (hasTaxLiens) - only if noDerogItems === 'false'
+    // Q_R18 (index 17) - Tax Liens - only show if has negative items
     if (index === 17 && data.readinessAnswers[14] !== 1) return false;
     
-    // Q_R19 (bizCreditFile) - always show
-    // Q_R20 (inquiries30d) - always show
-    // Q_R21 (avgDailyBalance) - only if hasBusinessBankAccount === 'yes' (checked in foundation)
-    if (index === 20 && data.bankAccount !== 'dedicated' && data.bankAccount !== 'personal') return false;
-    
-    // Q_R22 (nsfCount) - only if hasBusinessBankAccount === 'yes'
-    if (index === 21 && data.bankAccount !== 'dedicated' && data.bankAccount !== 'personal') return false;
-    
-    // Q_R23 (monthlyRevenue) - always show
+    // All other questions show by default
     return true;
   };
 
