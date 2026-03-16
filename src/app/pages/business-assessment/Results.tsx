@@ -11,6 +11,8 @@ import { computeScore, getBand, computeExtendedResults } from './engine';
 import { evaluateProducts } from './productEligibility';
 import { getAllAuditItems, AuditItem } from '../../utils/businessData';
 import { EstimatedFunding } from '../StatusReports/EstimatedFunding';
+import { useAuth } from '../../contexts/AuthContext';
+import { ArrowRight } from 'lucide-react';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // Status Badge System - Per Elon's vision
@@ -77,6 +79,7 @@ function computeStatus(extendedResults: ExtendedResultsOutput): StatusInfo {
 
 export function Results() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [data, setData] = useState<UnifiedAnswers | null>(null);
   const [result, setResult] = useState<ReturnType<typeof computeScore> | null>(null);
   const [extendedResults, setExtendedResults] = useState<ExtendedResultsOutput | null>(null);
@@ -655,6 +658,102 @@ export function Results() {
 
         {activeTab === 'capital' && (
           <EstimatedFunding data={extendedResults!} />
+        )}
+
+        {/* Conversion CTA - Show only for non-logged-in users */}
+        {!user && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+            style={{
+              marginTop: '60px',
+              padding: '48px 32px',
+              background: '#131510',
+              border: '2px solid #8ab820',
+              borderRadius: '12px',
+              textAlign: 'center',
+            }}
+          >
+            <h2 style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(24px, 5vw, 32px)',
+              fontWeight: 800,
+              color: '#e4e8d8',
+              marginBottom: '16px',
+            }}>
+              Save Your FundScore & Get Your Full Roadmap
+            </h2>
+            <p style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '16px',
+              color: '#b0b3a3',
+              lineHeight: 1.6,
+              marginBottom: '32px',
+              maxWidth: '600px',
+              margin: '0 auto 32px',
+            }}>
+              Create a free account to save your results, track your progress, and unlock your complete 30 to 180 day bankability roadmap with personalized action steps.
+            </p>
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+            }}>
+              <button
+                onClick={() => navigate('/signup')}
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  padding: '14px 32px',
+                  background: '#8ab820',
+                  color: '#131510',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.3s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#9bc832'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#8ab820'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
+              >
+                Save My Results <ArrowRight size={16} />
+              </button>
+              <button
+                onClick={() => navigate('/login')}
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  padding: '14px 32px',
+                  background: 'transparent',
+                  color: '#8ab820',
+                  border: '1px solid #8ab820',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(138, 184, 32, 0.1)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent'
+                }}
+              >
+                Sign In
+              </button>
+            </div>
+          </motion.div>
         )}
       </div>
     </div>
