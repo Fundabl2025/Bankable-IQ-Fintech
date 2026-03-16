@@ -113,13 +113,14 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
   buckets.F.push(revenueScore);
 
   // ── F2: FUND SEPARATION (BANK ACCOUNT TYPE) ─────────────────────────────────
+  // BUG FIX: Apply penalty for 'none', full points for 'dedicated', partial for 'personal'
   if (data.bankAccount === 'dedicated') buckets.F.push(1.0);
   else if (data.bankAccount === 'personal') buckets.F.push(0.5);
-  else buckets.F.push(0.0);
+  else buckets.F.push(-0.5); // FIXED: Changed from 0.0 to -0.5 (significant penalty for no bank account)
 
   // ── F3: AVERAGE DAILY BALANCE ───────────────────────────────────────────────
   let balanceScore = 0.0; // Default zero if no data
-  if (data.avgDailyBalance === 'over_25k') balanceScore = 1.0;
+  if (data.avgDailyBalance === '25k_plus' || data.avgDailyBalance === 'over_25k') balanceScore = 1.0;
   else if (data.avgDailyBalance === '10k_25k') balanceScore = 0.8;
   else if (data.avgDailyBalance === '2k_10k') balanceScore = 0.55;
   else if (data.avgDailyBalance === '500_2k') balanceScore = 0.25;
@@ -129,9 +130,10 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
   // ── F4: NSF/OVERDRAFT COUNT ─────────────────────────────────────────────────
   let nsfScore = 1.0; // Default full credit if no data
   if (data.nsfCount === '0') nsfScore = 1.0;
+  else if (data.nsfCount === 'zero') nsfScore = 1.0; // Handle both '0' and 'zero'
   else if (data.nsfCount === '1_2') nsfScore = 0.7;
   else if (data.nsfCount === '3_5') nsfScore = 0.3;
-  else if (data.nsfCount === '5plus') nsfScore = 0.05;
+  else if (data.nsfCount === '5plus' || data.nsfCount === 'over_5') nsfScore = 0.05;
   buckets.F.push(nsfScore);
 
   // ══════════════════════════════════════════════════════════════════════════════
@@ -223,10 +225,10 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
   else if (data.inquiries30d === '5plus') buckets.N.push(0.1);
   else buckets.N.push(0.5);
 
-  // ══════════════════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════���════════════════════════════════
   // PART 2: READINESS ANSWERS → DIMENSION BUCKETS
   // Map old dimension codes to new ones for readiness questions
-  // ═══════════════════════════════════════════════════════════��══════════════════
+  // ═══════════════════════════════════════════════════════════���══════════════════
 
   const dimMap: Record<string, string> = {
     'C': 'P', // Old Credit → Personal
@@ -367,18 +369,23 @@ function calculateBankableScore(data: UnifiedAnswers): number {
   else if (data.monthlyRevenue === '5k_15k') revenuePoints = 10;
   else if (data.monthlyRevenue === 'under_5k') revenuePoints = 3;
 
-  // Bank rating (0-30 points)
+  // Bank rating (0-30 points, but can go negative for 'none')
+  // BUG FIX: Apply significant penalty for no bank account
   let bankPoints = 0;
   if (data.bankAccount === 'dedicated') bankPoints += 10;
   else if (data.bankAccount === 'personal') bankPoints += 3;
+  else bankPoints -= 15; // FIXED: Changed from 0 to -15 (significant penalty for hard stop)
   
-  if (data.avgDailyBalance === '25k_plus') bankPoints += 12;
+  if (data.avgDailyBalance === '25k_plus' || data.avgDailyBalance === '25k_plus') bankPoints += 12;
   else if (data.avgDailyBalance === '10k_25k') bankPoints += 9;
   else if (data.avgDailyBalance === '2k_10k') bankPoints += 6;
   else if (data.avgDailyBalance === '500_2k') bankPoints += 3;
+  else if (data.avgDailyBalance === 'near_zero') bankPoints -= 5; // FIXED: Added penalty for near_zero balance
   
-  if (data.nsfCount === 'zero') bankPoints += 8;
+  if (data.nsfCount === '0' || data.nsfCount === 'zero') bankPoints += 8;
   else if (data.nsfCount === '1_2') bankPoints += 3;
+  else if (data.nsfCount === '3_5') bankPoints -= 3; // FIXED: Added penalty for multiple NSFs
+  else if (data.nsfCount === '5plus' || data.nsfCount === 'over_5') bankPoints -= 8; // FIXED: Added penalty for many NSFs
 
   // Bank age contribution (0-20 points)
   let bankAgePoints = 0;
@@ -777,7 +784,7 @@ function computeContingencies(data: UnifiedAnswers): ExtendedResultsOutput['cont
 
 // ────────────────────────────────────────────────────────────────────────────────
 // HELPER: Bankable Items (20 items)
-// ──────────────────────────────────────��─────────────────────────────────────────
+// ─────────────────────────��────────────��─────────────────────────────────────────
 function computeBankableItems(data: UnifiedAnswers): ExtendedResultsOutput['bankableItems'] {
   const creditScores = [data.experian || 0, data.transunion || 0, data.equifax || 0].filter(s => s > 0).sort((a, b) => a - b);
   const composite = creditScores.length > 0 ? creditScores[Math.floor(creditScores.length / 2)] : 0;

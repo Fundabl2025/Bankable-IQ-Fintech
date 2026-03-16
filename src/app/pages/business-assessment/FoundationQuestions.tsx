@@ -942,7 +942,7 @@ function QuestionF6({ data, updateData, onNext, onBack, currentQuestionNumber, t
     { value: '25k_plus', label: '$25K+' },
   ];
 
-  const isValid = data.bankAccount && data.bankAge && data.avgDailyBalance;
+  const isValid = data.bankAccount && (data.bankAccount === 'none' || (data.bankAge && data.avgDailyBalance));
 
   return (
     <>
@@ -1031,85 +1031,89 @@ function QuestionF6({ data, updateData, onNext, onBack, currentQuestionNumber, t
         </div>
       </div>
 
-      {/* Account Age */}
-      <div style={{ marginBottom: '32px' }}>
-        <label
-          style={{
-            display: 'block',
-            fontFamily: 'var(--font-body)',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'var(--text-primary)',
-            marginBottom: '12px',
-          }}
-        >
-          Account Age
-        </label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-          {accountAges.map((age) => (
-            <motion.div
-              key={age.value}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => updateData({ bankAge: age.value as any })}
-              style={{
-                background: data.bankAge === age.value ? 'var(--primary-alpha)' : 'var(--bg-surface-2)',
-                border: data.bankAge === age.value ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
-                borderRadius: '12px',
-                padding: '16px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-body)',
-                fontSize: '15px',
-                fontWeight: 500,
-                color: 'var(--text-primary)',
-              }}
-            >
-              {age.label}
-            </motion.div>
-          ))}
+      {/* Account Age - ONLY SHOW if Bank Account is NOT 'none' */}
+      {data.bankAccount !== 'none' && (
+        <div style={{ marginBottom: '32px' }}>
+          <label
+            style={{
+              display: 'block',
+              fontFamily: 'var(--font-body)',
+              fontSize: '14px',
+              fontWeight: 500,
+              color: 'var(--text-primary)',
+              marginBottom: '12px',
+            }}
+          >
+            Account Age
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+            {accountAges.map((age) => (
+              <motion.div
+                key={age.value}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => updateData({ bankAge: age.value as any })}
+                style={{
+                  background: data.bankAge === age.value ? 'var(--primary-alpha)' : 'var(--bg-surface-2)',
+                  border: data.bankAge === age.value ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '15px',
+                  fontWeight: 500,
+                  color: 'var(--text-primary)',
+                }}
+              >
+                {age.label}
+              </motion.div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Average Balance */}
-      <div style={{ marginBottom: '8px' }}>
-        <label
-          style={{
-            display: 'block',
-            fontFamily: 'var(--font-body)',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'var(--text-primary)',
-            marginBottom: '12px',
-          }}
-        >
-          Average Daily Balance
-        </label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-          {balances.map((bal) => (
-            <motion.div
-              key={bal.value}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => updateData({ avgDailyBalance: bal.value as any })}
-              style={{
-                background: data.avgDailyBalance === bal.value ? 'var(--primary-alpha)' : 'var(--bg-surface-2)',
-                border: data.avgDailyBalance === bal.value ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
-                borderRadius: '12px',
-                padding: '16px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-body)',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: 'var(--text-primary)',
-              }}
-            >
-              {bal.label}
-            </motion.div>
-          ))}
+      {/* Average Daily Balance - ONLY SHOW if Bank Account is NOT 'none' */}
+      {data.bankAccount !== 'none' && (
+        <div style={{ marginBottom: '8px' }}>
+          <label
+            style={{
+              display: 'block',
+              fontFamily: 'var(--font-body)',
+              fontSize: '14px',
+              fontWeight: 500,
+              color: 'var(--text-primary)',
+              marginBottom: '12px',
+            }}
+          >
+            Average Daily Balance
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+            {balances.map((bal) => (
+              <motion.div
+                key={bal.value}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => updateData({ avgDailyBalance: bal.value as any })}
+                style={{
+                  background: data.avgDailyBalance === bal.value ? 'var(--primary-alpha)' : 'var(--bg-surface-2)',
+                  border: data.avgDailyBalance === bal.value ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: 'var(--text-primary)',
+                }}
+              >
+                {bal.label}
+              </motion.div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <NavigationButtons onNext={onNext} onBack={onBack} disabled={!isValid} step={5} />
     </>
