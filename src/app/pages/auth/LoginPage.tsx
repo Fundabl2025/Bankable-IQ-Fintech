@@ -37,18 +37,20 @@ export function LoginPage() {
 
   // Demo login bypasses auth and seeds pre-filled assessment data
   const handleDemoLogin = () => {
+    console.log('[v0] Demo mode button clicked!');
+    
     try {
-      console.log('[v0] Demo mode: starting...');
+      // Step 1: Seed data
+      console.log('[v0] Step 1: Calling seedDemoData...');
       seedDemoData();
-      console.log('[v0] Demo data seeded successfully');
-      // Use a small delay to ensure data is written before navigation
-      setTimeout(() => {
-        console.log('[v0] Navigating to /app');
-        navigate('/app');
-      }, 150);
+      console.log('[v0] Step 2: seedDemoData completed');
+      
+      // Step 2: Navigate using window.location as fallback
+      console.log('[v0] Step 3: About to navigate...');
+      window.location.href = '/app';
     } catch (error) {
       console.error('[v0] Demo mode error:', error);
-      setError('Failed to enter demo mode. Check console for details.');
+      alert('Demo mode error: ' + (error instanceof Error ? error.message : String(error)));
     }
   };
 
