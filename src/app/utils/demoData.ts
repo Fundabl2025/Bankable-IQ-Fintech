@@ -114,21 +114,25 @@ const DEMO_COMPLETED_ITEMS = [
  */
 export function seedDemoData(): void {
   try {
-    console.log('[v0] seedDemoData: Seeding unified_assessment');
-    localStorage.setItem('unified_assessment', JSON.stringify(DEMO_ASSESSMENT_DATA));
+    console.log('[v0] seedDemoData: Starting...');
     
-    console.log('[v0] seedDemoData: Seeding business profile');
-    // Also seed some business profile data for the dashboard
-    localStorage.setItem('fundready_business_profile', JSON.stringify({
+    // Save unified assessment data
+    const assessmentJSON = JSON.stringify(DEMO_ASSESSMENT_DATA);
+    localStorage.setItem('unified_assessment', assessmentJSON);
+    console.log('[v0] Saved unified_assessment:', assessmentJSON.length, 'bytes');
+    
+    // Save business profile
+    const profileData = {
       businessName: DEMO_ASSESSMENT_DATA.businessName,
       ownerName: `${DEMO_ASSESSMENT_DATA.ownerFirstName} ${DEMO_ASSESSMENT_DATA.ownerLastName}`,
       industry: DEMO_ASSESSMENT_DATA.industry,
       monthlyRevenue: DEMO_ASSESSMENT_DATA.monthlyRevenue,
       entityType: DEMO_ASSESSMENT_DATA.entityType,
-    }));
+    };
+    localStorage.setItem('fundready_business_profile', JSON.stringify(profileData));
+    console.log('[v0] Saved business profile');
 
-    console.log('[v0] seedDemoData: Seeding audit items (6 items)');
-    // Seed audit item completion status
+    // Save audit items completion status
     const completedItems: Record<string, { status: 'complete'; completedDate: string }> = {};
     const today = new Date().toISOString();
     
@@ -140,15 +144,16 @@ export function seedDemoData(): void {
     });
     
     localStorage.setItem('auditItems', JSON.stringify(completedItems));
+    console.log('[v0] Saved audit items:', DEMO_COMPLETED_ITEMS.length, 'items marked complete');
 
-    console.log('[v0] seedDemoData: Dispatching fundscoreUpdated event');
-    // Dispatch event to notify components
+    // Dispatch events to notify components
     window.dispatchEvent(new Event('fundscoreUpdated'));
     window.dispatchEvent(new Event('storage'));
+    console.log('[v0] Dispatched update events');
     
-    console.log('[v0] seedDemoData: Complete');
+    console.log('[v0] seedDemoData: Complete!');
   } catch (error) {
-    console.error('[v0] seedDemoData error:', error);
+    console.error('[v0] seedDemoData: ERROR -', error);
     throw error;
   }
 }
