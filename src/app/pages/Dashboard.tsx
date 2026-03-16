@@ -42,43 +42,44 @@ interface StatusInfo {
 }
 
 function getStatusInfo(bankableScore: number): StatusInfo {
+  // Using FundReady design system colors
   if (bankableScore < 80) {
     return {
       tier: 'Unprepared',
-      color: '#ef4444',
-      bgColor: 'rgba(239,68,68,0.1)',
+      color: 'var(--destructive)', // #b04428
+      bgColor: 'var(--destructive-bg)',
       capitalRange: '$0',
       description: 'Foundation building required'
     };
   } else if (bankableScore < 160) {
     return {
       tier: 'Fundable',
-      color: '#f97316',
-      bgColor: 'rgba(249,115,22,0.1)',
+      color: 'var(--warning)', // #c89020
+      bgColor: 'var(--warning-bg)',
       capitalRange: '$10K - $100K',
       description: 'Alternative capital eligible'
     };
   } else if (bankableScore < 190) {
     return {
       tier: 'Progressing',
-      color: '#eab308',
-      bgColor: 'rgba(234,179,8,0.1)',
+      color: 'var(--warning)', // #c89020
+      bgColor: 'var(--warning-bg)',
       capitalRange: '$100K - $500K',
       description: 'Growing bankability'
     };
   } else if (bankableScore < 210) {
     return {
       tier: 'Bankable',
-      color: '#10b981',
-      bgColor: 'rgba(16,185,129,0.1)',
+      color: 'var(--success)', // #10b981
+      bgColor: 'var(--success-bg)',
       capitalRange: '$500K - $1.5M',
       description: 'Bank capital eligible'
     };
   } else {
     return {
       tier: 'Elite',
-      color: '#8b5cf6',
-      bgColor: 'rgba(139,92,246,0.1)',
+      color: 'var(--primary)', // #8ab820
+      bgColor: 'var(--primary-bg)',
       capitalRange: '$1.5M+',
       description: 'Premium borrower status'
     };
@@ -117,11 +118,11 @@ function projectCapital(currentScore: number, blockerCount: number): CapitalMile
   };
 
   return [
-    { label: 'Today', days: 0, amount: scoreToAmount(today), score: today, color: '#64748b' },
-    { label: '30 Days', days: 30, amount: scoreToAmount(at30), score: at30, color: '#3b82f6' },
-    { label: '60 Days', days: 60, amount: scoreToAmount(at60), score: at60, color: '#06b6d4' },
-    { label: '90 Days', days: 90, amount: scoreToAmount(at90), score: at90, color: '#10b981' },
-    { label: '180 Days', days: 180, amount: scoreToAmount(at180), score: at180, color: '#8b5cf6' },
+    { label: 'Today', days: 0, amount: scoreToAmount(today), score: today, color: 'var(--muted-foreground)' },
+    { label: '30 Days', days: 30, amount: scoreToAmount(at30), score: at30, color: 'var(--warning)' },
+    { label: '60 Days', days: 60, amount: scoreToAmount(at60), score: at60, color: 'var(--warning)' },
+    { label: '90 Days', days: 90, amount: scoreToAmount(at90), score: at90, color: 'var(--success)' },
+    { label: '180 Days', days: 180, amount: scoreToAmount(at180), score: at180, color: 'var(--primary)' },
   ];
 }
 
@@ -186,14 +187,23 @@ export function Dashboard() {
     };
   }, []);
 
-  // Get audit items for blockers/actions
+  // Get audit items for blockers/actions (using severity classification)
   const allItems = getAllAuditItems();
   const incompleteItems = allItems.filter(i => i.status !== 'complete');
-  const criticalBlockers = incompleteItems
-    .filter(i => i.priority === 'critical' || i.priority === 'high')
-    .sort((a, b) => (b.ficoImpact || 0) - (a.ficoImpact || 0))
-    .slice(0, 5);
   
+  // Hard blockers first (auto-decline issues), then suppressors
+  const hardBlockers = incompleteItems
+    .filter(i => i.severity === 'hard_blocker')
+    .sort((a, b) => (b.ficoImpact || 0) - (a.ficoImpact || 0));
+  
+  const suppressors = incompleteItems
+    .filter(i => i.severity === 'suppressor')
+    .sort((a, b) => (b.ficoImpact || 0) - (a.ficoImpact || 0));
+  
+  // Critical blockers = hard blockers + top suppressors (total 5)
+  const criticalBlockers = [...hardBlockers, ...suppressors].slice(0, 5);
+  
+  // Top actions = all incomplete sorted by impact
   const topActions = incompleteItems
     .sort((a, b) => (b.ficoImpact || 0) - (a.ficoImpact || 0))
     .slice(0, 4);
@@ -304,7 +314,7 @@ export function Dashboard() {
             transition={{ delay: 0.15, duration: 0.5 }}
             className="mb-8"
             style={{
-              background: 'var(--bg-surface-1)',
+              background: 'var(--surface-1)',
               border: '2px solid var(--primary)',
               borderRadius: '2px',
               padding: '28px',
@@ -337,7 +347,7 @@ export function Dashboard() {
               {/* Current: Fundable Capital */}
               <div style={{
                 padding: '20px',
-                background: 'var(--bg-surface-2)',
+                background: 'var(--surface-2)',
                 borderRadius: '2px',
                 border: '1px solid var(--border)',
               }}>
@@ -363,16 +373,16 @@ export function Dashboard() {
                 </div>
                 <div style={{
                   padding: '12px',
-                  background: 'rgba(239,68,68,0.1)',
+                  background: 'var(--destructive-bg)',
                   borderRadius: '2px',
-                  border: '1px solid rgba(239,68,68,0.2)',
+                  border: '1px solid var(--destructive-border)',
                   marginBottom: '12px'
                 }}>
                   <div style={{ 
                     fontFamily: 'var(--font-display)',
                     fontSize: '16px',
                     fontWeight: 700,
-                    color: '#ef4444'
+                    color: 'var(--destructive)'
                   }}>
                     35%+ APR
                   </div>
@@ -423,7 +433,7 @@ export function Dashboard() {
               {/* Future: Bankable Capital */}
               <div style={{
                 padding: '20px',
-                background: 'var(--bg-surface-2)',
+                background: 'var(--surface-2)',
                 borderRadius: '2px',
                 border: '1px solid var(--border)',
               }}>
@@ -449,16 +459,16 @@ export function Dashboard() {
                 </div>
                 <div style={{
                   padding: '12px',
-                  background: 'rgba(16,185,129,0.1)',
+                  background: 'var(--success-bg)',
                   borderRadius: '2px',
-                  border: '1px solid rgba(16,185,129,0.2)',
+                  border: '1px solid var(--success-border)',
                   marginBottom: '12px'
                 }}>
                   <div style={{ 
                     fontFamily: 'var(--font-display)',
                     fontSize: '16px',
                     fontWeight: 700,
-                    color: '#10b981'
+                    color: 'var(--success)'
                   }}>
                     12-15% APR
                   </div>
@@ -741,60 +751,83 @@ export function Dashboard() {
                 fontFamily: 'var(--font-display)', 
                 fontWeight: 700, 
                 fontSize: '12px',
-                color: 'var(--destructive)' 
+                color: hardBlockers.length > 0 ? 'var(--destructive)' : 'var(--warning)' 
               }}>
-                {criticalBlockers.length} Critical
+                {hardBlockers.length > 0 ? `${hardBlockers.length} Blockers` : `${suppressors.length} Suppressors`}
               </span>
             </div>
 
             {/* Blocker List */}
             <div className="space-y-3">
-              {criticalBlockers.slice(0, 4).map((blocker, idx) => (
-                <div 
-                  key={blocker.id}
-                  className="flex items-start gap-3"
-                >
+              {criticalBlockers.slice(0, 4).map((blocker, idx) => {
+                const isHardBlocker = blocker.severity === 'hard_blocker';
+                const severityColor = isHardBlocker ? 'var(--destructive)' : 'var(--warning)';
+                const severityBg = isHardBlocker ? 'var(--destructive-bg)' : 'var(--warning-bg)';
+                
+                return (
                   <div 
-                    className="flex-shrink-0 w-5 h-5 flex items-center justify-center"
-                    style={{ 
-                      backgroundColor: 'rgba(239,68,68,0.1)',
-                      borderRadius: '2px',
-                      marginTop: '1px'
-                    }}
+                    key={blocker.id}
+                    className="flex items-start gap-3"
                   >
-                    <span style={{ 
-                      fontFamily: 'var(--font-display)', 
-                      fontWeight: 700, 
-                      fontSize: '10px',
-                      color: 'var(--destructive)' 
-                    }}>
-                      {idx + 1}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div style={{ 
-                      fontFamily: 'var(--font-body)', 
-                      fontSize: '13px',
-                      color: 'var(--foreground)',
-                      lineHeight: 1.4
-                    }}>
-                      {blocker.title}
+                    <div 
+                      className="flex-shrink-0 w-5 h-5 flex items-center justify-center"
+                      style={{ 
+                        backgroundColor: severityBg,
+                        borderRadius: '2px',
+                        marginTop: '1px'
+                      }}
+                    >
+                      <span style={{ 
+                        fontFamily: 'var(--font-display)', 
+                        fontWeight: 700, 
+                        fontSize: '10px',
+                        color: severityColor 
+                      }}>
+                        {idx + 1}
+                      </span>
                     </div>
-                    <div style={{ 
-                      fontFamily: 'var(--font-body)', 
-                      fontSize: '11px',
-                      color: 'var(--muted-foreground)',
-                      marginTop: '2px'
-                    }}>
-                      +{blocker.ficoImpact || 10} pts when resolved
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span style={{ 
+                          fontFamily: 'var(--font-body)', 
+                          fontSize: '13px',
+                          color: 'var(--foreground)',
+                          lineHeight: 1.4
+                        }}>
+                          {blocker.title}
+                        </span>
+                        {isHardBlocker && (
+                          <span style={{
+                            fontFamily: 'var(--font-display)',
+                            fontSize: '8px',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            color: severityColor,
+                            padding: '2px 4px',
+                            backgroundColor: severityBg,
+                            borderRadius: '2px',
+                          }}>
+                            Blocker
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ 
+                        fontFamily: 'var(--font-body)', 
+                        fontSize: '11px',
+                        color: 'var(--muted-foreground)',
+                        marginTop: '2px'
+                      }}>
+                        +{blocker.ficoImpact || 10} pts when resolved
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {criticalBlockers.length === 0 && (
                 <div 
                   className="flex items-center gap-2 p-3"
-                  style={{ backgroundColor: 'rgba(16,185,129,0.1)', borderRadius: '2px' }}
+                  style={{ backgroundColor: 'var(--success-bg)', borderRadius: '2px' }}
                 >
                   <CheckCircle2 style={{ color: 'var(--success)', width: 16, height: 16 }} />
                   <span style={{ 
@@ -1074,7 +1107,7 @@ export function Dashboard() {
           {[
             { label: 'Items Complete', value: `${progress.completedItems}/${progress.totalItems}`, icon: CheckCircle2, color: 'var(--success)' },
             { label: 'Overall Progress', value: `${progress.percentage}%`, icon: TrendingUp, color: 'var(--primary)' },
-            { label: 'Blockers Remaining', value: criticalBlockers.length.toString(), icon: AlertTriangle, color: 'var(--destructive)' },
+            { label: 'Hard Blockers', value: hardBlockers.length.toString(), icon: AlertTriangle, color: hardBlockers.length > 0 ? 'var(--destructive)' : 'var(--success)' },
             { label: 'Days to Bankable', value: distanceToBankable > 0 ? '~60' : '0', icon: Clock, color: 'var(--muted-foreground)' },
           ].map((stat) => (
             <div 
