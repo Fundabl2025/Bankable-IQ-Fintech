@@ -563,7 +563,7 @@ export function Dashboard() {
               <div style={{ 
                 fontFamily: 'var(--font-display)', 
                 fontWeight: 800, 
-                fontSize: '56px',
+                fontSize: 'clamp(32px, 5vw, 56px)',
                 lineHeight: 1,
                 letterSpacing: '-0.03em',
                 color: hasAssessment ? scoreBand.color : 'var(--muted-foreground)'
@@ -646,7 +646,7 @@ export function Dashboard() {
               <div style={{ 
                 fontFamily: 'var(--font-display)', 
                 fontWeight: 800, 
-                fontSize: '40px',
+                fontSize: 'clamp(28px, 4vw, 40px)',
                 lineHeight: 1,
                 letterSpacing: '-0.02em',
                 color: 'var(--primary)'
