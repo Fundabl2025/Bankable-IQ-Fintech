@@ -225,7 +225,7 @@ export function getDefaultAnswers(): UnifiedAnswers {
     industry: '',
     hasEIN: false,
     hasWebsite: false,
-    monthlyRevenue: 0,
+    monthlyRevenue: '', // FIXED: was 0, now empty string (matching type)
     ccSales: 0,
     bankAccount: '',
     bankAge: '',
@@ -239,19 +239,19 @@ export function getDefaultAnswers(): UnifiedAnswers {
     experian: 680,
     transunion: 680,
     equifax: 680,
-    utilization: 30,
+    utilization: '', // FIXED: was 30, now empty string (matching type)
     personalIncome: '',
-    hasBankruptcy: false,
+    hasBankruptcy: '', // FIXED: was false (boolean), now empty string (matching type)
     hasJudgments: false,
-    hasCollections: false,
+    hasCollections: '', // FIXED: was false (boolean), now empty string (matching type)
     hasChargeoffs: false,
     hasLatePay: false,
-    hasTaxLiens: false,
-    noDerogItems: false,
+    hasTaxLiens: '', // FIXED: was false (boolean), now empty string (matching type)
+    noDerogItems: '', // FIXED: was false (boolean), now empty string (matching type)
     bizCreditFile: '',
     inquiries30d: '',
 
     // Readiness
-    readinessAnswers: Array(14).fill(undefined),
+    readinessAnswers: Array(23).fill(undefined), // FIXED: was 14, now 23
   };
 }

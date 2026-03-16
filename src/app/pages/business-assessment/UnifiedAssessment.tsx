@@ -51,30 +51,53 @@ export function UnifiedAssessment() {
   
   const shouldShowReadinessQuestion = (readinessIdx: number): boolean => {
     const hasBusinessBankAccount = data.bankAccount === 'dedicated' || data.bankAccount === 'personal';
-    const hasNegativeItems = data.readinessAnswers[14] === 1; // Q_R15: "Yes, I have some"
+    const hasNegativeItems = data.noDerogItems === 'false'; // Q_R15: User selected "Yes, I have some"
     const businessAgeMonths = data.bankAge !== '0_6mo'; // More than 6 months
     const businessNotNew = data.startDate?.year && (new Date().getFullYear() - data.startDate.year > 0);
     
-    // BANKING CONDITIONALS (indices 2, 3, 7, 20, 21)
-    // Q_R3, Q_R4, Q_R8, Q_R21, Q_R22 only show if has business bank account
-    if ((readinessIdx === 2 || readinessIdx === 3 || readinessIdx === 20 || readinessIdx === 21) && !hasBusinessBankAccount) return false;
-    // Q_R8 additionally requires 6+ months of bank history
-    if (readinessIdx === 7 && (!hasBusinessBankAccount || !businessAgeMonths)) return false;
+    // DEBUG LOGGING
+    const shouldShow = (() => {
+      // BANKING CONDITIONALS (indices 2, 3, 7, 20, 21)
+      if ((readinessIdx === 2 || readinessIdx === 3 || readinessIdx === 20 || readinessIdx === 21) && !hasBusinessBankAccount) {
+        console.log(`[v0] Q_R${readinessIdx + 1} HIDDEN: Banking question, hasBusinessBankAccount=${hasBusinessBankAccount}`);
+        return false;
+      }
+      // Q_R8 additionally requires 6+ months of bank history
+      if (readinessIdx === 7 && (!hasBusinessBankAccount || !businessAgeMonths)) {
+        console.log(`[v0] Q_R8 HIDDEN: Bank balance trending requires 6+ months. hasBank=${hasBusinessBankAccount}, 6+mo=${businessAgeMonths}`);
+        return false;
+      }
+      
+      // REVENUE & FINANCIAL CONDITIONALS
+      // Q_R2 (index 1): P&L only if business not brand new
+      if (readinessIdx === 1 && !businessNotNew) {
+        console.log(`[v0] Q_R2 HIDDEN: P&L question, businessNotNew=${businessNotNew}`);
+        return false;
+      }
+      // Q_R5 (index 4): Revenue trend only if 6+ months history
+      if (readinessIdx === 4 && !businessAgeMonths) {
+        console.log(`[v0] Q_R5 HIDDEN: Revenue trend requires 6+ months. businessAgeMonths=${businessAgeMonths}`);
+        return false;
+      }
+      // Q_R6 (index 5): Profit margin only if revenue >= $5k/month
+      if (readinessIdx === 5 && data.monthlyRevenue === 'under_5k') {
+        console.log(`[v0] Q_R6 HIDDEN: Profit margin only if revenue >= $5k. monthlyRevenue=${data.monthlyRevenue}`);
+        return false;
+      }
+      
+      // DEROGATORY CONDITIONALS (indices 15, 16, 17)
+      // Q_R16, Q_R17, Q_R18 only show if user said "Yes, I have some" to Q_R15
+      if ((readinessIdx === 15 || readinessIdx === 16 || readinessIdx === 17) && !hasNegativeItems) {
+        console.log(`[v0] Q_R${readinessIdx + 1} HIDDEN: Derogatory question, hasNegativeItems=${hasNegativeItems} (data.noDerogItems=${data.noDerogItems})`);
+        return false;
+      }
+      
+      // All other readiness questions show by default
+      console.log(`[v0] Q_R${readinessIdx + 1} SHOWN`);
+      return true;
+    })();
     
-    // REVENUE & FINANCIAL CONDITIONALS
-    // Q_R2 (index 1): P&L only if business not brand new
-    if (readinessIdx === 1 && !businessNotNew) return false;
-    // Q_R5 (index 4): Revenue trend only if 6+ months history
-    if (readinessIdx === 4 && !businessAgeMonths) return false;
-    // Q_R6 (index 5): Profit margin only if revenue >= $5k/month
-    if (readinessIdx === 5 && data.monthlyRevenue === 'under_5k') return false;
-    
-    // DEROGATORY CONDITIONALS (indices 15, 16, 17)
-    // Q_R16, Q_R17, Q_R18 only show if user said "Yes, I have some" to Q_R15
-    if ((readinessIdx === 15 || readinessIdx === 16 || readinessIdx === 17) && !hasNegativeItems) return false;
-    
-    // All other readiness questions show by default (indices 0, 6, 8, 9, 10, 11, 12, 13, 14, 18, 19, 22)
-    return true;
+    return shouldShow;
   };
   
   const calculateApplicableQuestions = (): number => {
@@ -335,7 +358,17 @@ function ReadinessQuestion({ index, data, updateData, onNext, onBack, currentQue
   const handleSelectOption = (optionIndex: number) => {
     const newAnswers = [...data.readinessAnswers];
     newAnswers[index] = optionIndex;
-    updateData({ readinessAnswers: newAnswers });
+    
+    // Special handling: Q_R15 (index 14) is "Do you have negative items?"
+    // Option 0 = "No negative items" → set noDerogItems to 'true'
+    // Option 1 = "Yes, I have some" → set noDerogItems to 'false'
+    if (index === 14) {
+      const noDerogValue = optionIndex === 0 ? 'true' : 'false';
+      console.log(`[v0] Q_R15 answered: optionIndex=${optionIndex}, setting noDerogItems='${noDerogValue}'`);
+      updateData({ readinessAnswers: newAnswers, noDerogItems: noDerogValue });
+    } else {
+      updateData({ readinessAnswers: newAnswers });
+    }
   };
 
   return (
@@ -605,10 +638,10 @@ function getDefaultAnswers(): UnifiedAnswers {
     hasCollections: false,
     hasChargeoffs: false,
     hasLatePay: false,
-    hasTaxLiens: false,
-    noDerogItems: true,
+    hasTaxLiens: '',
+    noDerogItems: '', // Empty until Q_R15 is answered
     bizCreditFile: '',
     inquiries30d: '',
-    readinessAnswers: new Array(13).fill(undefined),
+    readinessAnswers: new Array(23).fill(undefined),
   };
 }
