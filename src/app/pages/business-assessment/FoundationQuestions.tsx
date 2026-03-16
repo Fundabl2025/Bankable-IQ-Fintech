@@ -439,7 +439,7 @@ function QuestionF2({ data, updateData, onNext, onBack, currentQuestionNumber, t
   );
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════���═════════
 // Q_F3: Start Date + Industry
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -795,8 +795,8 @@ function QuestionF5({ data, updateData, onNext, onBack, currentQuestionNumber, t
         totalQuestions={totalQuestions}
       />
 
-      {/* Monthly Revenue */}
-      <div style={{ marginBottom: '32px' }}>
+      {/* Monthly Revenue - BUTTON SELECT */}
+      <div style={{ marginBottom: '24px' }}>
         <label
           style={{
             display: 'block',
@@ -804,54 +804,57 @@ function QuestionF5({ data, updateData, onNext, onBack, currentQuestionNumber, t
             fontSize: '14px',
             fontWeight: 500,
             color: 'var(--text-primary)',
-            marginBottom: '8px',
+            marginBottom: '12px',
           }}
         >
           Average Gross Monthly Revenue
         </label>
-        <div
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '32px',
-            fontWeight: 700,
-            color: 'var(--primary)',
-            marginBottom: '16px',
-          }}
-        >
-          {formatCurrency(data.monthlyRevenue || 0)}
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="300000000"
-          step="100000"
-          value={data.monthlyRevenue || 0}
-          onChange={(e) => updateData({ monthlyRevenue: parseInt(e.target.value) })}
-          style={{
-            width: '100%',
-            height: '8px',
-            borderRadius: '4px',
-            background: 'var(--bg-surface-3)',
-            cursor: 'pointer',
-          }}
-        />
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontFamily: 'var(--font-body)',
-            fontSize: '11px',
-            color: 'var(--text-muted)',
-            marginTop: '8px',
-          }}
-        >
-          <span>$0</span>
-          <span>$300M</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {[
+            { value: 'under_5k', label: 'Under $5,000' },
+            { value: '5k_15k', label: '$5,000 - $15,000' },
+            { value: '15k_40k', label: '$15,000 - $40,000' },
+            { value: '40k_100k', label: '$40,000 - $100,000' },
+            { value: 'over_100k', label: 'Over $100,000' },
+          ].map((option) => (
+            <motion.button
+              key={option.value}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => updateData({ monthlyRevenue: option.value as any })}
+              style={{
+                background: '#131510',
+                border: data.monthlyRevenue === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
+                color: data.monthlyRevenue === option.value ? '#8ab820' : '#e4e8d8',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                fontFamily: 'var(--font-body)',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                textAlign: 'left',
+                width: '100%',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e: any) => {
+                if (data.monthlyRevenue !== option.value) {
+                  e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
+                }
+              }}
+              onMouseLeave={(e: any) => {
+                if (data.monthlyRevenue !== option.value) {
+                  e.currentTarget.style.borderColor = '#6b7258';
+                }
+              }}
+            >
+              {option.label}
+            </motion.button>
+          ))}
         </div>
       </div>
 
-      {/* CC Sales */}
-      <div style={{ marginBottom: '8px' }}>
+      {/* CC Sales - BUTTON SELECT */}
+      <div style={{ marginBottom: '24px' }}>
         <label
           style={{
             display: 'block',
@@ -859,49 +862,52 @@ function QuestionF5({ data, updateData, onNext, onBack, currentQuestionNumber, t
             fontSize: '14px',
             fontWeight: 500,
             color: 'var(--text-primary)',
-            marginBottom: '8px',
+            marginBottom: '12px',
           }}
         >
           Total Monthly Credit Card Sales
         </label>
-        <div
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '32px',
-            fontWeight: 700,
-            color: 'var(--primary)',
-            marginBottom: '16px',
-          }}
-        >
-          {formatCurrency(data.ccSales || 0)}
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="1000000"
-          step="10000"
-          value={data.ccSales || 0}
-          onChange={(e) => updateData({ ccSales: parseInt(e.target.value) })}
-          style={{
-            width: '100%',
-            height: '8px',
-            borderRadius: '4px',
-            background: 'var(--bg-surface-3)',
-            cursor: 'pointer',
-          }}
-        />
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontFamily: 'var(--font-body)',
-            fontSize: '11px',
-            color: 'var(--text-muted)',
-            marginTop: '8px',
-          }}
-        >
-          <span>$0</span>
-          <span>$1M</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {[
+            { value: 'no_cards', label: 'I do not accept credit cards' },
+            { value: 'under_5k', label: 'Under $5,000' },
+            { value: '5k_15k', label: '$5,000 - $15,000' },
+            { value: '15k_50k', label: '$15,000 - $50,000' },
+            { value: 'over_50k', label: 'Over $50,000' },
+          ].map((option) => (
+            <motion.button
+              key={option.value}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => updateData({ ccSales: option.value as any })}
+              style={{
+                background: '#131510',
+                border: data.ccSales === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
+                color: data.ccSales === option.value ? '#8ab820' : '#e4e8d8',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                fontFamily: 'var(--font-body)',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                textAlign: 'left',
+                width: '100%',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e: any) => {
+                if (data.ccSales !== option.value) {
+                  e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
+                }
+              }}
+              onMouseLeave={(e: any) => {
+                if (data.ccSales !== option.value) {
+                  e.currentTarget.style.borderColor = '#6b7258';
+                }
+              }}
+            >
+              {option.label}
+            </motion.button>
+          ))}
         </div>
       </div>
 
