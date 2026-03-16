@@ -879,69 +879,6 @@ export function Results() {
 
 export default Results;
 
-// ════════════════════════════════════════════════════════════════════════════════
-// Status Badge System - Per Elon's vision
-// Maps FundScore + Bankable Score to clear status progression
-// ════════════════════════════════════════════════════════════════════════════════
-
-interface StatusInfo {
-  status: 'Unprepared' | 'Fundable' | 'Progressing' | 'Bankable' | 'Elite';
-  bankableScore: number;
-  bankableThreshold: number;
-  pointsToBankable: number;
-  statusColor: string;
-  statusBgColor: string;
-  capitalTier: string;
-}
-
-function computeStatus(extendedResults: ExtendedResultsOutput): StatusInfo {
-  const bankableScore = extendedResults.sbssScore || 0;
-  const bankableThreshold = 160;
-  const pointsToBankable = Math.max(0, bankableThreshold - bankableScore);
-
-  let status: 'Unprepared' | 'Fundable' | 'Progressing' | 'Bankable' | 'Elite';
-  let statusColor: string;
-  let statusBgColor: string;
-  let capitalTier: string;
-
-  if (bankableScore < 80) {
-    status = 'Unprepared';
-    statusColor = '#ef4444';
-    statusBgColor = 'rgba(239,68,68,0.1)';
-    capitalTier = 'Tier 0 - Preparing Foundation';
-  } else if (bankableScore < 160) {
-    status = 'Fundable';
-    statusColor = '#f97316';
-    statusBgColor = 'rgba(249,115,22,0.1)';
-    capitalTier = 'Tier 1 - Alternative Capital';
-  } else if (bankableScore < 190) {
-    status = 'Progressing';
-    statusColor = '#eab308';
-    statusBgColor = 'rgba(234,179,8,0.1)';
-    capitalTier = 'Tier 2 - Growing Bankability';
-  } else if (bankableScore < 210) {
-    status = 'Bankable';
-    statusColor = '#10b981';
-    statusBgColor = 'rgba(16,185,129,0.1)';
-    capitalTier = 'Tier 3 - Bank Capital Eligible';
-  } else {
-    status = 'Elite';
-    statusColor = '#8b5cf6';
-    statusBgColor = 'rgba(139,92,246,0.1)';
-    capitalTier = 'Tier 4 - Elite Borrower';
-  }
-
-  return {
-    status,
-    bankableScore,
-    bankableThreshold,
-    pointsToBankable,
-    statusColor,
-    statusBgColor,
-    capitalTier,
-  };
-}
-
 export function Results() {
   const navigate = useNavigate();
   const { user } = useAuth();
