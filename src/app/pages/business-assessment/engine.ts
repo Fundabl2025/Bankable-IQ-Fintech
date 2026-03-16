@@ -61,35 +61,56 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
   else buckets.P.push(0.0); // No credit score provided
 
   // ── P2: CREDIT UTILIZATION ──────────────────────────────────────────────────
-  const utilization = data.utilization || 0;
-  if (utilization === 0) buckets.P.push(0.0); // No data provided
-  else if (utilization < 20) buckets.P.push(1.0);
-  else if (utilization <= 30) buckets.P.push(0.75);
-  else if (utilization <= 50) buckets.P.push(0.45);
-  else buckets.P.push(0.1);
+  let utilizationScore = 0.5; // Default neutral
+  if (data.utilization === 'under_10') utilizationScore = 1.0;
+  else if (data.utilization === '10_30') utilizationScore = 0.8;
+  else if (data.utilization === '30_50') utilizationScore = 0.5;
+  else if (data.utilization === '50_75') utilizationScore = 0.2;
+  else if (data.utilization === 'over_75') utilizationScore = 0.0;
+  else if (data.utilization) utilizationScore = 0.5; // Unknown value
+  else utilizationScore = 0.0; // No data provided
+  buckets.P.push(utilizationScore);
 
   // ── P3: DEROGATORY ITEMS ────────────────────────────────────────────────────
-  const hasRecentBankruptcy = data.hasBankruptcy && data.bankruptcyAge === 'under_2yr';
-  const hasSeriousDerog = data.hasCollections || data.hasChargeoffs || data.hasTaxLiens;
+  let derogScore = 1.0; // Start with full credit (no negatives)
   
-  if (data.noDerogItems) buckets.P.push(1.0);
-  else if (hasRecentBankruptcy) buckets.P.push(0.1);
-  else if (hasSeriousDerog) buckets.P.push(0.2);
-  else if (data.hasLatePay) buckets.P.push(0.4);
-  else buckets.P.push(0.6);
+  // Check for clean credit report flag
+  if (data.noDerogItems === 'false') {
+    // Has negative items - check specifics
+    if (data.hasBankruptcy === 'recent') derogScore = 0.0; // -30 penalty
+    else if (data.hasBankruptcy === 'aging') derogScore = 0.3; // -15 penalty
+    else if (data.hasBankruptcy === 'old') derogScore = 0.7; // -5 penalty
+    
+    if (data.hasCollections === 'active') derogScore = Math.min(derogScore, 0.0); // -25 penalty
+    else if (data.hasCollections === 'resolved') derogScore = Math.min(derogScore, 0.8); // -5 penalty
+    
+    if (data.hasTaxLiens && data.hasTaxLiens !== 'no') derogScore = Math.min(derogScore, 0.0); // -20 penalty
+  } else if (data.noDerogItems === 'true') {
+    derogScore = 1.0; // Clean report bonus
+  }
+  
+  buckets.P.push(derogScore);
+
+  // ── P4: RECENT CREDIT INQUIRIES (new credit seeking) ─────────────────────────
+  let inquiryScore = 1.0;
+  if (data.inquiries30d === '0') inquiryScore = 1.0;
+  else if (data.inquiries30d === '1_2') inquiryScore = 0.85;
+  else if (data.inquiries30d === '3_4') inquiryScore = 0.5;
+  else if (data.inquiries30d === '5plus') inquiryScore = 0.1;
+  buckets.P.push(inquiryScore);
 
   // ══════════════════════════════════════════════════════════════════════════════
   // F: FINANCIAL HEALTH (25%) — Revenue, cash flow, deposits, NSF
   // ══════════════════════════════════════════════════════════════════════════════
 
   // ── F1: MONTHLY REVENUE ─────────────────────────────────────────────────────
-  const revenue = data.monthlyRevenue || 0;
-  if (revenue >= 50000) buckets.F.push(1.0);
-  else if (revenue >= 25000) buckets.F.push(0.78);
-  else if (revenue >= 10000) buckets.F.push(0.55);
-  else if (revenue >= 5000) buckets.F.push(0.3);
-  else if (revenue >= 2000) buckets.F.push(0.1);
-  else buckets.F.push(0.05);
+  let revenueScore = 0.5; // Default neutral
+  if (data.monthlyRevenue === 'over_100k') revenueScore = 1.0;
+  else if (data.monthlyRevenue === '40k_100k') revenueScore = 0.85;
+  else if (data.monthlyRevenue === '15k_40k') revenueScore = 0.65;
+  else if (data.monthlyRevenue === '5k_15k') revenueScore = 0.35;
+  else if (data.monthlyRevenue === 'under_5k') revenueScore = 0.1;
+  buckets.F.push(revenueScore);
 
   // ── F2: FUND SEPARATION (BANK ACCOUNT TYPE) ─────────────────────────────────
   if (data.bankAccount === 'dedicated') buckets.F.push(1.0);
@@ -97,19 +118,21 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
   else buckets.F.push(0.0);
 
   // ── F3: AVERAGE DAILY BALANCE ───────────────────────────────────────────────
-  const balance = data.avgDailyBalance;
-  if (balance === '25k_plus') buckets.F.push(1.0);
-  else if (balance === '10k_25k') buckets.F.push(0.8);
-  else if (balance === '2k_10k') buckets.F.push(0.55);
-  else if (balance === '500_2k') buckets.F.push(0.25);
-  else buckets.F.push(0.0);
+  let balanceScore = 0.0; // Default zero if no data
+  if (data.avgDailyBalance === 'over_25k') balanceScore = 1.0;
+  else if (data.avgDailyBalance === '10k_25k') balanceScore = 0.8;
+  else if (data.avgDailyBalance === '2k_10k') balanceScore = 0.55;
+  else if (data.avgDailyBalance === '500_2k') balanceScore = 0.25;
+  else if (data.avgDailyBalance === 'near_zero') balanceScore = 0.0;
+  buckets.F.push(balanceScore);
 
   // ── F4: NSF/OVERDRAFT COUNT ─────────────────────────────────────────────────
-  const nsf = data.nsfCount;
-  if (nsf === 'zero') buckets.F.push(1.0);
-  else if (nsf === '1_2') buckets.F.push(0.65);
-  else if (nsf === '3_5') buckets.F.push(0.25);
-  else buckets.F.push(0.0);
+  let nsfScore = 1.0; // Default full credit if no data
+  if (data.nsfCount === '0') nsfScore = 1.0;
+  else if (data.nsfCount === '1_2') nsfScore = 0.7;
+  else if (data.nsfCount === '3_5') nsfScore = 0.3;
+  else if (data.nsfCount === '5plus') nsfScore = 0.05;
+  buckets.F.push(nsfScore);
 
   // ══════════════════════════════════════════════════════════════════════════════
   // B: BUSINESS PROFILE (10%) — Entity, industry
@@ -209,7 +232,7 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
     'C': 'P', // Old Credit → Personal
     'D': 'C', // Old Documentation → Compliance
     'F': 'F', // Financial stays same
-    'B': 'F', // Old Banking → Financial
+    'B': 'S', // Old Banking → Stability (FIXED: was 'F')
     'S': 'B', // Old Structure → Business
     'N': 'N', // Narrative → File
   };
@@ -237,7 +260,7 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
 
   // ══════════════════════════════════════════════════════════════════════════════
   // COMPUTE DIMENSION AVERAGES
-  // ══════════════════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════��════════════════════════
 
   const dimAvg: Record<string, number> = {};
   Object.keys(buckets).forEach((dim) => {

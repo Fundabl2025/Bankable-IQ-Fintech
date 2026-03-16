@@ -19,9 +19,9 @@ export function UnifiedAssessment() {
   // Assessment data
   const [data, setData] = useState<UnifiedAnswers>(getDefaultAnswers);
   
-  // Current question (0-22 for 23 total questions)
+  // Current question (0-32 for 33 total questions)
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const totalQuestions = 23; // 10 foundation + 13 readiness
+  const totalQuestions = 33; // 10 foundation + 23 readiness
 
   // Live score
   const [liveScore, setLiveScore] = useState(0);
@@ -47,7 +47,7 @@ export function UnifiedAssessment() {
 
   // Navigation handlers
   const handleNext = () => {
-    if (currentQuestion < 22) {
+    if (currentQuestion < 32) {
       setCurrentQuestion(currentQuestion + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
@@ -74,7 +74,7 @@ export function UnifiedAssessment() {
 
   // Determine which component to render based on question number
   const isFoundationQuestion = currentQuestion < 10; // Q0-9 are foundation
-  const readinessIndex = currentQuestion - 10; // Q10-22 map to readiness 0-12
+  const readinessIndex = currentQuestion - 10; // Q10-32 map to readiness 0-22
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
@@ -233,6 +233,37 @@ function LiveScoreBar({ score }: { score: number }) {
 function ReadinessQuestion({ index, data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions }: any) {
   const question = READINESS_QUESTIONS[index];
   const selectedAnswer = data.readinessAnswers[index];
+
+  // Conditional logic to hide questions based on user answers
+  const shouldShowQuestion = (): boolean => {
+    // Q_R14 (utilization) - always show
+    // Q_R15 (noDerogItems) - always show
+    // Q_R16 (hasBankruptcy) - only show if user said "Yes, I have some" to Q_R15
+    if (index === 15 && data.readinessAnswers[14] !== 1) return false;
+    
+    // Q_R17 (hasCollections) - only if noDerogItems === 'false'
+    if (index === 16 && data.readinessAnswers[14] !== 1) return false;
+    
+    // Q_R18 (hasTaxLiens) - only if noDerogItems === 'false'
+    if (index === 17 && data.readinessAnswers[14] !== 1) return false;
+    
+    // Q_R19 (bizCreditFile) - always show
+    // Q_R20 (inquiries30d) - always show
+    // Q_R21 (avgDailyBalance) - only if hasBusinessBankAccount === 'yes' (checked in foundation)
+    if (index === 20 && data.bankAccount !== 'dedicated' && data.bankAccount !== 'personal') return false;
+    
+    // Q_R22 (nsfCount) - only if hasBusinessBankAccount === 'yes'
+    if (index === 21 && data.bankAccount !== 'dedicated' && data.bankAccount !== 'personal') return false;
+    
+    // Q_R23 (monthlyRevenue) - always show
+    return true;
+  };
+
+  if (!shouldShowQuestion()) {
+    // Skip to next question automatically
+    setTimeout(() => onNext(), 0);
+    return null;
+  }
 
   const handleSelectOption = (optionIndex: number) => {
     const newAnswers = [...data.readinessAnswers];

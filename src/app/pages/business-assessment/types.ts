@@ -29,16 +29,16 @@ export interface UnifiedAnswers {
   websiteUrl?: string;
   
   // Q_F5: Revenue & CC Sales
-  monthlyRevenue: number;
+  monthlyRevenue: 'under_5k' | '5k_15k' | '15k_40k' | '40k_100k' | 'over_100k' | '';
   ccSales: number;
   
   // Q_F6: Banking (3 sub-fields)
   bankAccount: 'dedicated' | 'personal' | 'none' | '';
   bankAge: '0_6mo' | '6_12mo' | '12_24mo' | '24plus' | '';
-  avgDailyBalance: 'near_zero' | '500_2k' | '2k_10k' | '10k_25k' | '25k_plus' | '';
+  avgDailyBalance: 'near_zero' | '500_2k' | '2k_10k' | '10k_25k' | 'over_25k' | '';
   
   // Q_F7: NSFs & Assets
-  nsfCount: 'zero' | '1_2' | '3_5' | 'over_5' | '';
+  nsfCount: '0' | '1_2' | '3_5' | '5plus' | '';
   arBalance: number;
   equipmentValue: number;
   poBalance: number;
@@ -58,18 +58,17 @@ export interface UnifiedAnswers {
   equifax: number;
   
   // Q_F9: Utilization & Income
-  utilization: number;
+  utilization: 'under_10' | '10_30' | '30_50' | '50_75' | 'over_75' | '';
   personalIncome: 'under_35k' | '35_75k' | '75_125k' | '125_250k' | 'over_250k' | '';
   
   // Q_F10: Bankruptcy & Derogatories
-  hasBankruptcy: boolean;
-  bankruptcyAge?: 'under_2yr' | '2_7yr' | 'over_7yr';
+  hasBankruptcy: 'no' | 'recent' | 'aging' | 'old' | '';
   hasJudgments: boolean;
-  hasCollections: boolean;
+  hasCollections: 'no' | 'active' | 'resolved' | '';
   hasChargeoffs: boolean;
   hasLatePay: boolean;
-  hasTaxLiens: boolean;
-  noDerogItems: boolean;
+  hasTaxLiens: 'no' | 'federal' | 'state' | 'both' | '';
+  noDerogItems: 'true' | 'false' | '';
   
   // Q_F11: Business Credit & Inquiries
   bizCreditFile: 'paydex_80plus' | 'below_80' | 'building' | 'none' | '';
@@ -82,7 +81,7 @@ export interface UnifiedAnswers {
   businessZip?: string;
   businessPhone?: string;
   
-  // ── PART 2: READINESS (14 questions, indices 0–13) ─────────────────────────
+  // ── PART 2: READINESS (23 questions, indices 0–22) ─────────────────────────
   readinessAnswers: (number | undefined)[];
 }
 

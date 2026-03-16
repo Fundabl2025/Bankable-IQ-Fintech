@@ -372,12 +372,326 @@ export const READINESS_QUESTIONS: Question[] = [
       },
     ],
   },
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // SECTION H — PERSONAL CREDIT UTILIZATION (Q_R14)
+  // ──────────────────────────────────────────────────────────────────────────────
+  {
+    text: "What is your current personal credit card utilization rate?",
+    why: "Credit utilization accounts for 30% of FICO scores. Over 30% signals financial stress to lenders. Lenders read this as: 'This person relies on credit to operate' — which means more risk in downturns.",
+    type: 'options',
+    options: [
+      {
+        label: 'Under 10%',
+        sub: 'Excellent utilization',
+        score: { P: 1.0 },
+      },
+      {
+        label: '10% to 30%',
+        sub: 'Good utilization',
+        score: { P: 0.8 },
+      },
+      {
+        label: '30% to 50%',
+        sub: 'Moderate — approaching risk zone',
+        score: { P: 0.5 },
+      },
+      {
+        label: '50% to 75%',
+        sub: 'High utilization — stress signal',
+        score: { P: 0.2 },
+      },
+      {
+        label: 'Over 75%',
+        sub: 'Critical — major red flag',
+        score: { P: 0.0 },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // SECTION I — CLEAN CREDIT REPORT (Q_R15)
+  // ──────────────────────────────────────────────────────────────────────────────
+  {
+    text: "Do you have any negative items on your personal credit report?",
+    why: "Negative items tell lenders about your behavior under stress. Even resolved items signal past financial difficulty. Lenders use this to decide: 'Did this person learn from problems or make them worse?'",
+    type: 'options',
+    options: [
+      {
+        label: 'No negative items',
+        sub: 'Clean credit profile',
+        score: { P: 1.0 },
+      },
+      {
+        label: 'Yes, I have some',
+        sub: 'Negative items present',
+        score: { P: 0.0 }, // Conditional logic determines if next questions show
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // SECTION J — BANKRUPTCY HISTORY (Q_R16 - Conditional)
+  // ──────────────────────────────────────────────────────────────────────────────
+  {
+    text: "Have you filed for bankruptcy?",
+    why: "Bankruptcy is the ultimate credit event. Recent bankruptcies are near-automatic denials. Age matters significantly — a bankruptcy from 10 years ago is different from one last year.",
+    type: 'options',
+    options: [
+      {
+        label: 'No',
+        sub: 'No bankruptcy history',
+        score: { P: 1.0 },
+      },
+      {
+        label: 'Yes, within the last 2 years',
+        sub: 'Recent bankruptcy — very serious',
+        score: { P: 0.0 }, // -30 penalty in engine
+      },
+      {
+        label: 'Yes, 2 to 7 years ago',
+        sub: 'Aging bankruptcy',
+        score: { P: 0.3 }, // -15 penalty in engine
+      },
+      {
+        label: 'Yes, over 7 years ago',
+        sub: 'Old bankruptcy — minor impact',
+        score: { P: 0.7 }, // -5 penalty in engine
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // SECTION K — COLLECTIONS / CHARGEOFFS (Q_R17 - Conditional)
+  // ──────────────────────────────────────────────────────────────────────────────
+  {
+    text: "Do you have any collections or charge-offs on your credit report?",
+    why: "Collections mean you broke a payment agreement and an account went to third-party collection. This signals defaulting on financial obligations — the exact behavior lenders fear most.",
+    type: 'options',
+    options: [
+      {
+        label: 'No',
+        sub: 'No collections or chargeoffs',
+        score: { P: 1.0 },
+      },
+      {
+        label: 'Yes, currently active',
+        sub: 'Active collection accounts',
+        score: { P: 0.0 }, // -25 penalty in engine
+      },
+      {
+        label: 'Yes, but paid or resolved',
+        sub: 'Resolved collections',
+        score: { P: 0.8 }, // -5 penalty in engine
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // SECTION L — TAX LIENS (Q_R18 - Conditional)
+  // ──────────────────────────────────────────────────────────────────────────────
+  {
+    text: "Do you have any tax liens?",
+    why: "Tax liens mean you owe money to the government and have failed to resolve it. Governments always collect first — even before your lenders. This creates a priority problem lenders cannot ignore.",
+    type: 'options',
+    options: [
+      {
+        label: 'No',
+        sub: 'No tax liens',
+        score: { P: 1.0 },
+      },
+      {
+        label: 'Yes, federal',
+        sub: 'Federal tax lien',
+        score: { P: 0.0 }, // -20 penalty in engine
+      },
+      {
+        label: 'Yes, state',
+        sub: 'State tax lien',
+        score: { P: 0.0 }, // -20 penalty in engine
+      },
+      {
+        label: 'Yes, both federal and state',
+        sub: 'Multiple tax liens',
+        score: { P: 0.0 }, // -20 penalty in engine
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // SECTION M — BUSINESS CREDIT PROFILE (Q_R19)
+  // ──────────────────────────────────────────────────────────────────────────────
+  {
+    text: "Does your business have an established credit profile with Dun & Bradstreet, Experian Business, or Equifax Business?",
+    why: "Business credit is separate from personal credit. Many lenders check business credit even for small businesses. A strong business credit score signals: 'This company pays its suppliers and vendors on time.'",
+    type: 'options',
+    options: [
+      {
+        label: 'Yes, strong payment history (Paydex 80+)',
+        sub: 'Excellent business credit',
+        score: { N: 1.0 },
+      },
+      {
+        label: 'Yes, but payment history is mixed',
+        sub: 'Established but not strong',
+        score: { N: 0.6 },
+      },
+      {
+        label: 'Just starting to build business credit',
+        sub: 'New business credit profile',
+        score: { N: 0.35 },
+      },
+      {
+        label: 'No business credit profile exists',
+        sub: 'No business credit yet',
+        score: { N: 0.0 },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // SECTION N — NEW CREDIT INQUIRIES (Q_R20)
+  // ──────────────────────────────────────────────────────────────────────────────
+  {
+    text: "How many new credit applications or inquiries have you had in the last 30 days?",
+    why: "Multiple inquiries in short periods signal credit-seeking desperation to lenders. Lenders use this as an early warning: 'This person is being rejected elsewhere and applying everywhere.'",
+    type: 'options',
+    options: [
+      {
+        label: 'None',
+        sub: 'No recent inquiries',
+        score: { P: 1.0 },
+      },
+      {
+        label: '1 to 2',
+        sub: 'Minor inquiry activity',
+        score: { P: 0.85 },
+      },
+      {
+        label: '3 to 4',
+        sub: 'Moderate inquiry activity',
+        score: { P: 0.5 },
+      },
+      {
+        label: '5 or more',
+        sub: 'High inquiry activity — red flag',
+        score: { P: 0.1 },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // SECTION O — AVERAGE DAILY BANK BALANCE (Q_R21 - Conditional)
+  // ──────────────────────────────────────────────────────────────────────────────
+  {
+    text: "What is the average daily balance in your business bank account?",
+    why: "Average daily balance tells lenders about operational cash flow. Healthy businesses accumulate cash. Struggling businesses burn through it. Lenders see cash position as a direct signal of business health.",
+    type: 'options',
+    options: [
+      {
+        label: 'Near zero or negative',
+        sub: 'Cash flow stress signal',
+        score: { B: 0.0 },
+      },
+      {
+        label: '$500 to $2,000',
+        sub: 'Minimal cash reserves',
+        score: { B: 0.25 },
+      },
+      {
+        label: '$2,000 to $10,000',
+        sub: 'Moderate cash position',
+        score: { B: 0.55 },
+      },
+      {
+        label: '$10,000 to $25,000',
+        sub: 'Good cash reserves',
+        score: { B: 0.8 },
+      },
+      {
+        label: 'Over $25,000',
+        sub: 'Strong cash reserves',
+        score: { B: 1.0 },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // SECTION P — NSF / OVERDRAFT EVENTS (Q_R22 - Conditional)
+  // ──────────────────────────────────────────────────────────────────────────────
+  {
+    text: "In the last 12 months, how many times has your business bank account had insufficient funds or overdrafts?",
+    why: "NSF events are a hard signal of cash flow dysfunction. Each event tells lenders: 'This business cannot manage basic cash flow. It's unpredictable and risky.'",
+    type: 'options',
+    options: [
+      {
+        label: 'Never',
+        sub: 'No NSF incidents',
+        score: { B: 1.0 },
+      },
+      {
+        label: '1 to 2 times',
+        sub: 'Occasional NSF events',
+        score: { B: 0.7 },
+      },
+      {
+        label: '3 to 5 times',
+        sub: 'Multiple NSF incidents',
+        score: { B: 0.3 },
+      },
+      {
+        label: 'More than 5 times',
+        sub: 'Chronic NSF problems',
+        score: { B: 0.05 },
+      },
+    ],
+  },
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // SECTION Q — MONTHLY REVENUE (Q_R23)
+  // ──────────────────────────────────────────────────────────────────────────────
+  {
+    text: "What is your average monthly revenue over the last 3 months?",
+    why: "Revenue size determines loan size eligibility and repayment capacity. $5K/month business can't support a $100K loan. Lenders use monthly revenue as the first filter for product eligibility.",
+    type: 'options',
+    options: [
+      {
+        label: 'Under $5,000',
+        sub: 'Micro-revenue business',
+        score: { F: 0.1 },
+      },
+      {
+        label: '$5,000 to $15,000',
+        sub: 'Small revenue base',
+        score: { F: 0.35 },
+      },
+      {
+        label: '$15,000 to $40,000',
+        sub: 'Moderate revenue',
+        score: { F: 0.65 },
+      },
+      {
+        label: '$40,000 to $100,000',
+        sub: 'Healthy revenue scale',
+        score: { F: 0.85 },
+      },
+      {
+        label: 'Over $100,000',
+        sub: 'Strong revenue base',
+        score: { F: 1.0 },
+      },
+    ],
+  },
 ];
 
 // Question indices for each readiness section
 export const READINESS_SECTIONS = {
-  Documentation: [0, 1, 2, 3],    // Q_R1–Q_R4
-  'Cash Flow': [4, 5, 6],         // Q_R5–Q_R7
-  Structure: [7, 8],               // Q_R8, Q_R9
-  Narrative: [9, 10, 11, 12],     // Q_R10–Q_R13 (removed Q_R14 duplicate)
+  Documentation: [0, 1, 2, 3],                    // Q_R1–Q_R4
+  'Cash Flow': [4, 5, 6],                         // Q_R5–Q_R7
+  Structure: [7, 8],                              // Q_R8–Q_R9
+  Narrative: [9, 10, 11, 12],                     // Q_R10–Q_R13
+  'Personal Credit': [13, 14, 15, 16, 17, 19],   // Q_R14–Q_R18, Q_R20
+  'Business Credit': [18],                        // Q_R19
+  Banking: [20, 21],                              // Q_R21–Q_R22
+  Revenue: [22],                                  // Q_R23
 } as const;
