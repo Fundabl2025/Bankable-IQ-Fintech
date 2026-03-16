@@ -113,33 +113,44 @@ const DEMO_COMPLETED_ITEMS = [
  * Seed demo data into localStorage
  */
 export function seedDemoData(): void {
-  localStorage.setItem('unified_assessment', JSON.stringify(DEMO_ASSESSMENT_DATA));
-  
-  // Also seed some business profile data for the dashboard
-  localStorage.setItem('fundready_business_profile', JSON.stringify({
-    businessName: DEMO_ASSESSMENT_DATA.businessName,
-    ownerName: `${DEMO_ASSESSMENT_DATA.ownerFirstName} ${DEMO_ASSESSMENT_DATA.ownerLastName}`,
-    industry: DEMO_ASSESSMENT_DATA.industry,
-    monthlyRevenue: DEMO_ASSESSMENT_DATA.monthlyRevenue,
-    entityType: DEMO_ASSESSMENT_DATA.entityType,
-  }));
+  try {
+    console.log('[v0] seedDemoData: Seeding unified_assessment');
+    localStorage.setItem('unified_assessment', JSON.stringify(DEMO_ASSESSMENT_DATA));
+    
+    console.log('[v0] seedDemoData: Seeding business profile');
+    // Also seed some business profile data for the dashboard
+    localStorage.setItem('fundready_business_profile', JSON.stringify({
+      businessName: DEMO_ASSESSMENT_DATA.businessName,
+      ownerName: `${DEMO_ASSESSMENT_DATA.ownerFirstName} ${DEMO_ASSESSMENT_DATA.ownerLastName}`,
+      industry: DEMO_ASSESSMENT_DATA.industry,
+      monthlyRevenue: DEMO_ASSESSMENT_DATA.monthlyRevenue,
+      entityType: DEMO_ASSESSMENT_DATA.entityType,
+    }));
 
-  // Seed audit item completion status
-  const completedItems: Record<string, { status: 'complete'; completedDate: string }> = {};
-  const today = new Date().toISOString();
-  
-  DEMO_COMPLETED_ITEMS.forEach(id => {
-    completedItems[id] = {
-      status: 'complete',
-      completedDate: today,
-    };
-  });
-  
-  localStorage.setItem('auditItems', JSON.stringify(completedItems));
+    console.log('[v0] seedDemoData: Seeding audit items (6 items)');
+    // Seed audit item completion status
+    const completedItems: Record<string, { status: 'complete'; completedDate: string }> = {};
+    const today = new Date().toISOString();
+    
+    DEMO_COMPLETED_ITEMS.forEach(id => {
+      completedItems[id] = {
+        status: 'complete',
+        completedDate: today,
+      };
+    });
+    
+    localStorage.setItem('auditItems', JSON.stringify(completedItems));
 
-  // Dispatch event to notify components
-  window.dispatchEvent(new Event('fundscoreUpdated'));
-  window.dispatchEvent(new Event('storage'));
+    console.log('[v0] seedDemoData: Dispatching fundscoreUpdated event');
+    // Dispatch event to notify components
+    window.dispatchEvent(new Event('fundscoreUpdated'));
+    window.dispatchEvent(new Event('storage'));
+    
+    console.log('[v0] seedDemoData: Complete');
+  } catch (error) {
+    console.error('[v0] seedDemoData error:', error);
+    throw error;
+  }
 }
 
 /**
