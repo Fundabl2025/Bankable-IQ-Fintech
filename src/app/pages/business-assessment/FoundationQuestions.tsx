@@ -779,64 +779,74 @@ function QuestionF4({ data, updateData, onNext, onBack, currentQuestionNumber, t
 // ════════════════════════════════════════════════════════════════════════════════
 
 function QuestionF5({ data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions, step }: any) {
+  const revenueOptions = [
+    { value: 'under_5k',   label: 'Under $5,000' },
+    { value: '5k_15k',    label: '$5,000 to $15,000' },
+    { value: '15k_40k',   label: '$15,000 to $40,000' },
+    { value: '40k_100k',  label: '$40,000 to $100,000' },
+    { value: 'over_100k', label: 'Over $100,000' },
+  ];
+
+  const ccSalesOptions = [
+    { value: 'under_5k',  label: 'Under $5,000' },
+    { value: '5k_15k',   label: '$5,000 to $15,000' },
+    { value: '15k_50k',  label: '$15,000 to $50,000' },
+    { value: 'over_50k', label: 'Over $50,000' },
+  ];
+
+  const buttonStyle = (selected: boolean) => ({
+    background: '#131510',
+    border: selected ? '2px solid #8ab820' : '1px solid #6b7258',
+    color: selected ? '#8ab820' : '#e4e8d8',
+    borderRadius: '8px',
+    padding: '12px 16px',
+    fontFamily: 'var(--font-body)',
+    fontSize: '14px',
+    fontWeight: 500 as const,
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+    width: '100%',
+    transition: 'all 0.2s ease',
+  });
+
+  const isValid = !!data.monthlyRevenue && !!data.acceptsCards &&
+    (data.acceptsCards === 'no' || !!data.ccSales);
+
   return (
     <>
       <QuestionHeader
         number={5}
-        title="Do you accept credit card payments?"
-        why="Credit card sales are the primary qualification factor for Merchant Cash Advance — the fastest-funding product in the market."
+        title="Revenue and credit card sales"
+        why="Monthly revenue sets your maximum borrowing power. Credit card sales are the primary qualification factor for Merchant Cash Advance — the fastest-funding product in the market."
         currentQuestionNumber={currentQuestionNumber}
         totalQuestions={totalQuestions}
       />
 
-      {/* CC Sales - YES/NO BUTTONS */}
+      {/* SECTION 1: Monthly Revenue — always shown */}
       <div style={{ marginBottom: '24px' }}>
-        <label
-          style={{
-            display: 'block',
-            fontFamily: 'var(--font-body)',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'var(--text-primary)',
-            marginBottom: '12px',
-          }}
-        >
-          Credit Card Acceptance
+        <label style={{
+          display: 'block',
+          fontFamily: 'var(--font-body)',
+          fontSize: '14px',
+          fontWeight: 500,
+          color: 'var(--text-primary)',
+          marginBottom: '12px',
+        }}>
+          Average Gross Monthly Revenue
         </label>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          {[
-            { value: 'yes', label: 'Yes' },
-            { value: 'no', label: 'No' },
-          ].map((option) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {revenueOptions.map((option) => (
             <motion.button
               key={option.value}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => updateData({ acceptsCards: option.value as any })}
-              style={{
-                flex: 1,
-                background: '#131510',
-                border: data.acceptsCards === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
-                color: data.acceptsCards === option.value ? '#8ab820' : '#e4e8d8',
-                borderRadius: '8px',
-                padding: '12px 16px',
-                fontFamily: 'var(--font-body)',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                textAlign: 'center',
-                width: '100%',
-                transition: 'all 0.2s ease',
-              }}
+              onClick={() => updateData({ monthlyRevenue: option.value as any })}
+              style={buttonStyle(data.monthlyRevenue === option.value)}
               onMouseEnter={(e: any) => {
-                if (data.acceptsCards !== option.value) {
-                  e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
-                }
+                if (data.monthlyRevenue !== option.value) e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
               }}
               onMouseLeave={(e: any) => {
-                if (data.acceptsCards !== option.value) {
-                  e.currentTarget.style.borderColor = '#6b7258';
-                }
+                if (data.monthlyRevenue !== option.value) e.currentTarget.style.borderColor = '#6b7258';
               }}
             >
               {option.label}
@@ -845,7 +855,82 @@ function QuestionF5({ data, updateData, onNext, onBack, currentQuestionNumber, t
         </div>
       </div>
 
-      <NavigationButtons onNext={onNext} onBack={onBack} disabled={false} step={4} />
+      {/* SECTION 2: Accept Credit Cards — always shown */}
+      <div style={{ marginBottom: '24px' }}>
+        <label style={{
+          display: 'block',
+          fontFamily: 'var(--font-body)',
+          fontSize: '14px',
+          fontWeight: 500,
+          color: 'var(--text-primary)',
+          marginBottom: '12px',
+        }}>
+          Do you accept credit card payments?
+        </label>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {[
+            { value: 'yes', label: 'Yes' },
+            { value: 'no',  label: 'No' },
+          ].map((option) => (
+            <motion.button
+              key={option.value}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => updateData({ acceptsCards: option.value as any, ccSales: option.value === 'no' ? '' : data.ccSales })}
+              style={{ ...buttonStyle(data.acceptsCards === option.value), flex: 1, textAlign: 'center' as const }}
+              onMouseEnter={(e: any) => {
+                if (data.acceptsCards !== option.value) e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
+              }}
+              onMouseLeave={(e: any) => {
+                if (data.acceptsCards !== option.value) e.currentTarget.style.borderColor = '#6b7258';
+              }}
+            >
+              {option.label}
+            </motion.button>
+          ))}
+        </div>
+      </div>
+
+      {/* SECTION 3: CC Sales — only shown if acceptsCards === 'yes' */}
+      {data.acceptsCards === 'yes' && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ marginBottom: '24px' }}
+        >
+          <label style={{
+            display: 'block',
+            fontFamily: 'var(--font-body)',
+            fontSize: '14px',
+            fontWeight: 500,
+            color: 'var(--text-primary)',
+            marginBottom: '12px',
+          }}>
+            Total Monthly Credit Card Sales
+          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {ccSalesOptions.map((option) => (
+              <motion.button
+                key={option.value}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => updateData({ ccSales: option.value as any })}
+                style={buttonStyle(data.ccSales === option.value)}
+                onMouseEnter={(e: any) => {
+                  if (data.ccSales !== option.value) e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
+                }}
+                onMouseLeave={(e: any) => {
+                  if (data.ccSales !== option.value) e.currentTarget.style.borderColor = '#6b7258';
+                }}
+              >
+                {option.label}
+              </motion.button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      <NavigationButtons onNext={onNext} onBack={onBack} disabled={!isValid} step={4} />
     </>
   );
 }

@@ -28,8 +28,10 @@ export interface UnifiedAnswers {
   hasWebsite: boolean;
   websiteUrl?: string;
   
-  // Q_F5: Credit Card Acceptance (simplified from revenue + CC sales)
+  // Q_F5: Revenue, CC Acceptance, and CC Sales
+  monthlyRevenue: 'under_5k' | '5k_15k' | '15k_40k' | '40k_100k' | 'over_100k' | '';
   acceptsCards: 'yes' | 'no' | '';
+  ccSales: 'under_5k' | '5k_15k' | '15k_50k' | 'over_50k' | '';
   
   // Q_F6: Banking (2 sub-fields only - removed avgDailyBalance which is in Q_R21)
   bankAccount: 'dedicated' | 'personal' | 'none' | '';
@@ -222,7 +224,9 @@ export function getDefaultAnswers(): UnifiedAnswers {
     industry: '',
     hasEIN: false,
     hasWebsite: false,
-    acceptsCards: '', // FIXED: Changed from ccSales to acceptsCards (yes/no only)
+    monthlyRevenue: '',
+    acceptsCards: '',
+    ccSales: '',
     bankAccount: '',
     bankAge: '',
     nsfCount: '', // REMOVED: avgDailyBalance (now in Q_R21)
