@@ -19,9 +19,9 @@ export function UnifiedAssessment() {
   // Assessment data
   const [data, setData] = useState<UnifiedAnswers>(getDefaultAnswers);
   
-  // Current question (0-22 for 23 total questions)
+  // Current question (0-32 for 33 total questions)
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const totalQuestions = 23; // 10 foundation + 13 readiness
+  const totalQuestions = 33; // 10 foundation + 23 readiness
 
   // Live score
   const [liveScore, setLiveScore] = useState(0);
@@ -45,10 +45,119 @@ export function UnifiedAssessment() {
     setData(prev => ({ ...prev, ...updates }));
   };
 
-  // Navigation handlers
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // COMPREHENSIVE CONDITIONAL QUESTION LOGIC — ALL CATEGORIES
+  // ═══════════════════════════════════════════════════════════════════════════════
+  
+  const shouldShowReadinessQuestion = (readinessIdx: number): boolean => {
+    const hasBusinessBankAccount = data.bankAccount === 'dedicated' || data.bankAccount === 'personal';
+    const hasNegativeItems = data.noDerogItems === 'false'; // Q_R15: User selected "Yes, I have some"
+    const businessAgeMonths = data.bankAge !== '0_6mo'; // More than 6 months
+    const businessNotNew = data.startDate?.year && (new Date().getFullYear() - data.startDate.year > 0);
+    
+    // DEBUG: Log only when checking conditional questions (reduce verbosity)
+    const isConditionalQ = [2, 3, 7, 20, 21, 1, 4, 5, 15, 16, 17].includes(readinessIdx);
+    if (isConditionalQ) {
+      console.log(`[v0] Q_R${readinessIdx + 1}: bankAccount=${data.bankAccount}, noDerogItems=${data.noDerogItems}, bankAge=${data.bankAge}`);
+    }
+    
+    // BANKING CONDITIONALS (indices 2, 3, 7, 20, 21)
+    if ((readinessIdx === 2 || readinessIdx === 3 || readinessIdx === 20 || readinessIdx === 21) && !hasBusinessBankAccount) {
+      if (isConditionalQ) console.log(`    → HIDDEN (no bank account)`);
+      return false;
+    }
+    // Q_R8 additionally requires 6+ months of bank history
+    if (readinessIdx === 7 && (!hasBusinessBankAccount || !businessAgeMonths)) {
+      if (isConditionalQ) console.log(`    → HIDDEN (bank age < 6mo)`);
+      return false;
+    }
+    
+    // REVENUE & FINANCIAL CONDITIONALS
+    // Q_R2 (index 1): P&L only if business not brand new
+    if (readinessIdx === 1 && !businessNotNew) {
+      if (isConditionalQ) console.log(`    → HIDDEN (business too new)`);
+      return false;
+    }
+    // Q_R5 (index 4): Revenue trend only if 6+ months history
+    if (readinessIdx === 4 && !businessAgeMonths) {
+      if (isConditionalQ) console.log(`    → HIDDEN (bank age < 6mo)`);
+      return false;
+    }
+    // Q_R6 (index 5): Profit margin only if revenue >= $5k/month
+    if (readinessIdx === 5 && data.monthlyRevenue === 'under_5k') {
+      if (isConditionalQ) console.log(`    → HIDDEN (revenue under $5k)`);
+      return false;
+    }
+    
+    // DEROGATORY CONDITIONALS (indices 15, 16, 17)
+    // Q_R16, Q_R17, Q_R18 only show if user said "Yes, I have some" to Q_R15
+    if ((readinessIdx === 15 || readinessIdx === 16 || readinessIdx === 17) && !hasNegativeItems) {
+      if (isConditionalQ) console.log(`    → HIDDEN (no negative items)`);
+      return false;
+    }
+    
+    // All other readiness questions show by default
+    if (isConditionalQ) console.log(`    → SHOWN`);
+    return true;
+  };
+  
+  const calculateApplicableQuestions = (): number => {
+    // Calculate total applicable questions for accurate progress tracking
+    let count = 10; // Foundation questions always shown
+    
+    // Check each readiness question for applicability
+    for (let i = 0; i < 23; i++) {
+      if (shouldShowReadinessQuestion(i)) {
+        count++;
+      }
+    }
+    
+    return count;
+  };
+  
+  const getNextApplicableQuestion = (startFrom: number): number => {
+    let nextQuestion = startFrom + 1;
+    
+    while (nextQuestion < 33) {
+      if (nextQuestion < 10) {
+        // Foundation questions always applicable
+        return nextQuestion;
+      } else {
+        const readinessIdx = nextQuestion - 10;
+        if (shouldShowReadinessQuestion(readinessIdx)) {
+          return nextQuestion;
+        }
+      }
+      nextQuestion++;
+    }
+    
+    return 33; // Reached end
+  };
+  
+  const getPreviousApplicableQuestion = (startFrom: number): number => {
+    let prevQuestion = startFrom - 1;
+    
+    while (prevQuestion >= 0) {
+      if (prevQuestion < 10) {
+        // Foundation questions always applicable
+        return prevQuestion;
+      } else {
+        const readinessIdx = prevQuestion - 10;
+        if (shouldShowReadinessQuestion(readinessIdx)) {
+          return prevQuestion;
+        }
+      }
+      prevQuestion--;
+    }
+    
+    return -1; // Reached beginning
+  };
+  
   const handleNext = () => {
-    if (currentQuestion < 22) {
-      setCurrentQuestion(currentQuestion + 1);
+    const nextQuestion = getNextApplicableQuestion(currentQuestion);
+    
+    if (nextQuestion < 33) {
+      setCurrentQuestion(nextQuestion);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       // All done - show loading and navigate to results
@@ -60,8 +169,10 @@ export function UnifiedAssessment() {
   };
 
   const handleBack = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
+    const prevQuestion = getPreviousApplicableQuestion(currentQuestion);
+    
+    if (prevQuestion >= 0) {
+      setCurrentQuestion(prevQuestion);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -74,7 +185,7 @@ export function UnifiedAssessment() {
 
   // Determine which component to render based on question number
   const isFoundationQuestion = currentQuestion < 10; // Q0-9 are foundation
-  const readinessIndex = currentQuestion - 10; // Q10-22 map to readiness 0-12
+  const readinessIndex = currentQuestion - 10; // Q10-32 map to readiness 0-22
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
@@ -104,6 +215,7 @@ export function UnifiedAssessment() {
             onBack={handleBack}
             currentQuestionNumber={currentQuestion + 1}
             totalQuestions={totalQuestions}
+            shouldShowReadinessQuestion={shouldShowReadinessQuestion}
           />
         )}
 
@@ -230,14 +342,35 @@ function LiveScoreBar({ score }: { score: number }) {
 // READINESS QUESTION
 // ════════════════════════════════════════════════════════════════════════════════
 
-function ReadinessQuestion({ index, data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions }: any) {
+function ReadinessQuestion({ index, data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions, shouldShowReadinessQuestion }: any) {
   const question = READINESS_QUESTIONS[index];
   const selectedAnswer = data.readinessAnswers[index];
+
+  // Conditional logic to hide questions based on user answers (use passed prop)
+  const shouldShowQuestion = (): boolean => {
+    return shouldShowReadinessQuestion(index);
+  };
+
+  if (!shouldShowQuestion()) {
+    // Skip to next question automatically
+    setTimeout(() => onNext(), 0);
+    return null;
+  }
 
   const handleSelectOption = (optionIndex: number) => {
     const newAnswers = [...data.readinessAnswers];
     newAnswers[index] = optionIndex;
-    updateData({ readinessAnswers: newAnswers });
+    
+    // Special handling: Q_R15 (index 14) is "Do you have negative items?"
+    // Option 0 = "No negative items" → set noDerogItems to 'true'
+    // Option 1 = "Yes, I have some" → set noDerogItems to 'false'
+    if (index === 14) {
+      const noDerogValue = optionIndex === 0 ? 'true' : 'false';
+      console.log(`[v0] Q_R15 answered: optionIndex=${optionIndex}, setting noDerogItems='${noDerogValue}'`);
+      updateData({ readinessAnswers: newAnswers, noDerogItems: noDerogValue });
+    } else {
+      updateData({ readinessAnswers: newAnswers });
+    }
   };
 
   return (
@@ -507,10 +640,10 @@ function getDefaultAnswers(): UnifiedAnswers {
     hasCollections: false,
     hasChargeoffs: false,
     hasLatePay: false,
-    hasTaxLiens: false,
-    noDerogItems: true,
+    hasTaxLiens: '',
+    noDerogItems: '', // Empty until Q_R15 is answered
     bizCreditFile: '',
     inquiries30d: '',
-    readinessAnswers: new Array(13).fill(undefined),
+    readinessAnswers: new Array(23).fill(undefined),
   };
 }

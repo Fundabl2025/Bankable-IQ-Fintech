@@ -7,7 +7,9 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Eye, EyeOff, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { migrateLocalDataToSupabase } from '../../lib/data-adapter';
+import { Eye, EyeOff, AlertCircle, ArrowRight, Loader2, Zap } from 'lucide-react';
+import { seedDemoData } from '../../utils/demoData';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -26,11 +28,41 @@ export function LoginPage() {
 
     try {
       await signIn(email, password);
-      navigate('/dashboard');
+      
+      // Attempt to migrate any localStorage data to Supabase
+      try {
+        console.log('[v0] Login: Migrating localStorage data to Supabase...');
+        await migrateLocalDataToSupabase();
+        console.log('[v0] Login: Migration complete');
+      } catch (migrationError) {
+        console.warn('[v0] Login: Data migration failed, but login succeeded:', migrationError);
+        // Don't block navigation - sign-in was successful
+      }
+      
+      navigate('/app/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to sign in. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Demo login bypasses auth and seeds pre-filled assessment data
+  const handleDemoLogin = () => {
+    console.log('[v0] Demo mode button clicked!');
+    
+    try {
+      // Step 1: Seed data
+      console.log('[v0] Step 1: Calling seedDemoData...');
+      seedDemoData();
+      console.log('[v0] Step 2: seedDemoData completed');
+      
+      // Step 2: Navigate using window.location as fallback
+      console.log('[v0] Step 3: About to navigate...');
+      window.location.href = '/app';
+    } catch (error) {
+      console.error('[v0] Demo mode error:', error);
+      alert('Demo mode error: ' + (error instanceof Error ? error.message : String(error)));
     }
   };
 
@@ -52,16 +84,16 @@ export function LoginPage() {
       }}>
         <div>
           {/* Logo */}
-          <Link to="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 800, color: 'var(--foreground)' }}>
-              FUND
-            </span>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 800, color: 'var(--primary)' }}>
-              READY
-            </span>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: 'var(--primary)' }}>
-              ™
-            </span>
+          <Link to="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+            <img 
+              src="/images/fundready-logo.png" 
+              alt="FundReady - Unlocking Your Potential" 
+              style={{ 
+                height: '48px',
+                width: 'auto',
+                objectFit: 'contain',
+              }} 
+            />
           </Link>
         </div>
 
@@ -313,6 +345,61 @@ export function LoginPage() {
             >
               Forgot your password?
             </Link>
+          </div>
+
+          {/* Demo Mode Button */}
+          <div style={{
+            marginTop: '32px',
+            padding: '20px',
+            background: 'var(--surface-2)',
+            border: '1px dashed var(--border)',
+            borderRadius: '0',
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '11px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: 'var(--muted-foreground)',
+              marginBottom: '12px',
+            }}>
+              Development Mode
+            </div>
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: 'transparent',
+                color: 'var(--primary)',
+                fontFamily: 'var(--font-display)',
+                fontSize: '13px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                border: '1px solid var(--primary)',
+                borderRadius: '0',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+              }}
+            >
+              <Zap style={{ width: '16px', height: '16px' }} />
+              Enter Demo Mode
+            </button>
+            <p style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '11px',
+              color: 'var(--muted-foreground)',
+              marginTop: '10px',
+              lineHeight: 1.5,
+            }}>
+              Skip auth and load pre-filled assessment data for "Acme Consulting LLC" (FundScore ~700, SBSS ~160)
+            </p>
           </div>
         </motion.div>
       </div>

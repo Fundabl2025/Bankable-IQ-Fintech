@@ -3,102 +3,192 @@
 // ONE ENGINE. ONE CALCULATION. ONE SCORE. NO SYNC.
 // ════════════════════════════════════════════════════════════════════════════════
 
-import { UnifiedAnswers, ScoreResult } from './types';
+import { UnifiedAnswers, ScoreResult, ExtendedResultsOutput } from './types';
 import { READINESS_QUESTIONS } from './questions';
 
+// ════════════════════════════════════════════════════════════════════════════════
+// FUNDSCORE WEIGHTS — Aligned with Elon's Rule Logic Spec
+// Personal (P): 20% — FICO, utilization, derog, payment history
+// Business (B): 10% — Entity, age, industry
+// Financial (F): 25% — Revenue, cash flow, deposits, NSF
+// Compliance (C): 20% — NAP, website, EIN, filings
+// Stability (S): 15% — Time in biz, bank age, consistency
+// File (N):     10% — Business credit, tradelines, inquiries
+// ════════════════════════════════════════════════════════════════════════════════
 const WEIGHTS = {
-  C: 0.28, // Credit Profile
-  D: 0.22, // Documentation
-  F: 0.20, // Cash Flow
-  B: 0.13, // Banking Behavior
-  S: 0.10, // Business Structure
-  N: 0.07, // Narrative Strength
+  P: 0.20, // Personal Credit (owner FICO, utilization, derogs)
+  B: 0.10, // Business Profile (entity, age, industry)
+  F: 0.25, // Financial Health (revenue, cash flow, deposits)
+  C: 0.20, // Compliance (NAP, website, EIN, filings)
+  S: 0.15, // Stability (time in biz, bank age, consistency)
+  N: 0.10, // File Strength (biz credit, tradelines, inquiries)
 };
+
+// ════════════════════════════════════════════════════════════════════════════════
+// HELPER FUNCTIONS
+// ════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Convert categorical credit score ranges to numeric equivalents
+ * Used throughout engine for score calculation and comparisons
+ */
+function mapCreditScore(category: string): number {
+  if (category === 'exceptional') return 850; // 800-850
+  if (category === 'very_good') return 770; // 740-799
+  if (category === 'good') return 700; // 670-739
+  if (category === 'fair') return 620; // 580-669
+  if (category === 'poor') return 550; // 300-579
+  if (category === 'unknown') return 580; // Treat as fair with slight penalty
+  return 0; // No score provided
+}
 
 /**
  * Compute complete FundScore from unified assessment data
  * Returns score (0-1000) + dimension averages + Bankable Score + NAP Score
  */
 export function computeScore(data: UnifiedAnswers): ScoreResult {
+  // New 6-dimension buckets aligned with Elon's spec
   const buckets: Record<string, number[]> = {
-    C: [], D: [], F: [], B: [], S: [], N: []
+    P: [], // Personal Credit (20%)
+    B: [], // Business Profile (10%)
+    F: [], // Financial Health (25%)
+    C: [], // Compliance (20%)
+    S: [], // Stability (15%)
+    N: [], // File Strength (10%)
   };
   let totalBoost = 0;
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // PART 1: FOUNDATION DATA → DIMENSION BUCKETS
+  // P: PERSONAL CREDIT (20%) — Owner FICO, utilization, derogs, payment history
   // ══════════════════════════════════════════════════════════════════════════════
 
-  // ── C: PERSONAL CREDIT SCORE (FICO composite from 3 bureaus) ──────────────
+  // ── P1: PERSONAL CREDIT SCORE (FICO composite from 3 bureaus) ──────────────
+  // FIXED: Using module-level mapCreditScore function
   const creditScores = [
-    data.experian || 680,
-    data.transunion || 680,
-    data.equifax || 680,
-  ].sort((a, b) => a - b);
-  const composite = creditScores[1]; // Middle score
-
-  if (composite >= 740) buckets.C.push(1.0);
-  else if (composite >= 700) buckets.C.push(0.78);
-  else if (composite >= 650) buckets.C.push(0.6);
-  else if (composite >= 620) buckets.C.push(0.4);
-  else if (composite >= 580) buckets.C.push(0.2);
-  else buckets.C.push(0.05);
-
-  // ── C: CREDIT UTILIZATION ──────────────────────────────────────────────────
-  const utilization = data.utilization || 30;
-  if (utilization < 20) buckets.C.push(1.0);
-  else if (utilization <= 30) buckets.C.push(0.75);
-  else if (utilization <= 50) buckets.C.push(0.45);
-  else buckets.C.push(0.1);
-
-  // ── C: DEROGATORY ITEMS ────────────────────────────────────────────────────
-  const hasRecentBankruptcy = data.hasBankruptcy && data.bankruptcyAge === 'under_2yr';
-  const hasSeriousDerog = data.hasCollections || data.hasChargeoffs || data.hasTaxLiens;
+    mapCreditScore(data.experian || ''),
+    mapCreditScore(data.transunion || ''),
+    mapCreditScore(data.equifax || ''),
+  ].filter(s => s > 0).sort((a, b) => a - b);
   
-  if (data.noDerogItems) buckets.C.push(1.0);
-  else if (hasRecentBankruptcy) buckets.C.push(0.1);
-  else if (hasSeriousDerog) buckets.C.push(0.2);
-  else if (data.hasLatePay) buckets.C.push(0.4);
-  else buckets.C.push(0.6);
+  const composite = creditScores.length > 0 ? creditScores[Math.floor(creditScores.length / 2)] : 0;
 
-  // ── F: MONTHLY REVENUE ─────────────────────────────────────────────────────
-  const revenue = data.monthlyRevenue || 0;
-  if (revenue >= 50000) buckets.F.push(1.0);
-  else if (revenue >= 25000) buckets.F.push(0.78);
-  else if (revenue >= 10000) buckets.F.push(0.55);
-  else if (revenue >= 5000) buckets.F.push(0.3);
-  else if (revenue >= 2000) buckets.F.push(0.1);
-  else buckets.F.push(0.05);
+  if (composite >= 740) buckets.P.push(1.0);
+  else if (composite >= 700) buckets.P.push(0.78);
+  else if (composite >= 650) buckets.P.push(0.6);
+  else if (composite >= 620) buckets.P.push(0.4);
+  else if (composite >= 580) buckets.P.push(0.2);
+  else if (composite > 0) buckets.P.push(0.05);
+  else buckets.P.push(0.0); // No credit score provided
 
-  // ── B: FUND SEPARATION (BANK ACCOUNT TYPE) ─────────────────────────────────
-  if (data.bankAccount === 'dedicated') buckets.B.push(1.0);
-  else if (data.bankAccount === 'personal') buckets.B.push(0.5);
-  else buckets.B.push(0.0);
+  // ── P2: CREDIT UTILIZATION ──────────────────────────────────────────────────
+  let utilizationScore = 0.5; // Default neutral
+  if (data.utilization === 'under_10') utilizationScore = 1.0;
+  else if (data.utilization === '10_30') utilizationScore = 0.8;
+  else if (data.utilization === '30_50') utilizationScore = 0.5;
+  else if (data.utilization === '50_75') utilizationScore = 0.2;
+  else if (data.utilization === 'over_75') utilizationScore = 0.0;
+  else if (data.utilization) utilizationScore = 0.5; // Unknown value
+  else utilizationScore = 0.0; // No data provided
+  buckets.P.push(utilizationScore);
 
-  // ── B: AVERAGE DAILY BALANCE ───────────────────────────────────────────────
-  const balance = data.avgDailyBalance;
-  if (balance === '25k_plus') buckets.B.push(1.0);
-  else if (balance === '10k_25k') buckets.B.push(0.8);
-  else if (balance === '2k_10k') buckets.B.push(0.55);
-  else if (balance === '500_2k') buckets.B.push(0.25);
-  else buckets.B.push(0.0);
+  // ── P3: DEROGATORY ITEMS ────────────────────────────────────────────────────
+  let derogScore = 1.0; // Start with full credit (no negatives)
+  
+  // Check for clean credit report flag
+  if (data.noDerogItems === 'false') {
+    // Has negative items - check specifics
+    if (data.hasBankruptcy === 'recent') derogScore = 0.0; // -30 penalty
+    else if (data.hasBankruptcy === 'aging') derogScore = 0.3; // -15 penalty
+    else if (data.hasBankruptcy === 'old') derogScore = 0.7; // -5 penalty
+    
+    if (data.hasCollections === 'active') derogScore = Math.min(derogScore, 0.0); // -25 penalty
+    else if (data.hasCollections === 'resolved') derogScore = Math.min(derogScore, 0.8); // -5 penalty
+    
+    if (data.hasTaxLiens && data.hasTaxLiens !== 'no') derogScore = Math.min(derogScore, 0.0); // -20 penalty
+  } else if (data.noDerogItems === 'true') {
+    derogScore = 1.0; // Clean report bonus
+  }
+  
+  buckets.P.push(derogScore);
 
-  // ── B: NSF/OVERDRAFT COUNT ─────────────────────────────────────────────────
-  const nsf = data.nsfCount;
-  if (nsf === 'zero') buckets.B.push(1.0);
-  else if (nsf === '1_2') buckets.B.push(0.65);
-  else if (nsf === '3_5') buckets.B.push(0.25);
-  else buckets.B.push(0.0);
+  // ── P4: RECENT CREDIT INQUIRIES (new credit seeking) ─────────────────────────
+  let inquiryScore = 1.0;
+  if (data.inquiries30d === '0') inquiryScore = 1.0;
+  else if (data.inquiries30d === '1_2') inquiryScore = 0.85;
+  else if (data.inquiries30d === '3_4') inquiryScore = 0.5;
+  else if (data.inquiries30d === '5plus') inquiryScore = 0.1;
+  buckets.P.push(inquiryScore);
 
-  // ── S: ENTITY TYPE ─────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════════
+  // F: FINANCIAL HEALTH (25%) — Revenue, cash flow, deposits, NSF
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  // ── F1: MONTHLY REVENUE ─────────────────────────────────────────────────────
+  let revenueScore = 0.5; // Default neutral
+  if (data.monthlyRevenue === 'over_100k') revenueScore = 1.0;
+  else if (data.monthlyRevenue === '40k_100k') revenueScore = 0.85;
+  else if (data.monthlyRevenue === '15k_40k') revenueScore = 0.65;
+  else if (data.monthlyRevenue === '5k_15k') revenueScore = 0.35;
+  else if (data.monthlyRevenue === 'under_5k') revenueScore = 0.1;
+  buckets.F.push(revenueScore);
+
+  // ── F2: FUND SEPARATION (BANK ACCOUNT TYPE) ─────────────────────────────────
+  // BUG FIX: Apply penalty for 'none', full points for 'dedicated', partial for 'personal'
+  if (data.bankAccount === 'dedicated') buckets.F.push(1.0);
+  else if (data.bankAccount === 'personal') buckets.F.push(0.5);
+  else buckets.F.push(-0.5); // FIXED: Changed from 0.0 to -0.5 (significant penalty for no bank account)
+
+  // ── F3: AVERAGE DAILY BALANCE ───────────────────────────────────────────────
+  let balanceScore = 0.0; // Default zero if no data
+  if (data.avgDailyBalance === '25k_plus' || data.avgDailyBalance === 'over_25k') balanceScore = 1.0;
+  else if (data.avgDailyBalance === '10k_25k') balanceScore = 0.8;
+  else if (data.avgDailyBalance === '2k_10k') balanceScore = 0.55;
+  else if (data.avgDailyBalance === '500_2k') balanceScore = 0.25;
+  else if (data.avgDailyBalance === 'near_zero') balanceScore = 0.0;
+  buckets.F.push(balanceScore);
+
+  // ── F4: NSF/OVERDRAFT COUNT ─────────────────────────────────────────────────
+  let nsfScore = 1.0; // Default full credit if no data
+  if (data.nsfCount === '0') nsfScore = 1.0;
+  else if (data.nsfCount === 'zero') nsfScore = 1.0; // Handle both '0' and 'zero'
+  else if (data.nsfCount === '1_2') nsfScore = 0.7;
+  else if (data.nsfCount === '3_5') nsfScore = 0.3;
+  else if (data.nsfCount === '5plus' || data.nsfCount === 'over_5') nsfScore = 0.05;
+  buckets.F.push(nsfScore);
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // B: BUSINESS PROFILE (10%) — Entity, industry
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  // ── B1: ENTITY TYPE ─────────────────────────────────────────────────────────
   const entity = data.entityType;
-  if (entity === 'corp') buckets.S.push(1.0);
-  else if (entity === 'llc_multi') buckets.S.push(0.78);
-  else if (entity === 'llc_single') buckets.S.push(0.65);
-  else if (entity === 'sole_prop') buckets.S.push(0.1);
-  else buckets.S.push(0.5); // Default if not set
+  if (entity === 'corp') buckets.B.push(1.0);
+  else if (entity === 'llc_multi') buckets.B.push(0.78);
+  else if (entity === 'llc_single') buckets.B.push(0.65);
+  else if (entity === 'sole_prop') buckets.B.push(0.1);
+  else buckets.B.push(0.5); // Default if not set
 
-  // ── S: BUSINESS AGE (calculated from start date) ───────────────────────────
+  // ── B2: INDUSTRY (risk overlay) ─────────────────────────────────────────────
+  const industry = (data.industry || '').toLowerCase();
+  if (industry.includes('professional') || industry.includes('technology') || industry.includes('healthcare')) {
+    buckets.B.push(1.0);
+  } else if (industry.includes('retail') || industry.includes('e-commerce') || industry.includes('wholesale')) {
+    buckets.B.push(0.85);
+  } else if (industry.includes('construction') || industry.includes('real estate')) {
+    buckets.B.push(0.65);
+  } else if (industry.includes('restaurant') || industry.includes('food') || industry.includes('hospitality')) {
+    buckets.B.push(0.4);
+  } else if (industry.includes('transport') || industry.includes('truck') || industry.includes('logistics')) {
+    buckets.B.push(0.5);
+  } else {
+    buckets.B.push(0.7); // Other
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // S: STABILITY (15%) — Time in biz, bank age, consistency
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  // ── S1: BUSINESS AGE (calculated from start date) ───────────────────────────
   const now = new Date();
   const startYear = data.startDate.year || now.getFullYear();
   const startMonth = data.startDate.month || now.getMonth() + 1;
@@ -111,25 +201,63 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
   else if (ageMonths >= 6) buckets.S.push(0.05);  // 6-12 months
   else buckets.S.push(0.05); // Under 6 months
 
-  // ── S: INDUSTRY (risk overlay) ─────────────────────────────────────────────
-  const industry = (data.industry || '').toLowerCase();
-  if (industry.includes('professional') || industry.includes('technology') || industry.includes('healthcare')) {
-    buckets.S.push(1.0);
-  } else if (industry.includes('retail') || industry.includes('e-commerce') || industry.includes('wholesale')) {
-    buckets.S.push(0.85);
-  } else if (industry.includes('construction') || industry.includes('real estate')) {
-    buckets.S.push(0.65);
-  } else if (industry.includes('restaurant') || industry.includes('food') || industry.includes('hospitality')) {
-    buckets.S.push(0.4);
-  } else if (industry.includes('transport') || industry.includes('truck') || industry.includes('logistics')) {
-    buckets.S.push(0.5);
-  } else {
-    buckets.S.push(0.7); // Other
-  }
+  // ── S2: BANK AGE ────────────────────────────────────────────────────────────
+  if (data.bankAge === '24plus') buckets.S.push(1.0);
+  else if (data.bankAge === '12_24mo') buckets.S.push(0.7);
+  else if (data.bankAge === '6_12mo') buckets.S.push(0.4);
+  else if (data.bankAge === '0_6mo') buckets.S.push(0.15);
+  else buckets.S.push(0.3);
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // PART 2: READINESS ANSWERS → DIMENSION BUCKETS
+  // C: COMPLIANCE (20%) — NAP, website, EIN, filings
   // ══════════════════════════════════════════════════════════════════════════════
+
+  // ── C1: EIN ─────────────────────────────────────────────────────────────────
+  buckets.C.push(data.hasEIN ? 1.0 : 0.0);
+
+  // ── C2: WEBSITE ─────────────────────────────────────────────────────────────
+  buckets.C.push(data.hasWebsite ? 1.0 : 0.0);
+
+  // ── C3: BUSINESS NAME ───────────────────────────────────────────────────────
+  buckets.C.push(data.businessName ? 1.0 : 0.0);
+
+  // ── C4: BUSINESS ADDRESS (NAP completeness) ─────────────────────────────────
+  const hasFullAddress = data.businessAddress && data.businessCity && data.businessState && data.businessZip;
+  buckets.C.push(hasFullAddress ? 1.0 : data.businessAddress ? 0.5 : 0.0);
+
+  // ── C5: BUSINESS PHONE ──────────────────────────────────────────────────────
+  buckets.C.push(data.businessPhone || data.ownerPhone ? 1.0 : 0.0);
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // N: FILE STRENGTH (10%) — Business credit, tradelines, inquiries
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  // ── N1: BUSINESS CREDIT FILE ────────────────────────────────────────────────
+  if (data.bizCreditFile === 'paydex_80plus') buckets.N.push(1.0);
+  else if (data.bizCreditFile === 'below_80') buckets.N.push(0.6);
+  else if (data.bizCreditFile === 'building') buckets.N.push(0.3);
+  else buckets.N.push(0.0);
+
+  // ── N2: INQUIRIES (30 days) ─────────────────────────────────────────────────
+  if (data.inquiries30d === '0') buckets.N.push(1.0);
+  else if (data.inquiries30d === '1_2') buckets.N.push(0.75);
+  else if (data.inquiries30d === '3_4') buckets.N.push(0.4);
+  else if (data.inquiries30d === '5plus') buckets.N.push(0.1);
+  else buckets.N.push(0.5);
+
+  // ═════════════════════════════════════════════���════════════════════════════════
+  // PART 2: READINESS ANSWERS → DIMENSION BUCKETS
+  // Map old dimension codes to new ones for readiness questions
+  // ═══════════════════════════════════════════════════════════���══════════════════
+
+  const dimMap: Record<string, string> = {
+    'C': 'P', // Old Credit → Personal
+    'D': 'C', // Old Documentation → Compliance
+    'F': 'F', // Financial stays same
+    'B': 'S', // Old Banking → Stability (FIXED: was 'F')
+    'S': 'B', // Old Structure → Business
+    'N': 'N', // Narrative → File
+  };
 
   READINESS_QUESTIONS.forEach((q, qi) => {
     const answerIndex = data.readinessAnswers[qi];
@@ -143,17 +271,18 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
       totalBoost += selectedOption.boost;
     }
 
-    // Add scores to dimension buckets
+    // Add scores to dimension buckets (map old codes to new)
     Object.entries(selectedOption.score).forEach(([dim, val]) => {
-      if (buckets[dim]) {
-        buckets[dim].push(val as number);
+      const newDim = dimMap[dim] || dim;
+      if (buckets[newDim]) {
+        buckets[newDim].push(val as number);
       }
     });
   });
 
   // ══════════════════════════════════════════════════════════════════════════════
   // COMPUTE DIMENSION AVERAGES
-  // ══════════════════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════��════════════════════════
 
   const dimAvg: Record<string, number> = {};
   Object.keys(buckets).forEach((dim) => {
@@ -190,39 +319,193 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
 
   return {
     score: finalScore,
-    dimAvg: dimAvg as Record<'C' | 'D' | 'F' | 'B' | 'S' | 'N', number>,
+    dimAvg: dimAvg as Record<'P' | 'B' | 'F' | 'C' | 'S' | 'N', number>,
     bankableScore,
     napScore,
   };
 }
 
 /**
- * Calculate Bankable Score (0-160) from foundation data
+ * Calculate Bankable Score (SBSS) using Elon's 4-component formula
+ * 
+ * SBSS Weights (per spec):
+ * - Personal Credit: 35% — FICO, utilization, derogations
+ * - Financial Health: 30% — Revenue, bank rating, deposits, NSF
+ * - Business Profile: 20% — Entity, age, industry, web presence
+ * - Business Credit: 15% — Tradelines, Paydex, credit reports
+ * 
+ * Output: 0-300 scale, 160 = bankable threshold
  */
 function calculateBankableScore(data: UnifiedAnswers): number {
-  let score = 80; // Baseline
+  // ══════════════════════════════════════════════════════════════════════════
+  // COMPONENT 1: PERSONAL CREDIT (35% = 105 max points)
+  // ══════════════════════════════════════════════════════════════════════════
+  const creditScores = [mapCreditScore(data.experian || ''), mapCreditScore(data.transunion || ''), mapCreditScore(data.equifax || '')]
+    .filter(s => s > 0)
+    .sort((a, b) => a - b);
+  const composite = creditScores.length > 0 ? creditScores[Math.floor(creditScores.length / 2)] : 0;
+  
+  // FICO score contribution (0-60 points)
+  let ficoPoints = 0;
+  if (composite >= 750) ficoPoints = 60;
+  else if (composite >= 720) ficoPoints = 52;
+  else if (composite >= 700) ficoPoints = 45;
+  else if (composite >= 680) ficoPoints = 38;
+  else if (composite >= 660) ficoPoints = 30;
+  else if (composite >= 640) ficoPoints = 22;
+  else if (composite >= 620) ficoPoints = 15;
+  else if (composite > 0) ficoPoints = 5;
+  else ficoPoints = 0; // No score provided
 
-  // Basic completeness
-  if (data.hasEIN) score += 15;
-  if (data.hasWebsite) score += 20;
-  if (data.businessName) score += 5;
-  if (data.businessAddress) score += 5;
-  if (data.businessPhone) score += 5;
-  
-  // Banking
-  if (data.bankAccount === 'dedicated') score += 15;
-  if (data.bankAge === '24plus' || data.bankAge === '12_24mo') score += 5;
-  
-  // Credit quality
-  const composite = [data.experian || 680, data.transunion || 680, data.equifax || 680]
-    .sort((a, b) => a - b)[1];
-  if (composite >= 700) score += 10;
-  else if (composite >= 650) score += 5;
-  
-  // Entity structure
-  if (data.entityType === 'corp' || data.entityType === 'llc_multi') score += 5;
+  // Utilization contribution (0-25 points)
+  const utilization = data.utilization || 0;
+  let utilPoints = 0;
+  if (utilization === 0) utilPoints = 0; // No data provided
+  else if (utilization < 10) utilPoints = 25;
+  else if (utilization <= 20) utilPoints = 22;
+  else if (utilization <= 30) utilPoints = 18;
+  else if (utilization <= 50) utilPoints = 10;
+  else if (utilization <= 70) utilPoints = 5;
+  else utilPoints = 0;
 
-  return Math.min(160, score);
+  // Derogatory penalty (0-20 points, subtracted)
+  let derogPenalty = 0;
+  if (data.hasBankruptcy && data.bankruptcyAge === 'under_2yr') derogPenalty = 20;
+  else if (data.hasCollections || data.hasChargeoffs) derogPenalty = 15;
+  else if (data.hasTaxLiens) derogPenalty = 12;
+  else if (data.hasLatePay) derogPenalty = 5;
+
+  const personalScore = Math.max(0, ficoPoints + utilPoints - derogPenalty);
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // COMPONENT 2: FINANCIAL HEALTH (30% = 90 max points)
+  // ══════════════════════════════════════════════════════════════════════════
+  
+  // Revenue contribution (0-40 points) - now categorical
+  let revenuePoints = 0;
+  if (data.monthlyRevenue === 'over_100k') revenuePoints = 40;
+  else if (data.monthlyRevenue === '40k_100k') revenuePoints = 32;
+  else if (data.monthlyRevenue === '15k_40k') revenuePoints = 25;
+  else if (data.monthlyRevenue === '5k_15k') revenuePoints = 10;
+  else if (data.monthlyRevenue === 'under_5k') revenuePoints = 3;
+
+  // Bank rating (0-30 points, but can go negative for 'none')
+  // BUG FIX: Apply significant penalty for no bank account
+  let bankPoints = 0;
+  if (data.bankAccount === 'dedicated') bankPoints += 10;
+  else if (data.bankAccount === 'personal') bankPoints += 3;
+  else bankPoints -= 15; // FIXED: Changed from 0 to -15 (significant penalty for hard stop)
+  
+  if (data.avgDailyBalance === '25k_plus' || data.avgDailyBalance === '25k_plus') bankPoints += 12;
+  else if (data.avgDailyBalance === '10k_25k') bankPoints += 9;
+  else if (data.avgDailyBalance === '2k_10k') bankPoints += 6;
+  else if (data.avgDailyBalance === '500_2k') bankPoints += 3;
+  else if (data.avgDailyBalance === 'near_zero') bankPoints -= 5; // FIXED: Added penalty for near_zero balance
+  
+  if (data.nsfCount === '0' || data.nsfCount === 'zero') bankPoints += 8;
+  else if (data.nsfCount === '1_2') bankPoints += 3;
+  else if (data.nsfCount === '3_5') bankPoints -= 3; // FIXED: Added penalty for multiple NSFs
+  else if (data.nsfCount === '5plus' || data.nsfCount === 'over_5') bankPoints -= 8; // FIXED: Added penalty for many NSFs
+
+  // Bank age contribution (0-20 points)
+  let bankAgePoints = 0;
+  if (data.bankAge === '24plus') bankAgePoints = 20;
+  else if (data.bankAge === '12_24mo') bankAgePoints = 14;
+  else if (data.bankAge === '6_12mo') bankAgePoints = 8;
+  else if (data.bankAge === '0_6mo') bankAgePoints = 3;
+
+  const financialScore = Math.min(90, revenuePoints + bankPoints + bankAgePoints);
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ASSET VALUES (SUPPLEMENTAL SCORING)
+  // arBalance, equipmentValue, poBalance now categorical for eligibility check
+  // ══════════════════════════════════════════════════════════════════════════
+  
+  // Accounts Receivable scoring - unlocks invoice factoring at 'over_250k'
+  let arPoints = 0;
+  if (data.arBalance === 'over_250k') arPoints = 20; // Full points + unlocks factoring
+  else if (data.arBalance === '50k_250k') arPoints = 12;
+  else if (data.arBalance === '10k_50k') arPoints = 6;
+  else if (data.arBalance === 'under_10k') arPoints = 2;
+  else arPoints = 0; // 'none' or empty
+  
+  // Equipment Value scoring - unlocks equipment financing at '50k_250k' or 'over_250k'
+  let equipmentPoints = 0;
+  if (data.equipmentValue === 'over_250k') equipmentPoints = 20; // Full points
+  else if (data.equipmentValue === '50k_250k') equipmentPoints = 18; // Unlocks equipment financing
+  else if (data.equipmentValue === '10k_50k') equipmentPoints = 10;
+  else if (data.equipmentValue === 'under_10k') equipmentPoints = 3;
+  else equipmentPoints = 0; // 'none' or empty
+  
+  // Purchase Orders scoring - unlocks PO financing at '50k_250k' or 'over_250k'
+  let poPoints = 0;
+  if (data.poBalance === 'over_250k') poPoints = 20; // Full points
+  else if (data.poBalance === '50k_250k') poPoints = 18; // Unlocks PO financing
+  else if (data.poBalance === '10k_50k') poPoints = 10;
+  else if (data.poBalance === 'under_10k') poPoints = 3;
+  else poPoints = 0; // 'none' or empty
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // COMPONENT 3: BUSINESS PROFILE (20% = 60 max points)
+  // ══════════════════════════════════════════════════════════════════════════
+  
+  // Entity type (0-15 points)
+  let entityPoints = 0;
+  if (data.entityType === 'corp') entityPoints = 15;
+  else if (data.entityType === 'llc_multi') entityPoints = 12;
+  else if (data.entityType === 'llc_single') entityPoints = 8;
+  else if (data.entityType === 'sole_prop') entityPoints = 2;
+
+  // Business age (0-20 points)
+  const now = new Date();
+  const startYear = data.startDate.year || now.getFullYear();
+  const startMonth = data.startDate.month || now.getMonth() + 1;
+  const ageMonths = (now.getFullYear() - startYear) * 12 + (now.getMonth() + 1 - startMonth);
+  
+  let agePoints = 0;
+  if (ageMonths >= 60) agePoints = 20;
+  else if (ageMonths >= 36) agePoints = 15;
+  else if (ageMonths >= 24) agePoints = 10;
+  else if (ageMonths >= 12) agePoints = 5;
+  else agePoints = 2;
+
+  // NAP + web presence (0-25 points)
+  let napPoints = 0;
+  if (data.hasEIN) napPoints += 8;
+  if (data.hasWebsite) napPoints += 8;
+  if (data.businessName) napPoints += 3;
+  if (data.businessAddress) napPoints += 3;
+  if (data.businessPhone || data.ownerPhone) napPoints += 3;
+
+  const profileScore = Math.min(60, entityPoints + agePoints + napPoints);
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // COMPONENT 4: BUSINESS CREDIT (15% = 45 max points)
+  // ══════════════════════════════════════════════════════════════════════════
+  
+  // Business credit file (0-30 points)
+  let bizCreditPoints = 0;
+  if (data.bizCreditFile === 'paydex_80plus') bizCreditPoints = 30;
+  else if (data.bizCreditFile === 'below_80') bizCreditPoints = 18;
+  else if (data.bizCreditFile === 'building') bizCreditPoints = 8;
+  else bizCreditPoints = 0;
+
+  // Inquiries impact (0-15 points)
+  let inquiryPoints = 0;
+  if (data.inquiries30d === '0') inquiryPoints = 15;
+  else if (data.inquiries30d === '1_2') inquiryPoints = 10;
+  else if (data.inquiries30d === '3_4') inquiryPoints = 5;
+  else if (data.inquiries30d === '5plus') inquiryPoints = 0;
+  else inquiryPoints = 8;
+
+  const bizCreditScore = Math.min(45, bizCreditPoints + inquiryPoints);
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // FINAL SBSS SCORE (0-300 scale)
+  // ══════════════════════════════════════════════════════════════════════════
+  const sbssTotal = personalScore + financialScore + profileScore + bizCreditScore;
+  
+  return Math.min(300, Math.max(0, sbssTotal));
 }
 
 /**
@@ -271,20 +554,20 @@ export function calculatePartialScore(partialData: Partial<UnifiedAnswers>): num
     industry: '',
     hasEIN: false,
     hasWebsite: false,
-    monthlyRevenue: 0,
-    ccSales: 0,
+    monthlyRevenue: '',
+    ccSales: '',
     bankAccount: '',
     bankAge: '',
     avgDailyBalance: '',
     nsfCount: '',
-    arBalance: 0,
-    equipmentValue: 0,
-    poBalance: 0,
+    arBalance: '', // FIXED: Changed from 0 to empty string
+    equipmentValue: '', // FIXED: Changed from 0 to empty string
+    poBalance: '', // FIXED: Changed from 0 to empty string
     ownsProperty: '',
     constructionPlan: '',
-    experian: 680,
-    transunion: 680,
-    equifax: 680,
+    experian: '', // FIXED: Changed from 680 to empty string
+    transunion: '', // FIXED: Changed from 680 to empty string
+    equifax: '', // FIXED: Changed from 680 to empty string
     utilization: 30,
     personalIncome: '',
     hasBankruptcy: false,
@@ -308,19 +591,17 @@ export function calculatePartialScore(partialData: Partial<UnifiedAnswers>): num
 // EXTENDED RESULTS COMPUTATION FOR DYNAMIC REPORTS
 // ════════════════════════════════════════════════════════════════════════════════
 
-import { ExtendedResultsOutput } from './types';
-
 export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOutput {
   // Get base scores
   const baseResult = computeScore(data);
   
   // Composite FICO
   const creditScores = [
-    data.experian || 680,
-    data.transunion || 680,
-    data.equifax || 680,
-  ].sort((a, b) => a - b);
-  const composite = creditScores[1]; // Middle score
+    data.experian || 0,
+    data.transunion || 0,
+    data.equifax || 0,
+  ].filter(s => s > 0).sort((a, b) => a - b);
+  const composite = creditScores.length > 0 ? creditScores[Math.floor(creditScores.length / 2)] : 0;
 
   // Report metadata
   const ownerName = `${data.ownerFirstName} ${data.ownerLastName}`.trim() || 'Business Owner';
@@ -357,9 +638,9 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
 
   const ownerStatus = {
     name: ownerName,
-    experian: data.experian || 680,
-    transunion: data.transunion || 680,
-    equifax: data.equifax || 680,
+    experian: mapCreditScore(data.experian || ''), // FIXED: Use mapping function
+    transunion: mapCreditScore(data.transunion || ''), // FIXED: Use mapping function
+    equifax: mapCreditScore(data.equifax || ''), // FIXED: Use mapping function
     inquiries3mo: inquiryData.mo3,
     inquiries6mo: inquiryData.mo6,
     inquiries12mo: inquiryData.mo12,
@@ -375,9 +656,9 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
   // Bankable Items (20 items)
   const bankableItems = computeBankableItems(data);
 
-  // SBSS Status
+  // SBSS Status (using new 0-300 scale, 160 = bankable threshold)
   const sbssOwnerStatus = composite >= 700 ? 'best' : composite >= 640 ? 'pass' : 'fail';
-  const sbssBusinessStatus = baseResult.bankableScore >= 160 ? 'best' : baseResult.bankableScore >= 130 ? 'pass' : 'fail';
+  const sbssBusinessStatus = baseResult.bankableScore >= 200 ? 'best' : baseResult.bankableScore >= 160 ? 'pass' : 'fail';
 
   // SBSS Sections
   const sbssSections = computeSBSSSections(data, composite, baseResult.bankableScore);
@@ -385,13 +666,9 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
   // Work Needed
   const workNeeded = computeWorkNeeded(data, composite, bankableItems);
 
-  // SBSS Score (0-300) - weighted composite of owner credit + business credit
-  // SBSS = 50% owner credit health + 50% business credit health
-  // Owner credit: based on composite FICO (300-850 range mapped to 0-150)
-  // Business credit: based on bankable score (0-160 mapped to 0-150)
-  const ownerCreditComponent = Math.min(150, Math.max(0, Math.round(((composite - 300) / 550) * 150)));
-  const businessCreditComponent = Math.min(150, Math.round((baseResult.bankableScore / 160) * 150));
-  const sbssScore = ownerCreditComponent + businessCreditComponent;
+  // SBSS Score is now directly from the bankable score (0-300 scale)
+  // Already computed with proper 35/30/20/15 weighting in calculateBankableScore
+  const sbssScore = baseResult.bankableScore;
 
   return {
     fundScore: baseResult.score,
@@ -414,11 +691,11 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
   };
 }
 
-// ────────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────���──────────────────────────────
 // HELPER: Funding Range Lookup
 // Aligned with Elon's strategic notes: ranges should reflect real capital unlock potential
 // Reference: "$80K → $250K → $1.4M" trajectory mentioned in strategic review
-// ────────────────────────────────────────────────────────────────────────────────
+// ─────────────���──────────────────────────────────────────────────────────────────
 function getFundingRange(score: number): ExtendedResultsOutput['fundingRange'] {
   // Score is 0-1000
   if (score >= 900) {
@@ -472,7 +749,7 @@ function getFundingRange(score: number): ExtendedResultsOutput['fundingRange'] {
   };
 }
 
-// ────────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────��───────────
 // HELPER: Time in Business
 // ────────────────────────────────────────────────────────────────────────────────
 function calculateTimeInBusiness(year: number, month: number): string {
@@ -487,7 +764,7 @@ function calculateTimeInBusiness(year: number, month: number): string {
   return `${months}m`;
 }
 
-// ────────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────���────────────────────────────────────
 // HELPER: Contingencies
 // ────────────────────────────────────────────────────────────────────────────────
 function computeContingencies(data: UnifiedAnswers): ExtendedResultsOutput['contingencies'] {
@@ -556,16 +833,18 @@ function computeContingencies(data: UnifiedAnswers): ExtendedResultsOutput['cont
 
 // ────────────────────────────────────────────────────────────────────────────────
 // HELPER: Bankable Items (20 items)
-// ────────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────��────────────��─────────────────────────────────────────
 function computeBankableItems(data: UnifiedAnswers): ExtendedResultsOutput['bankableItems'] {
-  const composite = [data.experian || 680, data.transunion || 680, data.equifax || 680].sort((a, b) => a - b)[1];
+  const creditScores = [mapCreditScore(data.experian || ''), mapCreditScore(data.transunion || ''), mapCreditScore(data.equifax || '')].filter(s => s > 0).sort((a, b) => a - b);
+  const composite = creditScores.length > 0 ? creditScores[Math.floor(creditScores.length / 2)] : 0;
   const goodStanding = data.readinessAnswers[8] === 0; // Q_R9 index 8, option A = "Yes, all filings current"
+  const sbssScore = calculateBankableScore(data); // Get computed SBSS score (0-300)
 
   const descriptions = [
     'Funding programs you currently pre-qualify for are listed inside the bankable system login.',
-    'A minimum 160 FICO SBSS is required by banks, credit unions and all the SBA lenders.',
-    "35% of the business FICO score is the Owner's credit. A minimum 640 FICO 8 is required.",
-    '30% of the business FICO SBSS score is the Bank Rating. A minimum Low 5 is required.',
+    'A minimum 160 SBSS is required by banks, credit unions and all the SBA lenders.',
+    "35% of the SBSS score is the Owner's credit. A minimum 640 FICO 8 is required.",
+    '30% of the SBSS score is the Bank Rating. A minimum Low 5 is required.',
     'The business must have credit reports with Experian, Equifax and Dun & Bradstreet.',
     'The business should have a minimum of 10 to 12 reporting business credit tradelines.',
     'The business should have a detailed business profile inside the business credit reports.',
@@ -586,13 +865,13 @@ function computeBankableItems(data: UnifiedAnswers): ExtendedResultsOutput['bank
 
   const items = [
     { name: 'Available Funding', status: 'pass' as const }, // Always pass
-    { name: 'Business FICO', status: (data.bankableScore >= 130 ? 'pass' : 'fail') as const },
+    { name: 'Business FICO (SBSS)', status: (sbssScore >= 160 ? 'pass' : 'fail') as const },
     { name: 'Owner\'s Credit', status: (composite >= 640 ? 'pass' : 'fail') as const },
     { name: 'Bank Rating', status: (data.avgDailyBalance !== 'near_zero' && data.nsfCount === 'zero' ? 'pass' : 'fail') as const },
     { name: 'Business Credit', status: (data.bizCreditFile === 'paydex_80plus' ? 'pass' : 'fail') as const },
     { name: 'Reporting Tradelines', status: (data.bizCreditFile === 'paydex_80plus' ? 'pass' : 'fail') as const },
     { name: 'Detailed Reports', status: (data.bizCreditFile !== 'none' ? 'pass' : 'fail') as const },
-    { name: 'Business Revenue', status: ((data.monthlyRevenue || 0) >= 10000 ? 'pass' : 'fail') as const },
+    { name: 'Business Revenue', status: ((['15k_40k', '40k_100k', 'over_100k'].includes(data.monthlyRevenue)) ? 'pass' : 'fail') as const },
     { name: 'Business Type', status: (data.entityType !== 'sole_prop' ? 'pass' : 'fail') as const },
     { name: 'Business Name', status: (!!data.businessName ? 'pass' : 'fail') as const },
     { name: 'Business Location', status: (data.hasEIN ? 'pass' : 'fail') as const },
@@ -615,7 +894,7 @@ function computeBankableItems(data: UnifiedAnswers): ExtendedResultsOutput['bank
 
 // ────────────────────────────────────────────────────────────────────────────────
 // HELPER: SBSS Sections
-// ────────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────���─────────────────────────────
 function computeSBSSSections(data: UnifiedAnswers, composite: number, bankableScore: number): ExtendedResultsOutput['sbssSections'] {
   const goodStanding = data.readinessAnswers[8] === 0;
 
@@ -630,8 +909,8 @@ function computeSBSSSections(data: UnifiedAnswers, composite: number, bankableSc
       section: 'Business Revenue',
       percentage: '30%',
       status: 
-        (data.monthlyRevenue || 0) > 15000 && data.nsfCount === 'zero' && data.bankAccount === 'dedicated' ? 'pass' :
-        (data.monthlyRevenue || 0) > 5000 || data.bankAccount === 'dedicated' ? 'partial' :
+        (['40k_100k', 'over_100k'].includes(data.monthlyRevenue) && data.nsfCount === '0' && data.bankAccount === 'dedicated') ? 'pass' :
+        (['5k_15k', '15k_40k', '40k_100k', 'over_100k'].includes(data.monthlyRevenue) || data.bankAccount === 'dedicated') ? 'partial' :
         'fail',
       description: 'Business bank rating, revenue, debt ratio',
     },

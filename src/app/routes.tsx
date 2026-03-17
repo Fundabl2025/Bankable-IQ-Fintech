@@ -47,6 +47,7 @@ const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.S
 const TemplatesAndResources = lazy(() => import('./pages/TemplatesAndResources').then(m => ({ default: m.TemplatesAndResources })));
 const ResourceDetail = lazy(() => import('./pages/ResourceDetail').then(m => ({ default: m.ResourceDetail })));
 const CapitalAccessMap = lazy(() => import('./pages/CapitalAccessMap').then(m => ({ default: m.CapitalAccessMap })));
+const DenialDiagnosis = lazy(() => import('./pages/DenialDiagnosis'));
 const EntityFilings = lazy(() => import('./pages/LenderCompliance/EntityFilings').then(m => ({ default: m.EntityFilings })));
 
 // LenderCompliance sub-pages
@@ -80,27 +81,18 @@ const LazyComponent = ({ Component, ...props }: { Component: React.LazyExoticCom
 export const router = createBrowserRouter([
   {
     path: 'fundscore-assessment',
-    element: <Navigate to="/business-assessment" replace />,
+    element: <Navigate to="/app/business-assessment" replace />,
   },
-  // Public landing page (no sidebar/layout)
+  // App routes with RootLayout (sidebar, topnav) - PROTECTED routes
+  // Only auth-required routes go here
   {
-    path: '/',
-    element: <LazyComponent Component={LandingPage} />,
-  },
-  // Auth pages (no sidebar/layout)
-  {
-    path: '/login',
-    element: <LazyComponent Component={LoginPage} />,
-  },
-  {
-    path: '/signup',
-    element: <LazyComponent Component={SignupPage} />,
-  },
-  // App routes with RootLayout (sidebar, topnav)
-  {
-    path: '/',
+    path: '/app',
     Component: RootLayout,
     children: [
+      {
+        index: true,
+        element: <LazyComponent Component={Dashboard} />,
+      },
       {
         path: 'dashboard',
         element: <LazyComponent Component={Dashboard} />,
@@ -110,40 +102,8 @@ export const router = createBrowserRouter([
         element: <LazyComponent Component={Dashboard} />,
       },
       {
-        path: 'business-success-scan',
-        element: <Navigate to="/business-assessment" replace />,
-      },
-      {
-        path: 'business-success-scan/step-1',
-        element: <Navigate to="/business-assessment" replace />,
-      },
-      {
-        path: 'business-success-scan/step-2',
-        element: <Navigate to="/business-assessment" replace />,
-      },
-      {
-        path: 'business-success-scan/step-3',
-        element: <Navigate to="/business-assessment" replace />,
-      },
-      {
-        path: 'business-success-scan/fundscore',
-        element: <Navigate to="/business-assessment" replace />,
-      },
-      {
-        path: 'business-success-scan/assessment',
-        element: <Navigate to="/business-assessment" replace />,
-      },
-      {
-        path: 'business-success-scan/results',
-        element: <Navigate to="/business-assessment/results" replace />,
-      },
-      {
-        path: 'business-assessment',
-        element: <LazyComponent Component={UnifiedAssessment} />,
-      },
-      {
-        path: 'business-assessment/results',
-        element: <LazyComponent Component={UnifiedResults} />,
+        path: 'denial-diagnosis',
+        element: <LazyComponent Component={DenialDiagnosis} />,
       },
       {
         path: 'integrate-reports',
@@ -159,7 +119,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'my-business-profile',
-        element: <Navigate to="/settings/my-business-profile" replace />,
+        element: <Navigate to="/app/settings/my-business-profile" replace />,
       },
       {
         path: 'status-reports',
@@ -419,5 +379,34 @@ export const router = createBrowserRouter([
         ),
       },
     ],
+  },
+  // Auth pages (no sidebar/layout)
+  {
+    path: '/login',
+    element: <LazyComponent Component={LoginPage} />,
+  },
+  {
+    path: '/signup',
+    element: <LazyComponent Component={SignupPage} />,
+  },
+  // PUBLIC ASSESSMENT ROUTES - NO AUTH REQUIRED
+  // Lead generation funnel - anyone can take assessment
+  {
+    path: '/business-assessment',
+    element: <LazyComponent Component={UnifiedAssessment} />,
+  },
+  {
+    path: '/business-assessment/results',
+    element: <LazyComponent Component={UnifiedResults} />,
+  },
+  // Landing page
+  {
+    path: '/',
+    element: <LazyComponent Component={LandingPage} />,
+  },
+  // Catch all - redirect to landing
+  {
+    path: '*',
+    element: <Navigate to="/" replace />,
   },
 ]);

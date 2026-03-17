@@ -29,64 +29,66 @@ import {
   Target,
   Settings,
   CheckCircle,
-  XCircle
+  XCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { getPreQualifiedPrograms, isProgramPathPreQualified } from '../utils/fundingEligibility';
 import { getFoundationFirstData } from '../utils/foundationFirstData';
 
 // Business Success module items
 const businessMenuItems = [
-  { path: '/business-success-scan/step-1', label: 'Business Success Scan', icon: ClipboardCheck, badge: 'Start' },
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/business-assessment', label: 'Business Success Scan', icon: ClipboardCheck, badge: 'Start', isAssessment: true },
+  { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/app/denial-diagnosis', label: 'Denial Diagnosis', icon: AlertTriangle },
   { 
-    path: '/access-funding', 
+    path: '/app/access-funding', 
     label: 'Access Funding', 
     icon: DollarSign, 
     showPreQualifiedBadge: true,
     subItems: [
-      { path: '/access-funding/business-credit-cards', label: 'Syndicated Line of Credit (SLOC)' },
-      { path: '/access-funding/business-credit-line', label: 'Business Credit Line' },
-      { path: '/access-funding/business-term-loan', label: 'Business Term Loan' },
-      { path: '/access-funding/credit-union-loans', label: 'Credit Union Loans' },
-      { path: '/access-funding/equipment-financing', label: 'Equipment Financing' },
-      { path: '/access-funding/merchant-advance', label: 'Merchant Advance' },
-      { path: '/access-funding/personal-credit-cards', label: 'Personal Credit Cards' },
-      { path: '/access-funding/receivable-factoring', label: 'Receivable Factoring' },
-      { path: '/access-funding/revenue-based-loan', label: 'Revenue Based Loan' },
-      { path: '/access-funding/working-capital-loans', label: 'Working Capital Loans' },
-      { path: '/access-funding/sba-business-loan', label: 'SBA Loans: 7a & 504' },
-      { path: '/access-funding/accounts-receivable-finance', label: 'Accounts Receivable Finance' },
-      { path: '/access-funding/inventory-line-of-credit', label: 'Inventory Line of Credit' },
-      { path: '/access-funding/purchase-order-finance', label: 'Purchase Order Finance' },
-      { path: '/access-funding/bridge-loans', label: 'Bridge Loans' },
-      { path: '/access-funding/dscr-loans', label: 'DSCR Loans' },
-      { path: '/access-funding/construction-loans', label: 'Construction Loans' },
+      { path: '/app/access-funding/business-credit-cards', label: 'Syndicated Line of Credit (SLOC)' },
+      { path: '/app/access-funding/business-credit-line', label: 'Business Credit Line' },
+      { path: '/app/access-funding/business-term-loan', label: 'Business Term Loan' },
+      { path: '/app/access-funding/credit-union-loans', label: 'Credit Union Loans' },
+      { path: '/app/access-funding/equipment-financing', label: 'Equipment Financing' },
+      { path: '/app/access-funding/merchant-advance', label: 'Merchant Advance' },
+      { path: '/app/access-funding/personal-credit-cards', label: 'Personal Credit Cards' },
+      { path: '/app/access-funding/receivable-factoring', label: 'Receivable Factoring' },
+      { path: '/app/access-funding/revenue-based-loan', label: 'Revenue Based Loan' },
+      { path: '/app/access-funding/working-capital-loans', label: 'Working Capital Loans' },
+      { path: '/app/access-funding/sba-business-loan', label: 'SBA Loans: 7a & 504' },
+      { path: '/app/access-funding/accounts-receivable-finance', label: 'Accounts Receivable Finance' },
+      { path: '/app/access-funding/inventory-line-of-credit', label: 'Inventory Line of Credit' },
+      { path: '/app/access-funding/purchase-order-finance', label: 'Purchase Order Finance' },
+      { path: '/app/access-funding/bridge-loans', label: 'Bridge Loans' },
+      { path: '/app/access-funding/dscr-loans', label: 'DSCR Loans' },
+      { path: '/app/access-funding/construction-loans', label: 'Construction Loans' },
     ]
   },
-  { path: '/integrate-reports', label: 'Integrate Reports', icon: FileText },
+  { path: '/app/integrate-reports', label: 'Integrate Reports', icon: FileText },
   { 
-    path: '/status-reports', 
+    path: '/app/status-reports', 
     label: 'Status Reports', 
     icon: BarChart3,
     subItems: [
-      { path: '/status-reports/bankable-status', label: 'Bankable Status' },
-      { path: '/status-reports/business-fico', label: 'Business FICO' },
-      { path: '/status-reports/estimated-funding', label: 'Estimated Funding' },
-      { path: '/status-reports/owners-credit', label: 'Owners Credit' },
+      { path: '/app/status-reports/bankable-status', label: 'Bankable Status' },
+      { path: '/app/status-reports/business-fico', label: 'Business FICO' },
+      { path: '/app/status-reports/estimated-funding', label: 'Estimated Funding' },
+      { path: '/app/status-reports/owners-credit', label: 'Owners Credit' },
     ]
   },
-  { path: '/document-collection', label: 'Document Collection', icon: FolderOpen },
-  { path: '/lender-compliance', label: 'Lender Compliance', icon: Shield },
-  { path: '/capital-access-map', label: 'Capital Access Map', icon: Target },
-  { path: '/optimize-reporting', label: 'Optimize Reporting', icon: TrendingUp },
-  { path: '/online-analysis', label: 'Online Analysis', icon: LineChart },
-  { path: '/building-credit', label: 'Building Credit', icon: CreditCard },
-  { path: '/organize-financials', label: 'Organize Financials', icon: Briefcase },
-  { path: '/become-bankable', label: 'Become Bankable', icon: Building },
-  { path: '/templates-resources', label: 'Templates & Resources', icon: BookOpen },
-  { path: '/business-education', label: 'Business Education', icon: GraduationCap },
-  { path: '/help-desk', label: 'Help Desk', icon: HelpCircle },
-  { path: '/settings', label: 'Settings', icon: Settings }
+  { path: '/app/document-collection', label: 'Document Collection', icon: FolderOpen },
+  { path: '/app/lender-compliance', label: 'Lender Compliance', icon: Shield },
+  { path: '/app/capital-access-map', label: 'Capital Access Map', icon: Target },
+  { path: '/app/optimize-reporting', label: 'Optimize Reporting', icon: TrendingUp },
+  { path: '/app/online-analysis', label: 'Online Analysis', icon: LineChart },
+  { path: '/app/building-credit', label: 'Building Credit', icon: CreditCard },
+  { path: '/app/organize-financials', label: 'Organize Financials', icon: Briefcase },
+  { path: '/app/become-bankable', label: 'Become Bankable', icon: Building },
+  { path: '/app/templates-resources', label: 'Templates & Resources', icon: BookOpen },
+  { path: '/app/business-education', label: 'Business Education', icon: GraduationCap },
+  { path: '/app/help-desk', label: 'Help Desk', icon: HelpCircle },
+  { path: '/app/settings', label: 'Settings', icon: Settings }
 ];
 
 // FoundationFirst module items
@@ -152,6 +154,20 @@ export function Sidebar() {
     setExpandedItem(expandedItem === path ? null : path);
   };
 
+  // Handle Business Success Scan navigation - check if assessment already exists
+  const handleAssessmentClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const assessmentData = localStorage.getItem('unified_assessment');
+    
+    if (assessmentData) {
+      // Assessment exists - navigate to results page instead
+      e.preventDefault();
+      navigate('/business-assessment/results');
+    } else {
+      // No assessment - proceed to new assessment
+      navigate('/business-assessment');
+    }
+  };
+
   return (
     <div 
       className="min-h-screen shadow-xl relative flex flex-col"
@@ -163,28 +179,19 @@ export function Sidebar() {
       }}
     >
       {/* Logo/Brand Section */}
-      <div className="p-6 border-b flex-shrink-0" style={{ borderColor: 'var(--sidebar-border)' }}>
-        <div className="flex items-center gap-2 mb-2">
-          <div>
-            <h1 
-              className="text-[20px] tracking-tight leading-none"
-              style={{ fontFamily: 'var(--font-display)', fontWeight: 800 }}
-            >
-              <span style={{ color: 'var(--foreground)' }}>FUND</span>
-              <span style={{ color: 'var(--primary)' }}>READY</span>
-            </h1>
-            <p 
-              className="text-[9px] uppercase tracking-[0.2em] mt-1"
-              style={{ 
-                fontFamily: 'var(--font-body)', 
-                fontWeight: 400,
-                color: 'var(--muted-foreground)'
-              }}
-            >
-              Funding Platform
-            </p>
-          </div>
-        </div>
+      <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--sidebar-border)' }}>
+        <Link to="/" style={{ display: 'block', textDecoration: 'none' }}>
+          <img 
+            src="/images/fundready-logo.png" 
+            alt="FundReady - Unlocking Your Potential" 
+            style={{ 
+              width: '100%', 
+              maxWidth: '180px',
+              height: 'auto',
+              objectFit: 'contain',
+            }} 
+          />
+        </Link>
       </div>
       
       {/* Navigation */}
@@ -328,6 +335,7 @@ export function Sidebar() {
                           >
                             <Link
                               to={item.path}
+                              onClick={item.isAssessment ? handleAssessmentClick : undefined}
                               className="flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-200 relative"
                               style={{
                                 backgroundColor: isActive ? 'var(--sidebar-accent-hover)' : 'transparent',

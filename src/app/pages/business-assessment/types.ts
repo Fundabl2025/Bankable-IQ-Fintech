@@ -29,19 +29,19 @@ export interface UnifiedAnswers {
   websiteUrl?: string;
   
   // Q_F5: Revenue & CC Sales
-  monthlyRevenue: number;
-  ccSales: number;
+  monthlyRevenue: 'under_5k' | '5k_15k' | '15k_40k' | '40k_100k' | 'over_100k' | '';
+  ccSales: 'no_cards' | 'under_5k' | '5k_15k' | '15k_50k' | 'over_50k' | '';
   
   // Q_F6: Banking (3 sub-fields)
   bankAccount: 'dedicated' | 'personal' | 'none' | '';
   bankAge: '0_6mo' | '6_12mo' | '12_24mo' | '24plus' | '';
-  avgDailyBalance: 'near_zero' | '500_2k' | '2k_10k' | '10k_25k' | '25k_plus' | '';
+  avgDailyBalance: 'near_zero' | '500_2k' | '2k_10k' | '10k_25k' | 'over_25k' | '';
   
   // Q_F7: NSFs & Assets
-  nsfCount: 'zero' | '1_2' | '3_5' | 'over_5' | '';
-  arBalance: number;
-  equipmentValue: number;
-  poBalance: number;
+  nsfCount: '0' | '1_2' | '3_5' | '5plus' | '';
+  arBalance: 'none' | 'under_10k' | '10k_50k' | '50k_250k' | 'over_250k' | '';
+  equipmentValue: 'none' | 'under_10k' | '10k_50k' | '50k_250k' | 'over_250k' | '';
+  poBalance: 'none' | 'under_10k' | '10k_50k' | '50k_250k' | 'over_250k' | '';
   ownsProperty: 'yes' | 'no' | 'planning' | '';
   propertyData?: {
     count: number;
@@ -52,24 +52,23 @@ export interface UnifiedAnswers {
   constructionPlan: 'yes' | 'no' | 'later' | '';
   constructionBudget?: number;
   
-  // Q_F8: Personal Credit (3 bureaus)
-  experian: number;
-  transunion: number;
-  equifax: number;
+  // Q_F8: Personal Credit (3 bureaus) - FIXED: Changed from number to categorical
+  experian: 'exceptional' | 'very_good' | 'good' | 'fair' | 'poor' | 'unknown' | '';
+  transunion: 'exceptional' | 'very_good' | 'good' | 'fair' | 'poor' | 'unknown' | '';
+  equifax: 'exceptional' | 'very_good' | 'good' | 'fair' | 'poor' | 'unknown' | '';
   
   // Q_F9: Utilization & Income
-  utilization: number;
+  utilization: 'under_10' | '10_30' | '30_50' | '50_75' | 'over_75' | '';
   personalIncome: 'under_35k' | '35_75k' | '75_125k' | '125_250k' | 'over_250k' | '';
   
   // Q_F10: Bankruptcy & Derogatories
-  hasBankruptcy: boolean;
-  bankruptcyAge?: 'under_2yr' | '2_7yr' | 'over_7yr';
+  hasBankruptcy: 'no' | 'recent' | 'aging' | 'old' | '';
   hasJudgments: boolean;
-  hasCollections: boolean;
+  hasCollections: 'no' | 'active' | 'resolved' | '';
   hasChargeoffs: boolean;
   hasLatePay: boolean;
-  hasTaxLiens: boolean;
-  noDerogItems: boolean;
+  hasTaxLiens: 'no' | 'federal' | 'state' | 'both' | '';
+  noDerogItems: 'true' | 'false' | '';
   
   // Q_F11: Business Credit & Inquiries
   bizCreditFile: 'paydex_80plus' | 'below_80' | 'building' | 'none' | '';
@@ -82,7 +81,7 @@ export interface UnifiedAnswers {
   businessZip?: string;
   businessPhone?: string;
   
-  // ── PART 2: READINESS (14 questions, indices 0–13) ─────────────────────────
+  // ── PART 2: READINESS (23 questions, indices 0–22) ─────────────────────────
   readinessAnswers: (number | undefined)[];
 }
 
@@ -115,8 +114,11 @@ export interface Field {
 
 export interface ScoreResult {
   score: number;
-  dimAvg: Record<'C' | 'D' | 'F' | 'B' | 'S' | 'N', number>;
-  bankableScore: number;
+  // New dimension codes aligned with Elon's spec:
+  // P = Personal Credit (20%), B = Business Profile (10%), F = Financial (25%)
+  // C = Compliance (20%), S = Stability (15%), N = File Strength (10%)
+  dimAvg: Record<'P' | 'B' | 'F' | 'C' | 'S' | 'N', number>;
+  bankableScore: number; // SBSS score 0-300, 160 = bankable threshold
   napScore: number;
 }
 
@@ -124,9 +126,9 @@ export interface ScoreResult {
 export interface ExtendedResultsOutput {
   // Core scores (existing)
   fundScore: number;
-  bankableScore: number;
+  bankableScore: number; // SBSS 0-300 scale, 160 = bankable
   napScore: number;
-  dimAvg: Record<'C' | 'D' | 'F' | 'B' | 'S' | 'N', number>;
+  dimAvg: Record<'P' | 'B' | 'F' | 'C' | 'S' | 'N', number>;
 
   // Report metadata
   ownerName: string;
@@ -190,13 +192,14 @@ export interface ExtendedResultsOutput {
   }>;
 }
 
+// Aligned with Elon's Rule Logic Spec
 export const DIMENSION_INFO = {
-  C: { name: 'Credit Profile', color: '#c89020', weight: 0.28 },
-  D: { name: 'Documentation', color: '#8ab820', weight: 0.22 },
-  F: { name: 'Cash Flow', color: '#38a880', weight: 0.20 },
-  B: { name: 'Banking Behavior', color: '#a0a020', weight: 0.13 },
-  S: { name: 'Business Structure', color: '#c8f040', weight: 0.10 },
-  N: { name: 'Narrative Strength', color: '#b04428', weight: 0.07 },
+  P: { name: 'Personal Credit', color: '#c89020', weight: 0.20 },
+  B: { name: 'Business Profile', color: '#8ab820', weight: 0.10 },
+  F: { name: 'Financial Health', color: '#38a880', weight: 0.25 },
+  C: { name: 'Compliance', color: '#a0a020', weight: 0.20 },
+  S: { name: 'Stability', color: '#c8f040', weight: 0.15 },
+  N: { name: 'File Strength', color: '#b04428', weight: 0.10 },
 } as const;
 
 export const SECTION_NAMES = [
@@ -222,33 +225,33 @@ export function getDefaultAnswers(): UnifiedAnswers {
     industry: '',
     hasEIN: false,
     hasWebsite: false,
-    monthlyRevenue: 0,
-    ccSales: 0,
+    monthlyRevenue: '', // FIXED: was 0, now empty string (matching type)
+    ccSales: '', // FIXED: was 0, now empty string (matching type)
     bankAccount: '',
     bankAge: '',
     avgDailyBalance: '',
     nsfCount: '',
-    arBalance: 0,
-    equipmentValue: 0,
-    poBalance: 0,
+    arBalance: '', // FIXED: Changed from 0 to empty string (matching new type)
+    equipmentValue: '', // FIXED: Changed from 0 to empty string (matching new type)
+    poBalance: '', // FIXED: Changed from 0 to empty string (matching new type)
     ownsProperty: '',
     constructionPlan: '',
-    experian: 680,
-    transunion: 680,
-    equifax: 680,
-    utilization: 30,
+    experian: '', // FIXED: Changed from 680 to empty string (matching new categorical type)
+    transunion: '', // FIXED: Changed from 680 to empty string (matching new categorical type)
+    equifax: '', // FIXED: Changed from 680 to empty string (matching new categorical type)
+    utilization: '', // FIXED: was 30, now empty string (matching type)
     personalIncome: '',
-    hasBankruptcy: false,
+    hasBankruptcy: '', // FIXED: was false (boolean), now empty string (matching type)
     hasJudgments: false,
-    hasCollections: false,
+    hasCollections: '', // FIXED: was false (boolean), now empty string (matching type)
     hasChargeoffs: false,
     hasLatePay: false,
-    hasTaxLiens: false,
-    noDerogItems: false,
+    hasTaxLiens: '', // FIXED: was false (boolean), now empty string (matching type)
+    noDerogItems: '', // FIXED: was false (boolean), now empty string (matching type)
     bizCreditFile: '',
     inquiries30d: '',
 
     // Readiness
-    readinessAnswers: Array(14).fill(undefined),
+    readinessAnswers: Array(23).fill(undefined), // FIXED: was 14, now 23
   };
 }
