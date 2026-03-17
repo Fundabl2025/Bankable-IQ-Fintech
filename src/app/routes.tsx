@@ -83,7 +83,8 @@ export const router = createBrowserRouter([
     path: 'fundscore-assessment',
     element: <Navigate to="/app/business-assessment" replace />,
   },
-  // App routes with RootLayout (sidebar, topnav) - protected routes
+  // App routes with RootLayout (sidebar, topnav) - PROTECTED routes
+  // Only auth-required routes go here
   {
     path: '/app',
     Component: RootLayout,
@@ -388,7 +389,8 @@ export const router = createBrowserRouter([
     path: '/signup',
     element: <LazyComponent Component={SignupPage} />,
   },
-  // Public assessment routes (no auth required - lead generation)
+  // PUBLIC ASSESSMENT ROUTES - NO AUTH REQUIRED
+  // Lead generation funnel - anyone can take assessment
   {
     path: '/business-assessment',
     element: <LazyComponent Component={UnifiedAssessment} />,
