@@ -953,15 +953,9 @@ function QuestionF6({ data, updateData, onNext, onBack, currentQuestionNumber, t
     { value: '24plus', label: '24+ months' },
   ];
 
-  const balances = [
-    { value: 'near_zero', label: 'Near zero' },
-    { value: '500_2k', label: '$500–$2K' },
-    { value: '2k_10k', label: '$2K–$10K' },
-    { value: '10k_25k', label: '$10K–$25K' },
-    { value: '25k_plus', label: '$25K+' },
-  ];
-
-  const isValid = data.bankAccount && (data.bankAccount === 'none' || (data.bankAge && data.avgDailyBalance));
+  // Validation: bankAccount is required, and if not 'none', bankAge is also required
+  // Note: avgDailyBalance was moved to Q_R21 so it's no longer required here
+  const isValid = data.bankAccount && (data.bankAccount === 'none' || data.bankAge);
 
   return (
     <>
