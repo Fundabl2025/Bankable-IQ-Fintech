@@ -51,53 +51,80 @@ export function UnifiedAssessment() {
   
   const shouldShowReadinessQuestion = (readinessIdx: number): boolean => {
     const hasBusinessBankAccount = data.bankAccount === 'dedicated' || data.bankAccount === 'personal';
-    const hasNegativeItems = data.noDerogItems === 'false'; // Q_R15: User selected "Yes, I have some"
+    const hasNegativeItems = data.noDerogItems === false; // Q_R15: User selected "Yes, I have some"
     const businessAgeMonths = data.bankAge !== '0_6mo'; // More than 6 months
     const businessNotNew = data.startDate?.year && (new Date().getFullYear() - data.startDate.year > 0);
     
-    // DEBUG: Log only when checking conditional questions (reduce verbosity)
-    const isConditionalQ = [2, 3, 7, 20, 21, 1, 4, 5, 15, 16, 17].includes(readinessIdx);
-    if (isConditionalQ) {
-      console.log(`[v0] Q_R${readinessIdx + 1}: bankAccount=${data.bankAccount}, noDerogItems=${data.noDerogItems}, bankAge=${data.bankAge}`);
-    }
+    // Q_R1 (index 0): Tax returns - ALWAYS show
+    if (readinessIdx === 0) return true;
     
-    // BANKING CONDITIONALS (indices 2, 3, 7, 20, 21)
-    if ((readinessIdx === 2 || readinessIdx === 3 || readinessIdx === 20 || readinessIdx === 21) && !hasBusinessBankAccount) {
-      if (isConditionalQ) console.log(`    → HIDDEN (no bank account)`);
-      return false;
-    }
-    // Q_R8 additionally requires 6+ months of bank history
-    if (readinessIdx === 7 && (!hasBusinessBankAccount || !businessAgeMonths)) {
-      if (isConditionalQ) console.log(`    → HIDDEN (bank age < 6mo)`);
-      return false;
-    }
+    // Q_R2 (index 1): P&L - Only show if business not brand new
+    if (readinessIdx === 1) return businessNotNew;
     
-    // REVENUE & FINANCIAL CONDITIONALS
-    // Q_R2 (index 1): P&L only if business not brand new
-    if (readinessIdx === 1 && !businessNotNew) {
-      if (isConditionalQ) console.log(`    → HIDDEN (business too new)`);
-      return false;
-    }
-    // Q_R5 (index 4): Revenue trend only if 6+ months history
-    if (readinessIdx === 4 && !businessAgeMonths) {
-      if (isConditionalQ) console.log(`    → HIDDEN (bank age < 6mo)`);
-      return false;
-    }
-    // Q_R6 (index 5): Profit margin only if revenue >= $5k/month
-    if (readinessIdx === 5 && data.monthlyRevenue === 'under_5k') {
-      if (isConditionalQ) console.log(`    → HIDDEN (revenue under $5k)`);
-      return false;
-    }
+    // Q_R3 (index 2): Bank statements months - Only show if has bank account
+    if (readinessIdx === 2) return hasBusinessBankAccount;
     
-    // DEROGATORY CONDITIONALS (indices 15, 16, 17)
-    // Q_R16, Q_R17, Q_R18 only show if user said "Yes, I have some" to Q_R15
-    if ((readinessIdx === 15 || readinessIdx === 16 || readinessIdx === 17) && !hasNegativeItems) {
-      if (isConditionalQ) console.log(`    → HIDDEN (no negative items)`);
-      return false;
-    }
+    // Q_R4 (index 3): Revenue alignment - Only show if has bank account
+    if (readinessIdx === 3) return hasBusinessBankAccount;
     
-    // All other readiness questions show by default
-    if (isConditionalQ) console.log(`    → SHOWN`);
+    // Q_R5 (index 4): Revenue trend - Only show if 6+ months of bank history
+    if (readinessIdx === 4) return businessAgeMonths;
+    
+    // Q_R6 (index 5): Monthly profit - ALWAYS show (user might not know revenue)
+    if (readinessIdx === 5) return true;
+    
+    // Q_R7 (index 6): Loan payment capacity - ALWAYS show
+    if (readinessIdx === 6) return true;
+    
+    // Q_R8 (index 7): Bank balance trending - Only show if has bank account AND 6+ months history
+    if (readinessIdx === 7) return hasBusinessBankAccount && businessAgeMonths;
+    
+    // Q_R9 (index 8): State standing - ALWAYS show
+    if (readinessIdx === 8) return true;
+    
+    // Q_R10 (index 9): Use of funds - ALWAYS show
+    if (readinessIdx === 9) return true;
+    
+    // Q_R11 (index 10): Repayment plan - ALWAYS show
+    if (readinessIdx === 10) return true;
+    
+    // Q_R12 (index 11): Past loan repayment - ALWAYS show
+    if (readinessIdx === 11) return true;
+    
+    // Q_R13 (index 12): Owner experience - ALWAYS show
+    if (readinessIdx === 12) return true;
+    
+    // Q_R14 (index 13): Credit utilization - ALWAYS show
+    if (readinessIdx === 13) return true;
+    
+    // Q_R15 (index 14): Negative items - ALWAYS show
+    if (readinessIdx === 14) return true;
+    
+    // Q_R16 (index 15): Bankruptcy - Only show if Q_R15 = "Yes, I have some"
+    if (readinessIdx === 15) return hasNegativeItems;
+    
+    // Q_R17 (index 16): Collections - Only show if Q_R15 = "Yes, I have some"
+    if (readinessIdx === 16) return hasNegativeItems;
+    
+    // Q_R18 (index 17): Tax liens - Only show if Q_R15 = "Yes, I have some"
+    if (readinessIdx === 17) return hasNegativeItems;
+    
+    // Q_R19 (index 18): Business credit - ALWAYS show
+    if (readinessIdx === 18) return true;
+    
+    // Q_R20 (index 19): Credit inquiries - ALWAYS show
+    if (readinessIdx === 19) return true;
+    
+    // Q_R21 (index 20): Avg daily balance - Only show if has bank account
+    if (readinessIdx === 20) return hasBusinessBankAccount;
+    
+    // Q_R22 (index 21): NSF events - Only show if has bank account
+    if (readinessIdx === 21) return hasBusinessBankAccount;
+    
+    // Q_R23 (index 22): Monthly revenue - ALWAYS show
+    if (readinessIdx === 22) return true;
+    
+    // Default: show all others
     return true;
   };
   
