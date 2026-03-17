@@ -19,9 +19,9 @@ export function UnifiedAssessment() {
   // Assessment data
   const [data, setData] = useState<UnifiedAnswers>(getDefaultAnswers);
   
-  // Current question (0-32 for 33 total questions)
+  // Current question (0-32 for 32 total questions)
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const totalQuestions = 33; // 10 foundation + 23 readiness
+  const totalQuestions = 32; // 9 foundation + 23 readiness
 
   // Live score
   const [liveScore, setLiveScore] = useState(0);

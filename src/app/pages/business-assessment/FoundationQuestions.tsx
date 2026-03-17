@@ -21,7 +21,7 @@ interface FoundationQuestionProps {
 export function FoundationQuestion({ step, data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions }: FoundationQuestionProps) {
   const questions = [
     QuestionF1, QuestionF2, QuestionF3, QuestionF4, QuestionF5,
-    QuestionF6, QuestionF7, QuestionF8, QuestionF9, QuestionF10, QuestionF11,
+    QuestionF6, QuestionF7, QuestionF8, QuestionF9, QuestionF11,
   ];
 
   const CurrentQuestion = questions[step];
@@ -779,23 +779,17 @@ function QuestionF4({ data, updateData, onNext, onBack, currentQuestionNumber, t
 // ════════════════════════════════════════════════════════════════════════════════
 
 function QuestionF5({ data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions, step }: any) {
-  const formatCurrency = (val: number) => {
-    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
-    if (val >= 1000) return `$${(val / 1000).toFixed(0)}K`;
-    return `$${val.toLocaleString()}`;
-  };
-
   return (
     <>
       <QuestionHeader
         number={5}
-        title="What is your average monthly revenue, and do you accept credit cards?"
-        why="Monthly revenue sets your maximum borrowing power. Credit card sales are the primary qualification factor for Merchant Cash Advance — the fastest-funding product in the market."
+        title="Do you accept credit card payments?"
+        why="Credit card sales are the primary qualification factor for Merchant Cash Advance — the fastest-funding product in the market."
         currentQuestionNumber={currentQuestionNumber}
         totalQuestions={totalQuestions}
       />
 
-      {/* Monthly Revenue - BUTTON SELECT */}
+      {/* CC Sales - YES/NO BUTTONS */}
       <div style={{ marginBottom: '24px' }}>
         <label
           style={{
@@ -807,100 +801,40 @@ function QuestionF5({ data, updateData, onNext, onBack, currentQuestionNumber, t
             marginBottom: '12px',
           }}
         >
-          Average Gross Monthly Revenue
+          Credit Card Acceptance
         </label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '12px' }}>
           {[
-            { value: 'under_5k', label: 'Under $5,000' },
-            { value: '5k_15k', label: '$5,000 - $15,000' },
-            { value: '15k_40k', label: '$15,000 - $40,000' },
-            { value: '40k_100k', label: '$40,000 - $100,000' },
-            { value: 'over_100k', label: 'Over $100,000' },
+            { value: 'yes', label: 'Yes' },
+            { value: 'no', label: 'No' },
           ].map((option) => (
             <motion.button
               key={option.value}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => updateData({ monthlyRevenue: option.value as any })}
+              onClick={() => updateData({ acceptsCards: option.value as any })}
               style={{
+                flex: 1,
                 background: '#131510',
-                border: data.monthlyRevenue === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
-                color: data.monthlyRevenue === option.value ? '#8ab820' : '#e4e8d8',
+                border: data.acceptsCards === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
+                color: data.acceptsCards === option.value ? '#8ab820' : '#e4e8d8',
                 borderRadius: '8px',
                 padding: '12px 16px',
                 fontFamily: 'var(--font-body)',
                 fontSize: '14px',
-                fontWeight: 500,
+                fontWeight: 600,
                 cursor: 'pointer',
-                textAlign: 'left',
+                textAlign: 'center',
                 width: '100%',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e: any) => {
-                if (data.monthlyRevenue !== option.value) {
+                if (data.acceptsCards !== option.value) {
                   e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
                 }
               }}
               onMouseLeave={(e: any) => {
-                if (data.monthlyRevenue !== option.value) {
-                  e.currentTarget.style.borderColor = '#6b7258';
-                }
-              }}
-            >
-              {option.label}
-            </motion.button>
-          ))}
-        </div>
-      </div>
-
-      {/* CC Sales - BUTTON SELECT */}
-      <div style={{ marginBottom: '24px' }}>
-        <label
-          style={{
-            display: 'block',
-            fontFamily: 'var(--font-body)',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'var(--text-primary)',
-            marginBottom: '12px',
-          }}
-        >
-          Total Monthly Credit Card Sales
-        </label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {[
-            { value: 'no_cards', label: 'I do not accept credit cards' },
-            { value: 'under_5k', label: 'Under $5,000' },
-            { value: '5k_15k', label: '$5,000 - $15,000' },
-            { value: '15k_50k', label: '$15,000 - $50,000' },
-            { value: 'over_50k', label: 'Over $50,000' },
-          ].map((option) => (
-            <motion.button
-              key={option.value}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => updateData({ ccSales: option.value as any })}
-              style={{
-                background: '#131510',
-                border: data.ccSales === option.value ? '2px solid #8ab820' : '1px solid #6b7258',
-                color: data.ccSales === option.value ? '#8ab820' : '#e4e8d8',
-                borderRadius: '8px',
-                padding: '12px 16px',
-                fontFamily: 'var(--font-body)',
-                fontSize: '14px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                textAlign: 'left',
-                width: '100%',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e: any) => {
-                if (data.ccSales !== option.value) {
-                  e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
-                }
-              }}
-              onMouseLeave={(e: any) => {
-                if (data.ccSales !== option.value) {
+                if (data.acceptsCards !== option.value) {
                   e.currentTarget.style.borderColor = '#6b7258';
                 }
               }}
@@ -1073,47 +1007,7 @@ function QuestionF6({ data, updateData, onNext, onBack, currentQuestionNumber, t
         </div>
       )}
 
-      {/* Average Daily Balance - ONLY SHOW if Bank Account is NOT 'none' */}
-      {data.bankAccount !== 'none' && (
-        <div style={{ marginBottom: '8px' }}>
-          <label
-            style={{
-              display: 'block',
-              fontFamily: 'var(--font-body)',
-              fontSize: '14px',
-              fontWeight: 500,
-              color: 'var(--text-primary)',
-              marginBottom: '12px',
-            }}
-          >
-            Average Daily Balance
-          </label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-            {balances.map((bal) => (
-              <motion.div
-                key={bal.value}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => updateData({ avgDailyBalance: bal.value as any })}
-                style={{
-                  background: data.avgDailyBalance === bal.value ? 'var(--primary-alpha)' : 'var(--bg-surface-2)',
-                  border: data.avgDailyBalance === bal.value ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: 'var(--text-primary)',
-                }}
-              >
-                {bal.label}
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Average Daily Balance - REMOVED (duplicated in Q_R21) */}
 
       <NavigationButtons onNext={onNext} onBack={onBack} disabled={!isValid} step={5} />
     </>
@@ -1144,67 +1038,13 @@ function QuestionF7({ data, updateData, onNext, onBack, currentQuestionNumber, t
     <>
       <QuestionHeader
         number={7}
-        title="Any overdrafts or NSFs in the last 12 months? And what other business assets do you have?"
-        why="NSF events are flagged in lender reviews — even 2–3 per year changes your story. Outstanding invoices, equipment, and purchase orders each unlock different funding products."
+        title="What other business assets do you have?"
+        why="Outstanding invoices, equipment, and purchase orders each unlock different funding products and expand your borrowing capacity."
         currentQuestionNumber={currentQuestionNumber}
         totalQuestions={totalQuestions}
       />
 
-      {/* NSF Count */}
-      <div style={{ marginBottom: '32px' }}>
-        <label
-          style={{
-            display: 'block',
-            fontFamily: 'var(--font-body)',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'var(--text-primary)',
-            marginBottom: '12px',
-          }}
-        >
-          Overdrafts/NSFs in Last 12 Months
-        </label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-          {nsfOptions.map((opt) => (
-            <motion.div
-              key={opt.value}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => updateData({ nsfCount: opt.value as any })}
-              style={{
-                background: data.nsfCount === opt.value ? 'var(--primary-alpha)' : 'var(--bg-surface-2)',
-                border: data.nsfCount === opt.value ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
-                borderRadius: '12px',
-                padding: '16px',
-                textAlign: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '15px',
-                  fontWeight: 500,
-                  color: 'var(--text-primary)',
-                  marginBottom: '4px',
-                }}
-              >
-                {opt.label}
-              </div>
-              <div
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '11px',
-                  fontWeight: 300,
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                {opt.sub}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
+      {/* NSF Count - REMOVED (duplicated in Q_R22) */}
 
       {/* Assets - SLIDERS */}
       <div
@@ -1843,227 +1683,9 @@ function QuestionF9({ data, updateData, onNext, onBack, currentQuestionNumber, t
   );
 }
 
-function QuestionF10({ data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions, step }: any) {
-  const bankruptcyAges = [
-    { value: 'under_2yr', label: 'Under 2 years ago' },
-    { value: '2_7yr', label: '2–7 years ago' },
-    { value: 'over_7yr', label: 'Over 7 years ago' },
-  ];
-
-  const derogItems = [
-    { key: 'hasCollections', label: 'Collections' },
-    { key: 'hasChargeoffs', label: 'Charge-offs' },
-    { key: 'hasLatePay', label: 'Late Payments (60+ days)' },
-    { key: 'hasTaxLiens', label: 'Tax Liens' },
-    { key: 'noDerogItems', label: 'No derogatory items (clean)' },
-  ];
-
-  const handleDerogToggle = (key: string) => {
-    if (key === 'noDerogItems') {
-      updateData({
-        hasCollections: false,
-        hasChargeoffs: false,
-        hasLatePay: false,
-        hasTaxLiens: false,
-        noDerogItems: true,
-      });
-    } else {
-      updateData({
-        [key]: !data[key],
-        noDerogItems: false,
-      });
-    }
-  };
-
-  return (
-    <>
-      <QuestionHeader
-        number={10}
-        title="Do you have any major derogatory items on your personal credit report?"
-        why="Lenders see your full credit report. Bankruptcy timing, collections, charge-offs — each has specific recovery windows that open or close product access. Transparency here protects you from surprises."
-        currentQuestionNumber={currentQuestionNumber}
-        totalQuestions={totalQuestions}
-      />
-
-      {/* Bankruptcy */}
-      <div style={{ marginBottom: '32px' }}>
-        <label
-          style={{
-            display: 'block',
-            fontFamily: 'var(--font-body)',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'var(--text-primary)',
-            marginBottom: '12px',
-          }}
-        >
-          Bankruptcy History
-        </label>
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-          {[
-            { value: true, label: 'Yes' },
-            { value: false, label: 'No' },
-          ].map((opt) => (
-            <motion.div
-              key={String(opt.value)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => updateData({ hasBankruptcy: opt.value, bankruptcyAge: opt.value ? data.bankruptcyAge : undefined })}
-              style={{
-                flex: 1,
-                background: data.hasBankruptcy === opt.value ? 'var(--primary-alpha)' : 'var(--bg-surface-2)',
-                border: data.hasBankruptcy === opt.value ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
-                borderRadius: '12px',
-                padding: '16px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-body)',
-                fontSize: '15px',
-                fontWeight: 500,
-                color: 'var(--text-primary)',
-              }}
-            >
-              {opt.label}
-            </motion.div>
-          ))}
-        </div>
-
-        {data.hasBankruptcy && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {bankruptcyAges.map((age) => (
-              <motion.div
-                key={age.value}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                onClick={() => updateData({ bankruptcyAge: age.value as any })}
-                style={{
-                  background: data.bankruptcyAge === age.value ? 'var(--primary-alpha)' : 'var(--bg-surface-2)',
-                  border: data.bankruptcyAge === age.value ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
-                  borderRadius: '8px',
-                  padding: '12px 16px',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: 'var(--text-primary)',
-                }}
-              >
-                {age.label}
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Judgments/Liens */}
-      <div style={{ marginBottom: '32px' }}>
-        <label
-          style={{
-            display: 'block',
-            fontFamily: 'var(--font-body)',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'var(--text-primary)',
-            marginBottom: '12px',
-          }}
-        >
-          Judgments or Liens?
-        </label>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          {[
-            { value: true, label: 'Yes' },
-            { value: false, label: 'No' },
-          ].map((opt) => (
-            <motion.div
-              key={String(opt.value)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => updateData({ hasJudgments: opt.value })}
-              style={{
-                flex: 1,
-                background: data.hasJudgments === opt.value ? 'var(--primary-alpha)' : 'var(--bg-surface-2)',
-                border: data.hasJudgments === opt.value ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
-                borderRadius: '12px',
-                padding: '16px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-body)',
-                fontSize: '15px',
-                fontWeight: 500,
-                color: 'var(--text-primary)',
-              }}
-            >
-              {opt.label}
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* Other Derogatories */}
-      <div style={{ marginBottom: '8px' }}>
-        <label
-          style={{
-            display: 'block',
-            fontFamily: 'var(--font-body)',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: 'var(--text-primary)',
-            marginBottom: '12px',
-          }}
-        >
-          Other Derogatory Items (select all that apply)
-        </label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {derogItems.map((item) => (
-            <motion.div
-              key={item.key}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              onClick={() => handleDerogToggle(item.key)}
-              style={{
-                background: data[item.key] ? 'var(--primary-alpha)' : 'var(--bg-surface-2)',
-                border: data[item.key] ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
-                borderRadius: '8px',
-                padding: '12px 16px',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-body)',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: 'var(--text-primary)',
-                position: 'relative',
-              }}
-            >
-              {item.label}
-              {data[item.key] && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '12px',
-                    right: '16px',
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    background: 'var(--primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--bg-base)',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                  }}
-                >
-                  ✓
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      <NavigationButtons onNext={onNext} onBack={onBack} disabled={false} step={9} />
-    </>
-  );
-}
+// ════════════════════════════════════════════════════════════════════════════════
+// Q_F11: Business Credit & Inquiry History
+// ════════════════════════════════════════════════════════════════════════════════
 
 function QuestionF11({ data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions, step }: any) {
   const bizCreditOptions = [

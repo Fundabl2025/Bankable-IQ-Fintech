@@ -28,17 +28,14 @@ export interface UnifiedAnswers {
   hasWebsite: boolean;
   websiteUrl?: string;
   
-  // Q_F5: Revenue & CC Sales
-  monthlyRevenue: 'under_5k' | '5k_15k' | '15k_40k' | '40k_100k' | 'over_100k' | '';
-  ccSales: 'no_cards' | 'under_5k' | '5k_15k' | '15k_50k' | 'over_50k' | '';
+  // Q_F5: Credit Card Acceptance (simplified from revenue + CC sales)
+  acceptsCards: 'yes' | 'no' | '';
   
-  // Q_F6: Banking (3 sub-fields)
+  // Q_F6: Banking (2 sub-fields only - removed avgDailyBalance which is in Q_R21)
   bankAccount: 'dedicated' | 'personal' | 'none' | '';
   bankAge: '0_6mo' | '6_12mo' | '12_24mo' | '24plus' | '';
-  avgDailyBalance: 'near_zero' | '500_2k' | '2k_10k' | '10k_25k' | 'over_25k' | '';
   
-  // Q_F7: NSFs & Assets
-  nsfCount: '0' | '1_2' | '3_5' | '5plus' | '';
+  // Q_F7: Assets only (removed nsfCount which is in Q_R22)
   arBalance: 'none' | 'under_10k' | '10k_50k' | '50k_250k' | 'over_250k' | '';
   equipmentValue: 'none' | 'under_10k' | '10k_50k' | '50k_250k' | 'over_250k' | '';
   poBalance: 'none' | 'under_10k' | '10k_50k' | '50k_250k' | 'over_250k' | '';
@@ -225,12 +222,10 @@ export function getDefaultAnswers(): UnifiedAnswers {
     industry: '',
     hasEIN: false,
     hasWebsite: false,
-    monthlyRevenue: '', // FIXED: was 0, now empty string (matching type)
-    ccSales: '', // FIXED: was 0, now empty string (matching type)
+    acceptsCards: '', // FIXED: Changed from ccSales to acceptsCards (yes/no only)
     bankAccount: '',
     bankAge: '',
-    avgDailyBalance: '',
-    nsfCount: '',
+    nsfCount: '', // REMOVED: avgDailyBalance (now in Q_R21)
     arBalance: '', // FIXED: Changed from 0 to empty string (matching new type)
     equipmentValue: '', // FIXED: Changed from 0 to empty string (matching new type)
     poBalance: '', // FIXED: Changed from 0 to empty string (matching new type)
