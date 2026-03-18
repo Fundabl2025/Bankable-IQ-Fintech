@@ -7,6 +7,8 @@ import { Shield, TrendingUp, Building, HelpCircle, User, DollarSign, GraduationC
 const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
 const LoginPage = lazy(() => import('./pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
 const SignupPage = lazy(() => import('./pages/auth/SignupPage').then(m => ({ default: m.SignupPage })));
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })));
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const FoundationFirstDashboard = lazy(() => import('./pages/FoundationFirst/Dashboard').then(m => ({ default: m.Dashboard })));
 const IntegrateReports = lazy(() => import('./pages/IntegrateReports').then(m => ({ default: m.IntegrateReports })));
@@ -388,6 +390,14 @@ export const router = createBrowserRouter([
   {
     path: '/signup',
     element: <LazyComponent Component={SignupPage} />,
+  },
+  {
+    path: '/forgot-password',
+    element: <LazyComponent Component={ForgotPasswordPage} />,
+  },
+  {
+    path: '/reset-password',
+    element: <LazyComponent Component={ResetPasswordPage} />,
   },
   // PUBLIC ASSESSMENT ROUTES - NO AUTH REQUIRED
   // Lead generation funnel - anyone can take assessment
