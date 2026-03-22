@@ -50,6 +50,8 @@ const TemplatesAndResources = lazy(() => import('./pages/TemplatesAndResources')
 const ResourceDetail = lazy(() => import('./pages/ResourceDetail').then(m => ({ default: m.ResourceDetail })));
 const CapitalAccessMap = lazy(() => import('./pages/CapitalAccessMap').then(m => ({ default: m.CapitalAccessMap })));
 const DenialDiagnosis = lazy(() => import('./pages/DenialDiagnosis'));
+const IdeaValidatorPage = lazy(() => import('./pages/IdeaValidator/IdeaValidatorPage').then(m => ({ default: m.IdeaValidatorPage })));
+const IdeaReportPage = lazy(() => import('./pages/IdeaValidator/IdeaReportPage').then(m => ({ default: m.IdeaReportPage })));
 const EntityFilings = lazy(() => import('./pages/LenderCompliance/EntityFilings').then(m => ({ default: m.EntityFilings })));
 
 // LenderCompliance sub-pages
@@ -106,6 +108,14 @@ export const router = createBrowserRouter([
       {
         path: 'denial-diagnosis',
         element: <LazyComponent Component={DenialDiagnosis} />,
+      },
+      {
+        path: 'idea-validator',
+        element: <LazyComponent Component={IdeaValidatorPage} />,
+      },
+      {
+        path: 'idea-validator/:id',
+        element: <LazyComponent Component={IdeaReportPage} />,
       },
       {
         path: 'integrate-reports',
