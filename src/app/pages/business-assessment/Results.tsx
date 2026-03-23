@@ -364,8 +364,13 @@ export function Results() {
                   </div>
                 </div>
               </motion.div>
+            );
+          })()}
 
-              {/* Identity Moment */}
+          {/* Identity Moment */}
+          {extendedResults && (() => {
+            const statusInfo = computeStatus(extendedResults);
+            return (
               <div style={{
                 padding: '12px 16px',
                 background: 'var(--bg-surface-2)',
@@ -373,7 +378,7 @@ export function Results() {
                 border: '1px solid var(--border-subtle)',
                 textAlign: 'center',
                 maxWidth: '500px',
-                margin: '12px auto 0 auto',
+                margin: '-20px auto 32px auto',
               }}>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic' }}>
                   {statusInfo.status === 'Unprepared' && 'Your business is building its foundation. Most businesses start here.'}

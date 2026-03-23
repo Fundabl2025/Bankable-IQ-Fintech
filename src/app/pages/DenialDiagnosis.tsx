@@ -305,7 +305,7 @@ export default function DenialDiagnosis() {
               fontSize: '12px',
               color: 'var(--muted-foreground)',
             }}>
-              {isBankable ? 'You've crossed the bankable threshold' : 'from the bankable threshold'}
+              {isBankable ? 'You have crossed the bankable threshold' : 'from the bankable threshold'}
             </div>
           </div>
 

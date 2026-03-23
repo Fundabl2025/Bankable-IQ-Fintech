@@ -374,7 +374,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 30,
       timeline: '6–12 months',
       category: 'Credit',
-      description: 'Business credit is separate from personal credit and opens additional funding pathways. Businesses with established profiles access products that aren.t available otherwise.',
+      description: 'Business credit is separate from personal credit and opens additional funding pathways. Businesses with established profiles access products that are not available otherwise.',
       steps: [
         'Register with D&B (Dun & Bradstreet) to get a DUNS number',
         'Register with Experian Business',
