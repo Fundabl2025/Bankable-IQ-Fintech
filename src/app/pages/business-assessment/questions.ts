@@ -15,13 +15,13 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION D — DOCUMENTATION (Q_R1–Q_R4)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "How many years of filed business tax returns do you have?",
+    text: "How many years of filed business tax returns does your business have available?",
     why: "The SBA requires 2 years of filed returns. Most banks want 2–3 years. No returns = instant denial from most conventional lenders — no workaround exists.",
     type: 'options',
     options: [
       {
         label: 'None filed yet',
-        sub: 'Hard stop for most lenders',
+        sub: 'A pattern that typically blocks approval',
         score: { D: 0.0 },
       },
       {
@@ -42,7 +42,7 @@ export const READINESS_QUESTIONS: Question[] = [
     ],
   },
   {
-    text: "Do you have a current Profit & Loss (P&L) statement?",
+    text: "Is your business's Profit & Loss statement current and accessible?",
     why: "A P&L shows lenders whether the business actually makes money. Without one, you're asking them to trust a number with no proof. This is the document most business owners don't have when they apply.",
     type: 'options',
     options: [
@@ -63,19 +63,19 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: 'No P&L',
-        sub: 'Hard requirement for most products',
+        sub: 'A common requirement across most lenders',
         score: { D: 0.0 },
       },
     ],
   },
   {
-    text: "How many months of business bank statements can you provide right now?",
+    text: "How many months of business bank statements are readily available?",
     why: "Lenders read every line of 12 months of statements. Less than 3 months disqualifies you from most products — not because of the numbers, but because there isn't enough history to evaluate.",
     type: 'options',
     options: [
       {
         label: 'Less than 3 months',
-        sub: 'Insufficient for most lenders',
+        sub: 'Below the threshold most lenders look for',
         score: { D: 0.1 },
       },
       {
@@ -96,7 +96,7 @@ export const READINESS_QUESTIONS: Question[] = [
     ],
   },
   {
-    text: "Do the revenue figures on your tax returns and bank statements roughly match each other?",
+    text: "How closely do your reported revenue figures align across your tax returns and bank statements?",
     why: "Lenders cross-reference your documents automatically. A material difference between your tax-reported income and bank deposits raises immediate questions that stall or kill applications.",
     type: 'options',
     options: [
@@ -112,7 +112,7 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: 'Significant difference exists',
-        sub: 'Red flag for lenders',
+        sub: 'A pattern lenders commonly flag',
         score: { D: 0.15 },
       },
       {
@@ -127,7 +127,7 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION E — CASH FLOW BEHAVIOR (Q_R5–Q_R7)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "Has your revenue been growing, flat, or declining over the past 12 months?",
+    text: "How would you describe your revenue trajectory over the past 12 months?",
     why: "Lenders don't just look at where you are — they look at where you're headed. A declining trend triggers automatic concern about repayment ability regardless of the current revenue number.",
     type: 'options',
     options: [
@@ -148,13 +148,13 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: 'Declining — revenue has been going down',
-        sub: 'Repayment risk concern',
+        sub: 'A trend that raises repayment questions',
         score: { F: 0.1 },
       },
     ],
   },
   {
-    text: "After all business expenses, does your business consistently generate a monthly profit?",
+    text: "After all expenses, how consistently does your business generate a monthly profit?",
     why: "Profit is how lenders know you can service new debt. A business that breaks even every month has no margin for a new loan payment — and lenders see that immediately in your numbers.",
     type: 'options',
     options: [
@@ -175,13 +175,13 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: 'Rarely or not yet',
-        sub: 'Not yet profitable',
+        sub: 'Building toward profitability',
         score: { F: 0.05 },
       },
     ],
   },
   {
-    text: "If you took on a new monthly loan payment, could your business comfortably cover it?",
+    text: "If your business took on a new monthly payment, how comfortably could it absorb that obligation?",
     why: "This is the DSCR — Debt Service Coverage Ratio — the most critical cash flow metric. Lenders want to see 25% more income than debt payments. 'Probably' is not a DSCR position that lenders accept.",
     type: 'options',
     options: [
@@ -202,7 +202,7 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: 'No — little to no margin',
-        sub: 'Insufficient debt capacity',
+        sub: 'Limited margin for additional obligations',
         score: { F: 0.05 },
       },
     ],
@@ -212,7 +212,7 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION F — BANKING TRAJECTORY (Q_R8)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "Has your average daily bank balance been trending upward over the last 3–6 months?",
+    text: "How has your average daily bank balance been trending over the last 3–6 months?",
     why: "An improving cash position tells lenders your business is gaining financial strength. Lenders read direction, not just current state. A rising balance story is worth more than a static one.",
     type: 'options',
     options: [
@@ -228,7 +228,7 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: 'Declining',
-        sub: 'Concerning trend',
+        sub: 'A pattern that raises questions',
         score: { B: 0.1 },
       },
       {
@@ -243,7 +243,7 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION G — LEGAL STANDING (Q_R9)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "Is your business currently in good standing with your state?",
+    text: "What is your business's current standing with your state?",
     why: "Lapsed filings or delinquent state fees trigger automatic rejection. Lenders verify this in minutes through state databases — there is no workaround and no exception process.",
     type: 'options',
     options: [
@@ -259,7 +259,7 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: 'No — there are outstanding issues',
-        sub: 'Hard stop — must resolve first',
+        sub: 'An issue that typically needs resolution before applying',
         score: { S: 0.0 },
       },
     ],
@@ -269,7 +269,7 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION H — NARRATIVE STRENGTH (Q_R10–Q_R14)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "Can you clearly explain exactly how you will use the loan funds — with specific dollar amounts?",
+    text: "How precisely can you articulate your intended use of capital — including specific dollar amounts and timeline?",
     why: "Vague use-of-funds kills applications that otherwise qualify. Lenders want exact numbers, exact purpose, exact timeline. 'Working capital' is not an answer.",
     type: 'options',
     options: [
@@ -285,18 +285,18 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: "I know what I need but can't explain ROI",
-        sub: 'Weak narrative position',
+        sub: 'An area that benefits from more specificity',
         score: { N: 0.25 },
       },
       {
         label: 'Not really — I just know I need capital',
-        sub: 'Not ready for lender questions',
+        sub: 'An area where additional preparation helps',
         score: { N: 0.0 },
       },
     ],
   },
   {
-    text: "Can you clearly explain how you will repay the loan — from which revenue stream, on what timeline?",
+    text: "How clearly can you map your repayment path — which revenue stream, what margin, what timeline?",
     why: "Lenders lend to plans, not desperation. 'From business revenue' is not a repayment plan. Which revenue stream, what margin, what timeline — these are the specifics that separate confident applicants from denied ones.",
     type: 'options',
     options: [
@@ -312,13 +312,13 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: "I haven't thought this through in detail",
-        sub: 'Not prepared for lender questions',
+        sub: 'An area that benefits from more preparation',
         score: { N: 0.1 },
       },
     ],
   },
   {
-    text: "Have you ever successfully repaid a business loan or line of credit?",
+    text: "Has your business previously completed repayment on a loan or line of credit?",
     why: "Past repayment is the single strongest behavioral predictor lenders use. A completed, on-time loan repayment proves credit character in a way no credit score fully captures.",
     type: 'options',
     options: [
@@ -340,13 +340,13 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: 'No — and there were defaults or issues',
-        sub: 'Negative repayment history',
+        sub: 'A pattern that weighs heavily in lender evaluation',
         score: { N: 0.0 },
       },
     ],
   },
   {
-    text: "How relevant is your personal background and experience to the business you currently operate?",
+    text: "How closely does your professional background align with the business you're operating?",
     why: "Years of relevant experience reduce perceived execution risk — especially for newer businesses. Lenders weigh operator expertise heavily when the business itself has limited history.",
     type: 'options',
     options: [
@@ -377,7 +377,7 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION H — PERSONAL CREDIT UTILIZATION (Q_R14)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "What is your current personal credit card utilization rate?",
+    text: "How much of your available personal credit are you currently using?",
     why: "Credit utilization accounts for 30% of FICO scores. Over 30% signals financial stress to lenders. Lenders read this as: 'This person relies on credit to operate' — which means more risk in downturns.",
     type: 'options',
     options: [
@@ -398,12 +398,12 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: '50% to 75%',
-        sub: 'High utilization — stress signal',
+        sub: 'A level that signals financial pressure',
         score: { P: 0.2 },
       },
       {
         label: 'Over 75%',
-        sub: 'Critical — major red flag',
+        sub: 'A pattern that significantly impacts approval',
         score: { P: 0.0 },
       },
     ],
@@ -413,7 +413,7 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION I — CLEAN CREDIT REPORT (Q_R15)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "Do you have any negative items on your personal credit report?",
+    text: "Are there any negative items currently appearing on your personal credit report?",
     why: "Negative items tell lenders about your behavior under stress. Even resolved items signal past financial difficulty. Lenders use this to decide: 'Did this person learn from problems or make them worse?'",
     type: 'options',
     options: [
@@ -434,7 +434,7 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION J — BANKRUPTCY HISTORY (Q_R16 - Conditional)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "Have you filed for bankruptcy?",
+    text: "Has a bankruptcy filing appeared in your credit history?",
     why: "Bankruptcy is the ultimate credit event. Recent bankruptcies are near-automatic denials. Age matters significantly — a bankruptcy from 10 years ago is different from one last year.",
     type: 'options',
     options: [
@@ -445,7 +445,7 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: 'Yes, within the last 2 years',
-        sub: 'Recent bankruptcy — very serious',
+        sub: 'A significant credit event in recent history',
         score: { P: 0.0 }, // -30 penalty in engine
       },
       {
@@ -465,7 +465,7 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION K — COLLECTIONS / CHARGEOFFS (Q_R17 - Conditional)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "Do you have any collections or charge-offs on your credit report?",
+    text: "Are there any collections or charge-offs currently on your credit report?",
     why: "Collections mean you broke a payment agreement and an account went to third-party collection. This signals defaulting on financial obligations — the exact behavior lenders fear most.",
     type: 'options',
     options: [
@@ -491,7 +491,7 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION L — TAX LIENS (Q_R18 - Conditional)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "Do you have any tax liens?",
+    text: "Are there any tax liens associated with your profile?",
     why: "Tax liens mean you owe money to the government and have failed to resolve it. Governments always collect first — even before your lenders. This creates a priority problem lenders cannot ignore.",
     type: 'options',
     options: [
@@ -522,7 +522,7 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION M — BUSINESS CREDIT PROFILE (Q_R19)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "Does your business have an established credit profile with Dun & Bradstreet, Experian Business, or Equifax Business?",
+    text: "Has your business established a credit profile with any of the major business bureaus?",
     why: "Business credit is separate from personal credit. Many lenders check business credit even for small businesses. A strong business credit score signals: 'This company pays its suppliers and vendors on time.'",
     type: 'options',
     options: [
@@ -553,7 +553,7 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION N — NEW CREDIT INQUIRIES (Q_R20)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "How many new credit applications or inquiries have you had in the last 30 days?",
+    text: "How many new credit inquiries have appeared on your report in the last 30 days?",
     why: "Multiple inquiries in short periods signal credit-seeking desperation to lenders. Lenders use this as an early warning: 'This person is being rejected elsewhere and applying everywhere.'",
     type: 'options',
     options: [
@@ -574,7 +574,7 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: '5 or more',
-        sub: 'High inquiry activity — red flag',
+        sub: 'A level of activity that draws lender attention',
         score: { P: 0.1 },
       },
     ],
@@ -584,13 +584,13 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION O — AVERAGE DAILY BANK BALANCE (Q_R21 - Conditional)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "What is the average daily balance in your business bank account?",
+    text: "What does your business's average daily bank balance look like?",
     why: "Average daily balance tells lenders about operational cash flow. Healthy businesses accumulate cash. Struggling businesses burn through it. Lenders see cash position as a direct signal of business health.",
     type: 'options',
     options: [
       {
         label: 'Near zero or negative',
-        sub: 'Cash flow stress signal',
+        sub: 'A level that signals cash flow pressure',
         score: { B: 0.0 },
       },
       {
@@ -620,7 +620,7 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION P — NSF / OVERDRAFT EVENTS (Q_R22 - Conditional)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "In the last 12 months, how many times has your business bank account had insufficient funds or overdrafts?",
+    text: "Over the past 12 months, how often has your business bank account experienced insufficient funds or overdrafts?",
     why: "NSF events are a hard signal of cash flow dysfunction. Each event tells lenders: 'This business cannot manage basic cash flow. It's unpredictable and risky.'",
     type: 'options',
     options: [
@@ -641,7 +641,7 @@ export const READINESS_QUESTIONS: Question[] = [
       },
       {
         label: 'More than 5 times',
-        sub: 'Chronic NSF problems',
+        sub: 'A pattern that indicates cash flow challenges',
         score: { B: 0.05 },
       },
     ],
@@ -651,7 +651,7 @@ export const READINESS_QUESTIONS: Question[] = [
   // SECTION Q — MONTHLY REVENUE (Q_R23)
   // ──────────────────────────────────────────────────────────────────────────────
   {
-    text: "What is your average monthly revenue over the last 3 months?",
+    text: "On average, how much revenue is your business generating each month?",
     why: "Revenue size determines loan size eligibility and repayment capacity. $5K/month business can't support a $100K loan. Lenders use monthly revenue as the first filter for product eligibility.",
     type: 'options',
     options: [

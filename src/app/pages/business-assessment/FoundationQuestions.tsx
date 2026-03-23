@@ -159,8 +159,8 @@ function QuestionF1({ data, updateData, onNext, onBack, currentQuestionNumber, t
     <>
       <QuestionHeader
         number={1}
-        title="Let's start with your contact information"
-        why="We need to know who we're working with. This information helps us personalize your experience and ensures we can reach you with important updates about your fundability."
+        title="Let's start with who's behind this business"
+        why="Every funding profile starts with the business owner. This helps us personalize your capital readiness assessment and ensures we can reach you with important insights."
         currentQuestionNumber={currentQuestionNumber}
         totalQuestions={totalQuestions}
       />
@@ -318,8 +318,8 @@ function QuestionF2({ data, updateData, onNext, onBack, currentQuestionNumber, t
     <>
       <QuestionHeader
         number={2}
-        title="What's your business legal name and entity type?"
-        why="Lenders verify your legal name against state records and EIN databases. Entity type is the #1 structural signal — it determines your legal separation from personal liability."
+        title="Tell us about your business structure"
+        why="Lenders verify legal names against state records and EIN databases. Entity type is the strongest structural signal — it shapes how lenders evaluate your liability separation and business maturity."
         currentQuestionNumber={currentQuestionNumber}
         totalQuestions={totalQuestions}
       />
@@ -496,8 +496,8 @@ function QuestionF3({ data, updateData, onNext, onBack, currentQuestionNumber, t
     <>
       <QuestionHeader
         number={3}
-        title="When did your business legally start operating, and what is your major industry focus?"
-        why="Business age is a hard filter lenders cannot override. Industry determines risk overlay — some industries face automatic additional scrutiny regardless of financials."
+        title="When did your business begin, and what industry are you in?"
+        why="Business age is one of the first filters lenders apply — and one they cannot override. Industry determines the risk lens applied to your profile, as some sectors face additional scrutiny regardless of financials."
         currentQuestionNumber={currentQuestionNumber}
         totalQuestions={totalQuestions}
       />
@@ -1478,8 +1478,8 @@ function QuestionF8({ data, updateData, onNext, onBack, currentQuestionNumber, t
     <>
       <QuestionHeader
         number={8}
-        title="What is your personal credit score across the three bureaus?"
-        why="Personal credit is the first thing every lender checks — before they look at anything else about your business. The middle score is what most lenders use."
+        title="How would you describe your personal credit profile across the three bureaus?"
+        why="Personal credit is the first signal every lender evaluates — before anything else about the business. The middle score is what most lenders use to make initial decisions."
         currentQuestionNumber={currentQuestionNumber}
         totalQuestions={totalQuestions}
       />
@@ -1718,8 +1718,8 @@ function QuestionF9({ data, updateData, onNext, onBack, currentQuestionNumber, t
     <>
       <QuestionHeader
         number={9}
-        title="What is your approximate credit utilization, and your annual personal income?"
-        why="Utilization is the #2 FICO factor — above 30% is actively hurting your score right now. Personal income is required for credit card stacking ($75K minimum) — a fast capital strategy for qualified owners."
+        title="How much of your available credit are you using, and what is your annual personal income?"
+        why="Utilization is the second most impactful FICO factor — above 30% is a pattern that actively suppresses scores. Personal income is evaluated for credit card stacking strategies ($75K minimum) — a fast capital path for qualified owners."
         currentQuestionNumber={currentQuestionNumber}
         totalQuestions={totalQuestions}
       />
@@ -1879,8 +1879,8 @@ function QuestionF10({ data, updateData, onNext, onBack, currentQuestionNumber, 
     <>
       <QuestionHeader
         number={10}
-        title="Do you have any major derogatory items on your personal credit report?"
-        why="Lenders see your full credit report. Bankruptcy timing, collections, charge-offs — each has specific recovery windows that open or close product access. Transparency here protects you from surprises."
+        title="Are there any major derogatory items on your personal credit report?"
+        why="Lenders review the full credit report. Bankruptcy timing, collections, charge-offs — each has specific recovery windows that open or close product access. Understanding these patterns helps map the clearest path forward."
         currentQuestionNumber={currentQuestionNumber}
         totalQuestions={totalQuestions}
       />

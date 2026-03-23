@@ -275,7 +275,7 @@ export function Results() {
               marginBottom: '24px',
             }}
           >
-            Your FundScore™
+            Your Capital Readiness Score
           </motion.div>
 
           {/* Score */}
@@ -364,6 +364,25 @@ export function Results() {
                   </div>
                 </div>
               </motion.div>
+
+              {/* Identity Moment */}
+              <div style={{
+                padding: '12px 16px',
+                background: 'var(--bg-surface-2)',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+                textAlign: 'center',
+                maxWidth: '500px',
+                margin: '12px auto 0 auto',
+              }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic' }}>
+                  {statusInfo.status === 'Unprepared' && 'Your business is building its foundation. Most businesses start here.'}
+                  {statusInfo.status === 'Fundable' && 'Your business now qualifies for alternative capital. This is the starting point most businesses never get clear about.'}
+                  {statusInfo.status === 'Progressing' && 'Your profile is strengthening. You are in the stage where the right moves compound quickly.'}
+                  {statusInfo.status === 'Bankable' && 'You are now a Bankable Business. Banks seek out businesses at this level.'}
+                  {statusInfo.status === 'Elite' && 'Your business is in the top 1%. Institutional capital and the best terms are within reach.'}
+                </div>
+              </div>
             );
           })()}
 
@@ -413,8 +432,8 @@ export function Results() {
                 </div>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
                   {statusInfo.pointsToBankable === 0 
-                    ? '✓ Bankable threshold reached!'
-                    : `${statusInfo.pointsToBankable} points to Bankable`
+                    ? '✓ You have crossed the bankable threshold'
+                    : `You are ${statusInfo.pointsToBankable} points from becoming a Bankable Business`
                   }
                 </div>
               </motion.div>
@@ -488,7 +507,7 @@ export function Results() {
             color: 'var(--text-primary)',
             marginBottom: '24px',
           }}>
-            What This Means
+            What Your Profile Reveals
           </h2>
 
           <div style={{
@@ -546,7 +565,7 @@ export function Results() {
               color: 'var(--text-primary)',
               marginBottom: '24px',
             }}>
-              Top Blockers
+              Patterns Lenders Flag at This Stage
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -596,7 +615,7 @@ export function Results() {
                       textTransform: 'uppercase',
                       whiteSpace: 'nowrap',
                     }}>
-                      {blocker.priority === 'critical' ? 'Critical' : 'High'}
+                      {blocker.priority === 'critical' ? 'Approval Barrier' : 'Significant Pattern'}
                     </div>
                   </div>
                 </div>
@@ -627,7 +646,7 @@ export function Results() {
             color: 'var(--text-primary)',
             marginBottom: '24px',
           }}>
-            Products Available Now
+            Capital Products Available Now
           </h2>
 
           {eligibleProducts.length > 0 ? (
@@ -678,7 +697,7 @@ export function Results() {
               textAlign: 'center'
             }}>
               <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--warning)', marginBottom: '8px' }}>
-                No products available yet
+                No products matched yet
               </div>
               <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
                 Complete the actions in "Your Path to Capital" to unlock financing options.
@@ -717,7 +736,7 @@ export function Results() {
               gap: '8px',
             }}
           >
-            View Your Capital Path (30/60/90/180 Days)
+            See Your Path to Capital (30 / 90 / 180 Days)
             <ArrowRight size={20} />
           </button>
         </motion.div>
@@ -749,7 +768,7 @@ export function Results() {
             color: 'var(--text-primary)',
             marginBottom: '24px',
           }}>
-            Business Owner Status
+            Your Business Profile
           </h2>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
@@ -843,7 +862,7 @@ export function Results() {
               color: '#e4e8d8',
               marginBottom: '16px',
             }}>
-              Save Your FundScore & Get Your Full Roadmap
+              See the Exact Path to Your Next Capital Tier
             </h2>
             <p style={{
               fontFamily: 'var(--font-body)',
@@ -854,7 +873,7 @@ export function Results() {
               maxWidth: '600px',
               margin: '0 auto 32px',
             }}>
-              Create a free account to save your results, track your progress, and unlock your complete 30 to 180 day bankability roadmap with personalized action steps.
+              Create a free account to save your results, track your progress, and see the specific moves that shift your profile toward bankability.
             </p>
             <div style={{
               display: 'flex',

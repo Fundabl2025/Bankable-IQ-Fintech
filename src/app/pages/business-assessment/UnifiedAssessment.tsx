@@ -164,7 +164,7 @@ export function UnifiedAssessment() {
       setShowLoading(true);
       setTimeout(() => {
         navigate('/business-assessment/results');
-      }, 1800);
+      }, 2400);
     }
   };
 
@@ -298,7 +298,7 @@ function LiveScoreBar({ score }: { score: number }) {
           color: 'var(--text-muted)',
         }}
       >
-        Live FundScore™
+        Live Capital Readiness Score
       </div>
       
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -332,7 +332,7 @@ function LiveScoreBar({ score }: { score: number }) {
           color: 'var(--text-secondary)',
         }}
       >
-        Calculating eligibility...
+        Mapping your capital path...
       </div>
     </div>
   );
@@ -546,6 +546,21 @@ function ReadinessQuestion({ index, data, updateData, onNext, onBack, currentQue
 // ════════════════════════════════════════════════════════════════════════════════
 
 function LoadingScreen() {
+  const [phase, setPhase] = useState(0);
+  const phases = [
+    "Analyzing your funding profile...",
+    "Identifying patterns lenders flag...",
+    "Mapping your capital path...",
+    "Calculating what you unlock in 30, 90, and 180 days...",
+  ];
+
+  useEffect(() => {
+    const timers = phases.map((_, i) =>
+      setTimeout(() => setPhase(i), i * 500)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
   return (
     <div
       style={{
@@ -556,7 +571,7 @@ function LoadingScreen() {
         padding: '40px 24px',
       }}
     >
-      <div style={{ textAlign: 'center' }}>
+      <div style={{ textAlign: 'center', maxWidth: '500px' }}>
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
@@ -566,29 +581,26 @@ function LoadingScreen() {
             border: '3px solid var(--border-subtle)',
             borderTopColor: 'var(--primary)',
             borderRadius: '50%',
-            margin: '0 auto 24px',
+            margin: '0 auto 32px',
           }}
         />
-        <div
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '20px',
-            fontWeight: 600,
-            color: 'var(--text-primary)',
-            marginBottom: '8px',
-          }}
-        >
-          Calculating Your FundScore™
-        </div>
-        <div
-          style={{
-            fontFamily: 'var(--font-body)',
-            fontSize: '14px',
-            fontWeight: 300,
-            color: 'var(--text-secondary)',
-          }}
-        >
-          Analyzing 24 data points across 6 dimensions...
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {phases.map((text, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: phase >= i ? 1 : 0, y: phase >= i ? 0 : 8 }}
+              transition={{ duration: 0.4 }}
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '15px',
+                fontWeight: phase === i ? 500 : 300,
+                color: phase === i ? 'var(--text-primary)' : 'var(--text-secondary)',
+              }}
+            >
+              {text}
+            </motion.div>
+          ))}
         </div>
       </div>
     </div>

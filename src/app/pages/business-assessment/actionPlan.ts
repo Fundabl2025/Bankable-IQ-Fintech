@@ -49,7 +49,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 0, // Gating issue, not score-based
       timeline: '1–2 weeks',
       category: 'Structure',
-      description: 'Your business is not in good standing with your state. This is an automatic rejection reason for all lenders.',
+      description: 'Businesses not in good standing with their state face automatic rejection. Resolving this is typically the fastest path to removing a hard barrier.',
       steps: [
         'Visit your state\'s Secretary of State website',
         'Check status of all required filings (Annual Report, Business License)',
@@ -70,7 +70,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 0,
       timeline: 'Time-dependent',
       category: 'Credit',
-      description: 'Your bankruptcy is under 2 years old. Most lenders require 2–4 years of seasoning.',
+      description: 'A bankruptcy under 2 years old is a pattern that triggers near-automatic declines. Most lenders require 2–4 years of seasoning before reconsidering.',
       steps: [
         'Focus on rebuilding credit in the meantime',
         'Consider alternative lenders after 2-year mark',
@@ -91,7 +91,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 0,
       timeline: '2–8 weeks',
       category: 'Credit',
-      description: 'Active judgments or liens are automatic disqualifiers for most financing.',
+      description: 'Active judgments or liens are a pattern that disqualifies most financing applications. Businesses that resolve these first see the broadest shift in available options.',
       steps: [
         'Pull your credit report from all 3 bureaus',
         'Identify all judgments, liens, and their amounts',
@@ -113,7 +113,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 35,
       timeline: '1 day',
       category: 'Structure',
-      description: 'An EIN is required for SBA loans and most institutional lenders.',
+      description: 'Without an EIN, most institutional lenders cannot process an application. This is one of the fastest items to resolve — and it immediately opens access to more products.',
       steps: [
         'Visit IRS.gov/EIN',
         'Complete online application (SS-4)',
@@ -160,7 +160,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 30,
       timeline: '1 week',
       category: 'Banking',
-      description: 'Using a personal account for business damages your fundability and complicates lender review.',
+      description: 'Operating through a personal account is a pattern that complicates lender review and limits available products. A dedicated business account is one of the most impactful structural changes.',
       steps: [
         'Research business checking accounts (local banks often best)',
         'Bring EIN, business formation docs, and ID',
@@ -182,7 +182,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 25,
       timeline: '6–12 months',
       category: 'Banking',
-      description: 'Your account is under 6 months old. Most lenders want 12 months of statements.',
+      description: 'A bank account under 6 months old is below the threshold most lenders require. Building 12+ months of clean history opens access to significantly more capital products.',
       steps: [
         'Continue operating through current account',
         'Maintain consistent deposit activity',
@@ -204,7 +204,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 30,
       timeline: 'Immediate + 6 months',
       category: 'Banking',
-      description: 'Multiple NSFs in the last 12 months are red flags. Lenders review statements line by line.',
+      description: 'Multiple NSF events are a pattern lenders read as cash flow dysfunction. Businesses that eliminate these see their banking profile strengthen significantly.',
       steps: [
         'Set up low balance alerts (under $500)',
         'Link savings account for overdraft protection',
@@ -225,7 +225,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 40,
       timeline: '1–2 weeks',
       category: 'Documentation',
-      description: 'A P&L is a hard requirement for most lenders. Without it, you cannot demonstrate profitability.',
+      description: 'Most lenders cannot evaluate profitability without a P&L. Having this ready removes one of the most common documentation barriers.',
       steps: [
         'Use QuickBooks, Xero, or Wave (free)',
         'Categorize all income and expenses for last 12 months',
@@ -247,7 +247,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 50,
       timeline: '2–4 weeks',
       category: 'Documentation',
-      description: 'No filed returns = instant denial from most conventional lenders.',
+      description: 'Filed tax returns are a baseline requirement for most conventional lenders. Without them, applications typically cannot proceed.',
       steps: [
         'Hire a CPA or tax professional',
         'Gather all income and expense records',
@@ -268,7 +268,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 35,
       timeline: `${12 - (data.q_r3 === 'under_3mo' ? 2 : 4)} months`,
       category: 'Banking',
-      description: 'Most lenders require 12 months of business bank statements. You need more time.',
+      description: 'Most lenders evaluate 12 months of banking history before making a decision. Building consistent history opens access to a broader range of products.',
       steps: [
         'Continue operating through current account',
         'Maintain clean, consistent deposit patterns',
@@ -289,7 +289,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 40,
       timeline: '2–4 weeks',
       category: 'Documentation',
-      description: 'Lenders cross-check your documents. Discrepancies raise red flags and stall applications.',
+      description: 'Lenders automatically cross-reference documentation. Discrepancies between reported figures raise questions that commonly stall or block applications.',
       steps: [
         'Compare reported tax revenue to bank deposits',
         'Identify and document all differences',
@@ -310,7 +310,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 45,
       timeline: '3–6 months',
       category: 'Revenue',
-      description: 'Most alternative lenders require $10K/mo minimum. Traditional lenders want $25K+.',
+      description: 'Revenue scale is the first filter most lenders apply. Businesses generating $10K+/month unlock significantly more product options.',
       steps: [
         'Focus on sales and customer acquisition',
         'Raise prices if underpriced',
@@ -331,7 +331,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 50,
       timeline: '3–6 months',
       category: 'Revenue',
-      description: 'Declining revenue triggers automatic concern about repayment ability.',
+      description: 'A declining revenue trend is one of the patterns that triggers the most concern about repayment capacity, regardless of current revenue level.',
       steps: [
         'Identify root cause of decline (seasonality, market, operations)',
         'Implement corrective actions immediately',
@@ -352,7 +352,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 55,
       timeline: '2–6 months',
       category: 'Revenue',
-      description: 'Lenders need to see margin for new debt payments. Break-even businesses cannot service loans.',
+      description: 'Consistent profitability signals that a business can absorb new obligations. Businesses that demonstrate this open access to better terms and larger amounts.',
       steps: [
         'Conduct profitability analysis by product/service',
         'Cut or fix unprofitable offerings',
@@ -374,7 +374,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 30,
       timeline: '6–12 months',
       category: 'Credit',
-      description: 'Business credit (D&B Paydex, Experian Intelliscore) is separate from personal credit and opens additional funding.',
+      description: 'Business credit is separate from personal credit and opens additional funding pathways. Businesses with established profiles access products that aren.t available otherwise.',
       steps: [
         'Register with D&B (Dun & Bradstreet) to get a DUNS number',
         'Register with Experian Business',
@@ -396,7 +396,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 15,
       timeline: '1–2 weeks',
       category: 'Structure',
-      description: 'Lenders verify your web presence. A website signals legitimacy and operational maturity.',
+      description: 'A professional web presence signals operational maturity. Lenders routinely verify this as part of their review.',
       steps: [
         'Purchase domain matching business name',
         'Use Wix, Squarespace, or WordPress',
@@ -418,7 +418,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 35,
       timeline: '2–4 weeks',
       category: 'Structure',
-      description: 'Sole proprietorships face limited funding options. LLC or Corp is required for SBA and most bank products.',
+      description: 'Sole proprietorships face the narrowest range of funding options. Forming an LLC or Corporation is one of the highest-impact structural changes for expanding capital access.',
       steps: [
         'Choose LLC (simpler) or S-Corp (tax advantages)',
         'File Articles of Organization with your state',
@@ -461,7 +461,7 @@ export function generateActionPlan(data: UnifiedAnswers, currentScore: number): 
       impactPoints: 25,
       timeline: '6–12 months',
       category: 'Credit',
-      description: 'Past repayment is the strongest behavioral signal. Consider a small starter loan.',
+      description: 'Past repayment is the strongest behavioral signal lenders use. Businesses with completed repayment history access better terms and higher approval rates.',
       steps: [
         'Apply for a small working capital loan ($5K–$10K)',
         'Use from alternative lender (faster approval)',

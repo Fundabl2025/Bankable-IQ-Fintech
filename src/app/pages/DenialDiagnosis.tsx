@@ -1,5 +1,5 @@
 /**
- * Denial Diagnosis Page
+ * Capital Readiness Diagnosis Page
  * 
  * Shows WHY the user isn't bankable yet with ranked blockers,
  * severity classification, and actionable fixes.
@@ -42,8 +42,8 @@ function getSeverityInfo(severity: 'hard_blocker' | 'suppressor' | 'optimization
   switch (severity) {
     case 'hard_blocker':
       return {
-        label: 'Hard Blocker',
-        description: 'Auto-decline. Must fix before ANY funding.',
+        label: 'Approval Barrier',
+        description: 'A pattern that typically prevents approval at any level.',
         color: 'var(--destructive)',
         bgColor: 'var(--destructive-bg)',
         borderColor: 'var(--destructive-border)',
@@ -51,8 +51,8 @@ function getSeverityInfo(severity: 'hard_blocker' | 'suppressor' | 'optimization
       };
     case 'suppressor':
       return {
-        label: 'Suppressor',
-        description: 'Limits options and amounts. Can still get some funding.',
+        label: 'Significant Pattern',
+        description: 'A pattern that limits available options and amounts.',
         color: 'var(--warning)',
         bgColor: 'var(--warning-bg)',
         borderColor: 'var(--warning-border)',
@@ -60,8 +60,8 @@ function getSeverityInfo(severity: 'hard_blocker' | 'suppressor' | 'optimization
       };
     case 'optimization':
       return {
-        label: 'Optimization',
-        description: 'Improves terms and rates. Not required but helps.',
+        label: 'Improvement Signal',
+        description: 'Addressing this typically improves terms and available options.',
         color: 'var(--primary)',
         bgColor: 'var(--primary-bg)',
         borderColor: 'var(--primary-border)',
@@ -185,7 +185,7 @@ export default function DenialDiagnosis() {
           color: 'var(--muted-foreground)',
           marginBottom: '8px',
         }}>
-          Denial Diagnosis
+          Capital Readiness Diagnosis
         </div>
         <h1 style={{
           fontFamily: 'var(--font-display)',
@@ -194,7 +194,7 @@ export default function DenialDiagnosis() {
           color: 'var(--foreground)',
           margin: 0,
         }}>
-          Why You're Not Bankable Yet
+          Patterns That Shape Your Bankability
         </h1>
         <p style={{
           fontFamily: 'var(--font-body)',
@@ -203,8 +203,8 @@ export default function DenialDiagnosis() {
           marginTop: '8px',
           maxWidth: '600px',
         }}>
-          These are the specific issues preventing you from accessing bank capital. 
-          Fix Hard Blockers first, then Suppressors, then Optimizations.
+          These are the patterns lenders evaluate when reviewing your profile. 
+          Businesses that reach bankable typically address Approval Barriers first, then Significant Patterns, then Improvement Signals.
         </p>
       </motion.div>
 
@@ -305,7 +305,7 @@ export default function DenialDiagnosis() {
               fontSize: '12px',
               color: 'var(--muted-foreground)',
             }}>
-              {isBankable ? 'You meet the threshold!' : 'still needed'}
+              {isBankable ? 'You've crossed the bankable threshold' : 'from the bankable threshold'}
             </div>
           </div>
 
@@ -351,7 +351,7 @@ export default function DenialDiagnosis() {
               fontSize: '12px',
               color: 'var(--muted-foreground)',
             }}>
-              Progress to 160 threshold
+              Progress toward bankable threshold
             </span>
             <span style={{
               fontFamily: 'var(--font-body)',
@@ -383,8 +383,8 @@ export default function DenialDiagnosis() {
         {/* Hard Blockers */}
         {hardBlockers.length > 0 && (
           <IssueSection
-            title="Hard Blockers"
-            description="These will auto-decline your application. Fix these FIRST."
+            title="Approval Barriers"
+            description="These patterns typically prevent approval. Businesses that reach bankable address these first."
             items={hardBlockers}
             severity="hard_blocker"
             totalPoints={totalBlockerPoints}
@@ -395,8 +395,8 @@ export default function DenialDiagnosis() {
         {/* Suppressors */}
         {suppressors.length > 0 && (
           <IssueSection
-            title="Suppressors"
-            description="These limit your options and amounts. Fix after blockers."
+            title="Significant Patterns"
+            description="These patterns limit available options and amounts. Address after barriers are cleared."
             items={suppressors}
             severity="suppressor"
             totalPoints={totalSuppressorPoints}
@@ -407,8 +407,8 @@ export default function DenialDiagnosis() {
         {/* Optimizations */}
         {optimizations.length > 0 && (
           <IssueSection
-            title="Optimizations"
-            description="These improve your rates and terms. Nice to have, not required."
+            title="Improvement Signals"
+            description="Addressing these typically improves terms and rates. Not required but beneficial."
             items={optimizations}
             severity="optimization"
             totalPoints={totalOptPoints}
@@ -442,7 +442,7 @@ export default function DenialDiagnosis() {
               color: 'var(--foreground)',
               marginBottom: '8px',
             }}>
-              No Critical Issues Found
+              No Approval Barriers Found
             </h3>
             <p style={{
               fontFamily: 'var(--font-body)',
@@ -450,7 +450,7 @@ export default function DenialDiagnosis() {
               color: 'var(--muted-foreground)',
               marginBottom: '24px',
             }}>
-              You have no hard blockers or suppressors. Focus on optimizations to get the best rates.
+              Your profile shows no approval barriers or significant patterns. Focus on improvement signals to secure the best terms.
             </p>
             <Link
               to="/app/access-funding"
@@ -500,14 +500,14 @@ export default function DenialDiagnosis() {
                 color: 'var(--foreground)',
                 marginBottom: '4px',
               }}>
-                Ready to fix these issues?
+                See what changes open this up
               </h3>
               <p style={{
                 fontFamily: 'var(--font-body)',
                 fontSize: '13px',
                 color: 'var(--muted-foreground)',
               }}>
-                Start with Lender Compliance to address the most impactful blockers first.
+                Start with the patterns that have the highest impact on your bankability.
               </p>
             </div>
             <Link
@@ -529,7 +529,7 @@ export default function DenialDiagnosis() {
                 whiteSpace: 'nowrap',
               }}
             >
-              Start Fixing Issues
+              Begin Addressing Patterns
               <ArrowRight style={{ width: 16, height: 16 }} />
             </Link>
           </div>
@@ -601,7 +601,7 @@ function IssueSection({
               fontWeight: 500,
               color: 'var(--muted-foreground)',
             }}>
-              ({items.length} issues, +{totalPoints} pts when fixed)
+              ({items.length} patterns, +{totalPoints} pts when addressed)
             </span>
           </h2>
           <p style={{
