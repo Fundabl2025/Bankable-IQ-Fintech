@@ -534,7 +534,7 @@ function ReadinessQuestion({ index, data, updateData, onNext, onBack, currentQue
             transition: 'all 0.2s ease',
           }}
         >
-          {index === 12 ? 'Complete Assessment →' : 'Continue →'}
+          {index === 22 ? 'Complete Assessment →' : 'Continue →'}
         </button>
       </div>
     </div>
