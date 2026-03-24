@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// FUNDREADY™ — Public Landing Page
-// Per P2.1 Figma Spec: Convert skepticism into action
-// "You weren't denied because you failed. You were denied because you weren't prepared."
+// FUNDREADY™ — Public Landing Page (PCP Rewrite)
+// Full PCP Sequence: Focus → Relevance → Micro-Compliance → Wedge → Authority
+// → Tribe → Emotion → Identity → Action
 // ════════════════════════════════════════════════════════════════════════════════
 
 import { Link } from 'react-router';
@@ -37,11 +37,11 @@ function ScorePreviewCard() {
         background: 'linear-gradient(90deg, var(--primary), var(--primary-hover))',
         borderRadius: '8px 8px 0 0',
       }} />
-      
+
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <div style={{ 
-          fontFamily: 'var(--font-body)', 
-          fontSize: '11px', 
+        <div style={{
+          fontFamily: 'var(--font-body)',
+          fontSize: '11px',
           color: 'var(--muted-foreground)',
           textTransform: 'uppercase',
           letterSpacing: '0.12em',
@@ -53,7 +53,7 @@ function ScorePreviewCard() {
           fontFamily: 'var(--font-display)',
           fontSize: '72px',
           fontWeight: 800,
-          color: '#a0a020', // Developing band color
+          color: '#a0a020',
           lineHeight: 1,
         }}>
           624
@@ -98,10 +98,13 @@ function ScorePreviewCard() {
         textAlign: 'center',
       }}>
         <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
-          3 products unlocked
+          3 capital paths open at your current profile
         </div>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 600, color: 'var(--foreground)' }}>
           Up to $125K accessible today
+        </div>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '4px' }}>
+          See what changes in 30, 60, and 90 days
         </div>
       </div>
     </motion.div>
@@ -109,9 +112,9 @@ function ScorePreviewCard() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
-// PROBLEM CARD — Shows why businesses get denied
+// PATTERN CARD — Shows patterns that block approval
 // ════════════════════════════════════════════════════════════════════════════════
-function ProblemCard({ stat, title, description }: { stat: string; title: string; description: string }) {
+function PatternCard({ stat, title, description }: { stat: string; title: string; description: string }) {
   return (
     <div style={{
       background: 'var(--surface-1)',
@@ -153,9 +156,9 @@ function ProblemCard({ stat, title, description }: { stat: string; title: string
 // ════════════════════════════════════════════════════════════════════════════════
 // SOLUTION STEP — Shows the 3-step process
 // ════════════════════════════════════════════════════════════════════════════════
-function SolutionStep({ number, title, description, icon: Icon }: { 
-  number: number; 
-  title: string; 
+function SolutionStep({ number, title, description, icon: Icon }: {
+  number: number;
+  title: string;
   description: string;
   icon: React.ElementType;
 }) {
@@ -204,7 +207,7 @@ function SolutionStep({ number, title, description, icon: Icon }: {
         fontSize: '14px',
         color: 'var(--muted-foreground)',
         lineHeight: 1.6,
-        maxWidth: '280px',
+        maxWidth: '320px',
       }}>
         {description}
       </div>
@@ -217,8 +220,8 @@ function SolutionStep({ number, title, description, icon: Icon }: {
 // ════════════════════════════════════════════════════════════════════════════════
 export function LandingPage() {
   return (
-    <div style={{ 
-      minHeight: '100vh', 
+    <div style={{
+      minHeight: '100vh',
       background: 'var(--background)',
       color: 'var(--foreground)',
     }}>
@@ -240,22 +243,22 @@ export function LandingPage() {
         borderBottom: '1px solid var(--border)',
       }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
-          <img 
-            src="/images/fundready-logo.png" 
-            alt="FundReady" 
-            style={{ 
+          <img
+            src="/images/fundready-logo.png"
+            alt="FundReady"
+            style={{
               height: '36px',
               width: 'auto',
               objectFit: 'contain',
-            }} 
+            }}
           />
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <Link 
-            to="/login" 
-            style={{ 
-              fontFamily: 'var(--font-body)', 
-              fontSize: '14px', 
+          <Link
+            to="/login"
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '14px',
               color: 'var(--muted-foreground)',
               textDecoration: 'none',
             }}
@@ -277,13 +280,13 @@ export function LandingPage() {
               borderRadius: '0',
             }}
           >
-            Get Started Free
+            See Your FundScore
           </Link>
         </div>
       </nav>
 
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      {/* HERO SECTION — Viewport height */}
+      {/* HERO SECTION — PCP Wedge + Micro-Compliance */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
       <section style={{
         minHeight: '100vh',
@@ -315,12 +318,12 @@ export function LandingPage() {
                 maxWidth: '600px',
               }}
             >
-              You weren't denied <span style={{ color: 'var(--primary)' }}>because you failed.</span>
+              Most businesses are not denied because <span style={{ color: 'var(--primary)' }}>they are not good enough.</span>
               <br />
-              You were denied because <span style={{ color: 'var(--primary)' }}>you weren't prepared.</span>
+              They are denied because <span style={{ color: 'var(--primary)' }}>the system has rules nobody showed them.</span>
             </motion.h1>
 
-            <motion.p
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}
@@ -330,12 +333,27 @@ export function LandingPage() {
                 fontStyle: 'italic',
                 color: 'var(--muted-foreground)',
                 lineHeight: 1.7,
-                marginBottom: '32px',
-                maxWidth: '480px',
+                marginBottom: '16px',
+                maxWidth: '500px',
               }}
             >
-              33 million small businesses. 80%+ denied. Not because their business isn't worthy — 
-              because no one showed them what lenders actually check.
+              There is a scoring model lenders use that most business owners have never seen. It is not just your credit score. It analyzes your business across more than a dozen dimensions — and if you do not know what those are, you are applying blind.
+            </motion.div>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.6 }}
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '15px',
+                color: 'var(--foreground)',
+                lineHeight: 1.6,
+                marginBottom: '32px',
+                maxWidth: '500px',
+              }}
+            >
+              33 million small businesses get denied every year. The ones that get approved are not luckier. <strong style={{ color: 'var(--primary)' }}>They are prepared.</strong>
             </motion.p>
 
             {/* CTA Row */}
@@ -343,7 +361,7 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.6 }}
-              style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}
+              style={{ display: 'flex', gap: '16px', marginBottom: '32px', flexWrap: 'wrap' }}
             >
               <Link
                 to="/business-assessment"
@@ -363,11 +381,11 @@ export function LandingPage() {
                   borderRadius: '0',
                 }}
               >
-                Get My FundScore Free
+                See What Lenders See — Free
                 <ArrowRight style={{ width: '18px', height: '18px' }} />
               </Link>
               <a
-                href="#how-it-works"
+                href="#the-real-pattern"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -384,7 +402,7 @@ export function LandingPage() {
                   border: 'none',
                 }}
               >
-                See How It Works
+                Find Out What Is Blocking You
               </a>
             </motion.div>
 
@@ -393,9 +411,9 @@ export function LandingPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.6 }}
-              style={{ 
-                display: 'flex', 
-                gap: '24px', 
+              style={{
+                display: 'flex',
+                gap: '24px',
                 alignItems: 'center',
                 flexWrap: 'wrap',
               }}
@@ -403,13 +421,13 @@ export function LandingPage() {
               {[
                 { icon: Lock, text: 'No bank login' },
                 { icon: BarChart3, text: 'No credit pull' },
-                { icon: Clock, text: 'Results in 10 min' },
+                { icon: Clock, text: 'Results in 10 minutes' },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Icon style={{ width: '14px', height: '14px', color: 'var(--muted-foreground)' }} />
-                  <span style={{ 
-                    fontFamily: 'var(--font-body)', 
-                    fontSize: '12px', 
+                  <span style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: '12px',
                     color: 'var(--muted-foreground)',
                   }}>
                     {text}
@@ -427,9 +445,9 @@ export function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      {/* PROBLEM SECTION — 3 columns */}
+      {/* THE REAL PATTERN SECTION — PCP Pattern Language + Wedge */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      <section style={{
+      <section id="the-real-pattern" style={{
         padding: '80px 40px',
         background: 'var(--surface-1)',
         borderTop: '1px solid var(--border)',
@@ -441,37 +459,71 @@ export function LandingPage() {
             fontSize: '36px',
             fontWeight: 700,
             textAlign: 'center',
+            marginBottom: '16px',
+          }}>
+            There is a reason most businesses keep hitting the same wall.
+          </h2>
+          <div style={{
+            maxWidth: '640px',
+            margin: '0 auto 16px',
+            textAlign: 'center',
+          }}>
+            <p style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: '16px',
+              fontStyle: 'italic',
+              color: 'var(--muted-foreground)',
+              lineHeight: 1.7,
+              marginBottom: '8px',
+            }}>
+              It is rarely the business itself. It is the profile the business presents to lenders.
+            </p>
+            <p style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '14px',
+              color: 'var(--muted-foreground)',
+              lineHeight: 1.6,
+            }}>
+              Most business owners have never seen that profile. And lenders have no reason to show it to you.
+            </p>
+          </div>
+          <p style={{
+            fontFamily: 'var(--font-body)',
+            fontSize: '15px',
+            fontWeight: 500,
+            color: 'var(--foreground)',
+            textAlign: 'center',
             marginBottom: '48px',
           }}>
-            The real reasons you were denied.
-          </h2>
+            Here are the three patterns that block approval most often at this stage.
+          </p>
 
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
             gap: '24px',
           }}>
-            <ProblemCard
+            <PatternCard
               stat="580"
               title="Credit Profile"
-              description="Lenders don't just check your score. They check utilization, payment history, inquiries, and 12+ hidden factors."
+              description="Lenders do not just look at your score. They analyze utilization, payment history, recent inquiries, and more than a dozen behavioral signals. Most businesses have signals they do not even know are working against them."
             />
-            <ProblemCard
+            <PatternCard
               stat="14/20"
-              title="Compliance Items"
-              description="Most businesses are missing 6+ compliance items. 14 of the 20 can be fixed in under 30 days."
+              title="Compliance Readiness"
+              description="Most businesses are missing several compliance items lenders expect before they review an application. The surprising part is that 14 of those 20 items can typically be addressed in under 30 days."
             />
-            <ProblemCard
+            <PatternCard
               stat="60%"
-              title="Documentation"
-              description="Incomplete or poorly organized documents cause 60% of preventable denials. Lenders need specific formats."
+              title="Documentation Readiness"
+              description="Six out of ten application denials involve documentation that was incomplete or not formatted the way lenders require. This is one of the most common preventable reasons businesses do not move forward."
             />
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      {/* SOLUTION SECTION — 3 steps */}
+      {/* HOW IT WORKS SECTION — PCP Pace and Lead */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
       <section id="how-it-works" style={{ padding: '80px 40px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -482,17 +534,20 @@ export function LandingPage() {
             textAlign: 'center',
             marginBottom: '16px',
           }}>
-            How FundReady Works
+            Three steps. No guessing. No bank login. No credit pull.
           </h2>
           <p style={{
             fontFamily: 'var(--font-serif)',
-            fontSize: '18px',
+            fontSize: '16px',
             fontStyle: 'italic',
             color: 'var(--muted-foreground)',
             textAlign: 'center',
             marginBottom: '48px',
+            maxWidth: '640px',
+            margin: '0 auto 48px',
+            lineHeight: 1.7,
           }}>
-            Three steps. No bank login. No credit pull. Know exactly where you stand.
+            Most businesses spend months applying and being rejected without understanding what needs to change. FundReady maps the exact picture lenders see and shows you the highest-leverage things to address first.
           </p>
 
           <div style={{
@@ -503,30 +558,30 @@ export function LandingPage() {
             <SolutionStep
               number={1}
               icon={BarChart3}
-              title="FundScore Assessment"
-              description="24 questions. 10 minutes. No bank login. We analyze your fundability across 6 dimensions."
+              title="Your FundScore Assessment"
+              description="24 questions. About 10 minutes. We build your full capital readiness profile across six dimensions — the same signals lenders actually weight."
             />
             <SolutionStep
               number={2}
               icon={Shield}
-              title="Gap Analysis"
-              description="See exactly what's blocking you. Every compliance gap. Every credit issue. Ranked by impact."
+              title="Your Gap Analysis"
+              description="See the exact patterns in your profile that are creating friction with lenders. Every compliance gap. Every credit signal. Ranked by the impact each one has on your approval odds."
             />
             <SolutionStep
               number={3}
               icon={TrendingUp}
-              title="Capital Access"
-              description="Pre-qualify today. See which products you unlock. Build a 30-90 day path to more capital."
+              title="Your Capital Path"
+              description="See which funding products your current profile qualifies for. Then see what opens up in 30, 60, and 90 days as your profile strengthens. Most businesses that follow the plan unlock significantly more capital within the first quarter."
             />
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      {/* SOCIAL PROOF STRIP */}
+      {/* SOCIAL PROOF STRIP — PCP Authority + Tribe */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
       <section style={{
-        padding: '48px 40px',
+        padding: '64px 40px',
         background: 'var(--surface-2)',
         borderTop: '1px solid var(--border)',
         borderBottom: '1px solid var(--border)',
@@ -534,40 +589,55 @@ export function LandingPage() {
         <div style={{
           maxWidth: '1000px',
           margin: '0 auto',
-          display: 'flex',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '40px',
+          textAlign: 'center',
         }}>
-          {[
-            { number: '33M', label: 'small businesses' },
-            { number: '$300B+', label: 'denied annually' },
-            { number: '17', label: 'funding products mapped' },
-          ].map(({ number, label }) => (
-            <div key={label} style={{ textAlign: 'center' }}>
-              <div style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '40px',
-                fontWeight: 800,
-                color: 'var(--primary)',
-              }}>
-                {number}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-around',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '40px',
+            marginBottom: '32px',
+          }}>
+            {[
+              { number: '33M', label: 'small businesses' },
+              { number: '$300B+', label: 'denied annually' },
+              { number: '17', label: 'funding products mapped' },
+            ].map(({ number, label }) => (
+              <div key={label} style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '40px',
+                  fontWeight: 800,
+                  color: 'var(--primary)',
+                }}>
+                  {number}
+                </div>
+                <div style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '14px',
+                  color: 'var(--muted-foreground)',
+                }}>
+                  {label}
+                </div>
               </div>
-              <div style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '14px',
-                color: 'var(--muted-foreground)',
-              }}>
-                {label}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          <p style={{
+            fontFamily: 'var(--font-body)',
+            fontSize: '15px',
+            color: 'var(--muted-foreground)',
+            lineHeight: 1.7,
+            maxWidth: '640px',
+            margin: '0 auto',
+          }}>
+            33 million small businesses in the US alone are navigating a system that was never explained to them. Over $300 billion in capital is denied every year — not because the businesses are not viable, but because the profiles are not ready. FundReady maps 17 funding products against your real profile so you see exactly where you stand and exactly what changes.
+          </p>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      {/* FINAL CTA SECTION */}
+      {/* CLOSING CTA SECTION — PCP Identity + Least Resistance */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
       <section style={{
         padding: '100px 40px',
@@ -577,13 +647,36 @@ export function LandingPage() {
           fontFamily: 'var(--font-display)',
           fontSize: 'clamp(28px, 4vw, 44px)',
           fontWeight: 800,
-          marginBottom: '32px',
+          marginBottom: '24px',
           maxWidth: '700px',
-          margin: '0 auto 32px',
+          margin: '0 auto 24px',
+          lineHeight: 1.2,
         }}>
-          Stop applying unprepared.<br />
-          <span style={{ color: 'var(--primary)' }}>Start with your FundScore.</span>
+          At some point, every business owner realizes that applying harder is not the answer.<br />
+          <span style={{ color: 'var(--primary)' }}>Applying prepared is.</span>
         </h2>
+
+        <p style={{
+          fontFamily: 'var(--font-body)',
+          fontSize: '16px',
+          color: 'var(--muted-foreground)',
+          lineHeight: 1.7,
+          maxWidth: '600px',
+          margin: '0 auto 16px',
+        }}>
+          The businesses that access bank-grade capital — lower rates, larger amounts, longer terms — are not fundamentally different from yours. They just understood what lenders look for before they applied.
+        </p>
+
+        <p style={{
+          fontFamily: 'var(--font-body)',
+          fontSize: '15px',
+          color: 'var(--foreground)',
+          lineHeight: 1.7,
+          maxWidth: '560px',
+          margin: '0 auto 40px',
+        }}>
+          Your FundScore takes 10 minutes. It does not touch your credit. And it shows you something most business owners have never seen: exactly what your profile looks like from the lender's side.
+        </p>
 
         <Link
           to="/business-assessment"
@@ -603,7 +696,7 @@ export function LandingPage() {
             borderRadius: '0',
           }}
         >
-          Get My FundScore Free
+          See Your FundScore Free
           <ArrowRight style={{ width: '20px', height: '20px' }} />
         </Link>
 
@@ -612,6 +705,7 @@ export function LandingPage() {
           display: 'flex',
           justifyContent: 'center',
           gap: '24px',
+          flexWrap: 'wrap',
         }}>
           {[
             { icon: Lock, text: 'No bank login required' },
@@ -620,9 +714,9 @@ export function LandingPage() {
           ].map(({ icon: Icon, text }) => (
             <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Icon style={{ width: '14px', height: '14px', color: 'var(--muted-foreground)' }} />
-              <span style={{ 
-                fontFamily: 'var(--font-body)', 
-                fontSize: '12px', 
+              <span style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '12px',
                 color: 'var(--muted-foreground)',
               }}>
                 {text}
@@ -640,7 +734,7 @@ export function LandingPage() {
         borderTop: '1px solid var(--border)',
         textAlign: 'center',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '8px' }}>
           <span style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: 'var(--foreground)' }}>
             FUND
           </span>
@@ -651,6 +745,14 @@ export function LandingPage() {
             ™
           </span>
         </div>
+        <p style={{
+          fontFamily: 'var(--font-body)',
+          fontSize: '13px',
+          color: 'var(--muted-foreground)',
+          marginBottom: '4px',
+        }}>
+          The capital readiness platform for small business.
+        </p>
         <p style={{
           fontFamily: 'var(--font-body)',
           fontSize: '12px',
