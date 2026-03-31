@@ -79,7 +79,7 @@ function ScorePreviewCard() {
               background: 'var(--success-bg)',
               border: '1px solid var(--success-border)',
               borderRadius: '4px',
-              fontFamily: 'var(--font-body)',
+              fontFamily: "'Inter', sans-serif",
               fontSize: '11px',
               color: 'var(--primary)',
               fontWeight: 500,
@@ -257,7 +257,7 @@ export function LandingPage() {
           <Link
             to="/login"
             style={{
-              fontFamily: 'var(--font-body)',
+              fontFamily: "'Inter', sans-serif",
               fontSize: '14px',
               color: 'var(--muted-foreground)',
               textDecoration: 'none',
@@ -271,11 +271,10 @@ export function LandingPage() {
               padding: '10px 24px',
               background: 'linear-gradient(135deg, #9333ea, #3b82f6)',
               color: '#ffffff',
-              fontFamily: 'var(--font-display)',
+              fontFamily: "'Inter', sans-serif",
               fontSize: '12px',
               fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
+              letterSpacing: '-0.01em',
               textDecoration: 'none',
               borderRadius: '1rem',
               boxShadow: '0 4px 15px rgba(147, 51, 234, 0.3)',
@@ -311,7 +310,7 @@ export function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
               style={{
-                fontFamily: 'var(--font-display)',
+                fontFamily: "'Inter', sans-serif",
                 fontSize: 'clamp(32px, 4vw, 48px)',
                 fontWeight: 800,
                 lineHeight: 1.2,
@@ -329,7 +328,7 @@ export function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}
               style={{
-                fontFamily: 'var(--font-serif)',
+                fontFamily: "'Inter', sans-serif",
                 fontSize: '16px',
                 fontStyle: 'italic',
                 color: 'var(--muted-foreground)',
@@ -346,7 +345,7 @@ export function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25, duration: 0.6 }}
               style={{
-                fontFamily: 'var(--font-body)',
+                fontFamily: "'Inter', sans-serif",
                 fontSize: '15px',
                 color: 'var(--foreground)',
                 lineHeight: 1.6,
@@ -373,7 +372,7 @@ export function LandingPage() {
                   padding: '16px 36px',
                   background: 'linear-gradient(135deg, #9333ea, #3b82f6)',
                   color: '#ffffff',
-                  fontFamily: 'var(--font-display)',
+                  fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
                   fontWeight: 700,
                   textTransform: 'uppercase',
@@ -395,7 +394,7 @@ export function LandingPage() {
                   padding: '16px 24px',
                   background: 'transparent',
                   color: 'var(--muted-foreground)',
-                  fontFamily: 'var(--font-display)',
+                  fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
                   fontWeight: 700,
                   textTransform: 'uppercase',
@@ -428,7 +427,7 @@ export function LandingPage() {
                 <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Icon style={{ width: '14px', height: '14px', color: 'var(--muted-foreground)' }} />
                   <span style={{
-                    fontFamily: 'var(--font-body)',
+                    fontFamily: "'Inter', sans-serif",
                     fontSize: '12px',
                     color: 'var(--muted-foreground)',
                   }}>
@@ -471,7 +470,7 @@ export function LandingPage() {
             textAlign: 'center',
           }}>
             <p style={{
-              fontFamily: 'var(--font-serif)',
+              fontFamily: "'Inter', sans-serif",
               fontSize: '16px',
               fontStyle: 'italic',
               color: 'var(--muted-foreground)',
@@ -481,7 +480,7 @@ export function LandingPage() {
               It is rarely the business itself. It is the profile the business presents to lenders.
             </p>
             <p style={{
-              fontFamily: 'var(--font-body)',
+              fontFamily: "'Inter', sans-serif",
               fontSize: '14px',
               color: 'var(--muted-foreground)',
               lineHeight: 1.6,
@@ -608,7 +607,7 @@ export function LandingPage() {
             ].map(({ number, label }) => (
               <div key={label} style={{ textAlign: 'center' }}>
                 <div style={{
-                  fontFamily: 'var(--font-display)',
+                  fontFamily: "'Inter', sans-serif",
                   fontSize: '40px',
                   fontWeight: 800,
                   color: 'var(--primary)',
@@ -616,7 +615,7 @@ export function LandingPage() {
                   {number}
                 </div>
                 <div style={{
-                  fontFamily: 'var(--font-body)',
+                  fontFamily: "'Inter', sans-serif",
                   fontSize: '14px',
                   color: 'var(--muted-foreground)',
                 }}>
@@ -718,7 +717,7 @@ export function LandingPage() {
             <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Icon style={{ width: '14px', height: '14px', color: 'var(--muted-foreground)' }} />
               <span style={{
-                fontFamily: 'var(--font-body)',
+                fontFamily: "'Inter', sans-serif",
                 fontSize: '12px',
                 color: 'var(--muted-foreground)',
               }}>
