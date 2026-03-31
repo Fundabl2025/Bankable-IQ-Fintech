@@ -35,15 +35,14 @@ import {
 import { getPreQualifiedPrograms, isProgramPathPreQualified } from '../utils/fundingEligibility';
 import { getFoundationFirstData } from '../utils/foundationFirstData';
 
-// Business Success module items
+// Business Success module — 6 primary nav items (Elon-style: minimal, purposeful)
 const businessMenuItems = [
   { path: '/business-assessment', label: 'Business Success Scan', icon: ClipboardCheck, badge: 'Start', isAssessment: true },
   { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/app/denial-diagnosis', label: 'Denial Diagnosis', icon: AlertTriangle },
-  { 
-    path: '/app/access-funding', 
-    label: 'Access Funding', 
-    icon: DollarSign, 
+  {
+    path: '/app/access-funding',
+    label: 'Get Funded',
+    icon: DollarSign,
     showPreQualifiedBadge: true,
     subItems: [
       { path: '/app/access-funding/business-credit-cards', label: 'Syndicated Line of Credit (SLOC)' },
@@ -65,31 +64,23 @@ const businessMenuItems = [
       { path: '/app/access-funding/construction-loans', label: 'Construction Loans' },
     ]
   },
-  { path: '/app/integrate-reports', label: 'Integrate Reports', icon: FileText },
-  { 
-    path: '/app/status-reports', 
-    label: 'Status Reports', 
-    icon: BarChart3,
+  { path: '/app/my-progress', label: 'My Progress', icon: TrendingUp },
+  {
+    path: '/app/my-tools',
+    label: 'My Tools',
+    icon: FolderOpen,
     subItems: [
-      { path: '/app/status-reports/bankable-status', label: 'Bankable Status' },
-      { path: '/app/status-reports/business-fico', label: 'Business FICO' },
-      { path: '/app/status-reports/estimated-funding', label: 'Estimated Funding' },
-      { path: '/app/status-reports/owners-credit', label: 'Owners Credit' },
+      { path: '/app/status-reports', label: 'Status Reports' },
+      { path: '/app/document-collection', label: 'Document Portal' },
+      { path: '/app/integrate-reports', label: 'Integrate Reports' },
+      { path: '/app/lender-compliance', label: 'Lender Compliance' },
+      { path: '/app/capital-access-map', label: 'Capital Access Map' },
+      { path: '/app/denial-diagnosis', label: 'Denial Diagnosis' },
+      { path: '/app/capital-glossary', label: 'Capital Glossary' },
+      { path: '/app/templates-resources', label: 'Templates & Resources' },
     ]
   },
-  { path: '/app/document-collection', label: 'Document Collection', icon: FolderOpen },
-  { path: '/app/lender-compliance', label: 'Lender Compliance', icon: Shield },
-  { path: '/app/capital-access-map', label: 'Capital Access Map', icon: Target },
-  { path: '/app/optimize-reporting', label: 'Optimize Reporting', icon: TrendingUp },
-  { path: '/app/online-analysis', label: 'Online Analysis', icon: LineChart },
-  { path: '/app/building-credit', label: 'Building Credit', icon: CreditCard },
-  { path: '/app/organize-financials', label: 'Organize Financials', icon: Briefcase },
-  { path: '/app/become-bankable', label: 'Become Bankable', icon: Building },
-  { path: '/app/capital-glossary', label: 'Capital Glossary', icon: BookOpen },
-  { path: '/app/templates-resources', label: 'Templates & Resources', icon: GraduationCap },
-  { path: '/app/business-education', label: 'Business Education', icon: GraduationCap },
-  { path: '/app/help-desk', label: 'Help Desk', icon: HelpCircle },
-  { path: '/app/settings', label: 'Settings', icon: Settings }
+  { path: '/app/settings', label: 'Settings', icon: Settings },
 ];
 
 // FoundationFirst module items

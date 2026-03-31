@@ -35,6 +35,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { UnifiedAnswers } from './business-assessment/types';
 import { BadgeGrid, BadgeToastContainer } from '../components/BadgeGrid';
 import { checkAndAwardBadges } from '../lib/badges';
+import { getPreQualifiedPrograms } from '../utils/fundingEligibility';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // STATUS SYSTEM - Matches Elon's 5-tier progression
@@ -224,6 +225,45 @@ function getDimAction(key: string, score: number, dimConfig: typeof DIM_CONFIG):
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
+// GAUGE HELPERS
+// ════════════════════════════════════════════════════════════════════════════════
+
+function describeArc(cx: number, cy: number, r: number, startDeg: number, sweepDeg: number) {
+  const toRad = (d: number) => ((d - 90) * Math.PI) / 180;
+  const x1 = cx + r * Math.cos(toRad(startDeg));
+  const y1 = cy + r * Math.sin(toRad(startDeg));
+  const x2 = cx + r * Math.cos(toRad(startDeg + sweepDeg));
+  const y2 = cy + r * Math.sin(toRad(startDeg + sweepDeg));
+  const large = sweepDeg > 180 ? 1 : 0;
+  return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+}
+
+function getGaugeColor(score: number) {
+  if (score < 200) return '#ef4444';
+  if (score < 400) return '#f97316';
+  if (score < 600) return '#f59e0b';
+  if (score < 800) return '#22c55e';
+  return '#10b981';
+}
+
+function getNextMilestone(score: number) {
+  if (score < 300) return { label: 'First Capital', pts: 300 - score };
+  if (score < 500) return { label: 'Alt. Capital', pts: 500 - score };
+  if (score < 700) return { label: 'Capital Ready', pts: 700 - score };
+  if (score < 800) return { label: 'Bankable', pts: 800 - score };
+  if (score < 900) return { label: 'Elite Status', pts: 900 - score };
+  return null;
+}
+
+function getLockedCapital(score: number) {
+  if (score < 300) return '$500K+';
+  if (score < 500) return '$300K+';
+  if (score < 700) return '$150K+';
+  if (score < 800) return '$100K+';
+  return null;
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
 // MAIN DASHBOARD COMPONENT
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -337,1381 +377,291 @@ export function Dashboard() {
   const firstName = user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'there';
   const emailVerified = user?.email_confirmed_at;
 
+  // Gauge math
+  const CX = 110, CY = 108, R = 82;
+  const SWEEP = 270;
+  const arcLen = 2 * Math.PI * R * (SWEEP / 360);
+  const bgArcPath = describeArc(CX, CY, R, 225, SWEEP);
+  const fillOffset = arcLen * (1 - Math.min(fundScore / 1000, 1));
+  const gaugeColor = getGaugeColor(fundScore);
+  const nextMilestone = getNextMilestone(fundScore);
+  const lockedCapital = getLockedCapital(fundScore);
+  const hour = new Date().getHours();
+  const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  const DIM_ORDER = ['P', 'B', 'F', 'C', 'S', 'N'];
+  const DIM_LABELS: Record<string, string> = { P: 'Personal Credit', B: 'Business Profile', F: 'Financial Health', C: 'Compliance', S: 'Stability', N: 'Documentation' };
+  const preQualPrograms = getPreQualifiedPrograms();
+  const FEATURED_PROGRAMS = [
+    { path: '/app/access-funding/business-credit-line', label: 'Business Credit Line', range: '$10K–$250K', icon: '💳' },
+    { path: '/app/access-funding/revenue-based-loan', label: 'Revenue-Based Loan', range: '$5K–$500K', icon: '📈' },
+    { path: '/app/access-funding/sba-business-loan', label: 'SBA Loans 7a & 504', range: '$50K–$5M', icon: '🏛️' },
+    { path: '/app/access-funding/equipment-financing', label: 'Equipment Financing', range: '$5K–$5M', icon: '🔧' },
+    { path: '/app/access-funding/merchant-advance', label: 'Merchant Advance', range: '$5K–$500K', icon: '⚡' },
+    { path: '/app/access-funding/working-capital-loans', label: 'Working Capital', range: '$10K–$500K', icon: '💰' },
+  ].slice(0, 3);
+  const topBlocker = criticalBlockers[0];
+
   return (
     <div
       className="flex-1 min-h-screen overflow-auto"
       style={{ backgroundColor: 'var(--background)' }}
     >
-      {/* Welcome modal */}
       {showWelcome && <WelcomeModal name={firstName} onDismiss={dismissWelcome} onNavigate={navigate} />}
-
-      {/* Badge unlock toasts */}
       <BadgeToastContainer newBadgeIds={newBadgeIds} />
 
-      {/* Email verification banner */}
       {user && !emailVerified && (
-        <div style={{
-          background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
-          borderBottom: '1px solid #f59e0b',
-          padding: '10px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          flexWrap: 'wrap',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '16px' }}>📧</span>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#92400e' }}>
-              Verify your email to save your FundScore and unlock your full capital report
-            </span>
-          </div>
-          <button
-            onClick={() => navigate('/app/settings')}
-            style={{
-              fontSize: '12px',
-              fontWeight: 700,
-              color: '#92400e',
-              background: 'rgba(146,64,14,0.12)',
-              border: '1px solid rgba(146,64,14,0.25)',
-              borderRadius: '6px',
-              padding: '5px 14px',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Verify Now →
-          </button>
+        <div style={{ background: 'linear-gradient(135deg,#fef3c7,#fde68a)', borderBottom: '1px solid #f59e0b', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#92400e' }}>📧 Verify your email to save your FundScore and unlock your full capital report</span>
+          <button onClick={() => navigate('/app/settings')} style={{ fontSize: '12px', fontWeight: 700, color: '#92400e', background: 'rgba(146,64,14,0.12)', border: '1px solid rgba(146,64,14,0.25)', borderRadius: '6px', padding: '5px 14px', cursor: 'pointer' }}>Verify Now →</button>
         </div>
       )}
-      <div className="max-w-[1400px] mx-auto px-6 py-8 lg:px-8 lg:py-10">
+      <div className="max-w-[1200px] mx-auto px-6 py-8 lg:px-8 lg:py-10">
         
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* PAGE HEADER - Clean, premium typography                                */}
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        <motion.header
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-10"
-        >
-          <h1 
-            style={{ 
-              fontFamily: 'var(--font-display)', 
-              fontWeight: 800,
-              fontSize: 'clamp(28px, 4vw, 40px)',
-              lineHeight: 1.1,
-              letterSpacing: '-0.02em',
-              color: 'var(--foreground)'
-            }}
-          >
-            Mission Control
-          </h1>
-          <p 
-            className="mt-2"
-            style={{ 
-              fontFamily: 'var(--font-body)', 
-              fontWeight: 400,
-              fontSize: '15px',
-              lineHeight: 1.6,
-              color: 'var(--muted-foreground)'
-            }}
-          >
-            Your capital readiness at a glance. Complete blockers to unlock more funding.
-          </p>
-        </motion.header>
-
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* FEATURE 1: NEXT ACTION HERO BANNER                                     */}
-        {/* Single most important action — FFP "Step 2: Required before unlock"    */}
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {hasAssessment && criticalBlockers.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.05 }}
-            className="mb-8 cursor-pointer"
-            onClick={() => navigate('/app/lender-compliance')}
-            style={{
-              background: 'linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(59,130,246,0.06) 100%)',
-              border: '2px solid var(--primary)',
-              borderRadius: '16px',
-              padding: '20px 24px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-            }}
-          >
-            <div style={{
-              width: '48px', height: '48px', borderRadius: '50%',
-              background: 'linear-gradient(135deg, #10b981, #3b82f6)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <span style={{ fontSize: '22px' }}>🎯</span>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
-                letterSpacing: '0.1em', color: 'var(--primary)', marginBottom: '4px',
-              }}>
-                Your Next Move — Required Before More Capital Opens
-              </div>
-              <div style={{
-                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px',
-                color: 'var(--foreground)', lineHeight: 1.3,
-              }}>
-                {criticalBlockers[0]?.title}
-              </div>
-              <div style={{
-                fontFamily: 'var(--font-body)', fontSize: '13px',
-                color: 'var(--muted-foreground)', marginTop: '3px',
-              }}>
-                {hardBlockers.length > 0
-                  ? `This is a hard blocker — lenders auto-decline while this is unresolved`
-                  : `Fixing this unlocks better rates and higher loan amounts`}
-              </div>
-            </div>
-            <div style={{
-              background: 'linear-gradient(135deg, #10b981, #3b82f6)',
-              color: 'white', padding: '9px 20px', borderRadius: '10px',
-              fontSize: '13px', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0,
-            }}>
-              Fix Now →
-            </div>
-          </motion.div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* ASSESSMENT CTA (if no assessment taken)                                */}
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {!hasAssessment && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            onClick={() => navigate('/app/business-assessment')}
-            className="mb-8 cursor-pointer group"
-            style={{
-              background: 'linear-gradient(135deg, rgba(138,184,32,0.1) 0%, rgba(138,184,32,0.05) 100%)',
-              border: '1px solid var(--primary)',
-              borderRadius: '2px',
-              padding: '24px 28px',
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <Zap style={{ color: 'var(--primary)', width: 20, height: 20 }} />
-                  <span style={{ 
-                    fontFamily: 'var(--font-display)', 
-                    fontWeight: 700, 
-                    fontSize: '16px',
-                    color: 'var(--foreground)' 
-                  }}>
-                    Start Your FundScore Assessment
-                  </span>
-                </div>
-                <p style={{ 
-                  fontFamily: 'var(--font-body)', 
-                  fontSize: '14px', 
-                  color: 'var(--muted-foreground)' 
-                }}>
-                  24 questions. 10 minutes. See exactly what capital you qualify for today.
-                </p>
-              </div>
-              <ArrowRight 
-                className="transition-transform group-hover:translate-x-1" 
-                style={{ color: 'var(--primary)', width: 24, height: 24 }} 
-              />
-            </div>
-          </motion.div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* CORE VALUE PROP: Fundable vs Bankable - The Capital Cost Narrative     */}
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {hasAssessment && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.5 }}
-            className="mb-8"
-            style={{
-              background: 'var(--surface-1)',
-              border: '2px solid var(--primary)',
-              borderRadius: '2px',
-              padding: '28px',
-            }}
-          >
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ 
-                fontFamily: 'var(--font-body)', 
-                fontSize: '12px', 
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                color: 'var(--muted-foreground)',
-                marginBottom: '8px'
-              }}>
-                Capital Access Path
-              </div>
-              <h2 style={{ 
-                fontFamily: 'var(--font-display)',
-                fontSize: '24px',
-                fontWeight: 700,
-                color: 'var(--foreground)',
-                lineHeight: 1.2
-              }}>
-                Move from expensive to bank capital
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Current: Fundable Capital */}
-              <div style={{
-                padding: '20px',
-                background: 'var(--surface-2)',
-                borderRadius: '2px',
-                border: '1px solid var(--border)',
-              }}>
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ 
-                    fontFamily: 'var(--font-body)',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    color: 'var(--muted-foreground)',
-                    marginBottom: '4px'
-                  }}>
-                    Today: Fundable
-                  </div>
-                  <div style={{ 
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '20px',
-                    fontWeight: 700,
-                    color: 'var(--foreground)'
-                  }}>
-                    $50K-$250K
-                  </div>
-                </div>
-                <div style={{
-                  padding: '12px',
-                  background: 'var(--destructive-bg)',
-                  borderRadius: '2px',
-                  border: '1px solid var(--destructive-border)',
-                  marginBottom: '12px'
-                }}>
-                  <div style={{ 
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '16px',
-                    fontWeight: 700,
-                    color: 'var(--destructive)'
-                  }}>
-                    35%+ APR
-                  </div>
-                  <div style={{ 
-                    fontFamily: 'var(--font-body)',
-                    fontSize: '12px',
-                    color: 'var(--muted-foreground)',
-                    marginTop: '4px'
-                  }}>
-                    MCA, factoring, credit cards
-                  </div>
-                </div>
-                <div style={{ 
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '12px',
-                  color: 'var(--muted-foreground)',
-                  lineHeight: 1.5
-                }}>
-                  Your current funding options. Fast approval, high cost.
-                </div>
-              </div>
-
-              {/* Arrow/Progression */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <div style={{ textAlign: 'center' }}>
-                  <TrendingUp style={{ 
-                    color: 'var(--primary)',
-                    width: 32,
-                    height: 32,
-                    margin: '0 auto 8px'
-                  }} />
-                  <div style={{
-                    fontFamily: 'var(--font-body)',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    color: 'var(--muted-foreground)',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    90-180 days
-                  </div>
-                </div>
-              </div>
-
-              {/* Future: Bankable Capital */}
-              <div style={{
-                padding: '20px',
-                background: 'var(--surface-2)',
-                borderRadius: '2px',
-                border: '1px solid var(--border)',
-              }}>
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ 
-                    fontFamily: 'var(--font-body)',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    color: 'var(--muted-foreground)',
-                    marginBottom: '4px'
-                  }}>
-                    Potential: Bankable
-                  </div>
-                  <div style={{ 
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '20px',
-                    fontWeight: 700,
-                    color: 'var(--primary)'
-                  }}>
-                    $250K-$1M+
-                  </div>
-                </div>
-                <div style={{
-                  padding: '12px',
-                  background: 'var(--success-bg)',
-                  borderRadius: '2px',
-                  border: '1px solid var(--success-border)',
-                  marginBottom: '12px'
-                }}>
-                  <div style={{ 
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '16px',
-                    fontWeight: 700,
-                    color: 'var(--success)'
-                  }}>
-                    12-15% APR
-                  </div>
-                  <div style={{ 
-                    fontFamily: 'var(--font-body)',
-                    fontSize: '12px',
-                    color: 'var(--muted-foreground)',
-                    marginTop: '4px'
-                  }}>
-                    SBA, bank loans, equipment
-                  </div>
-                </div>
-                <div style={{ 
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '12px',
-                  color: 'var(--muted-foreground)',
-                  lineHeight: 1.5
-                }}>
-                  Institutional capital. Lower cost, longer terms, larger amounts.
-                </div>
-              </div>
-            </div>
-
-            {/* Savings calculation */}
-            <div style={{
-              marginTop: '20px',
-              padding: '16px',
-              background: 'rgba(138,184,32,0.1)',
-              borderRadius: '2px',
-              border: '1px solid rgba(138,184,32,0.2)'
-            }}>
-              <div style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '13px',
-                color: 'var(--foreground)',
-                lineHeight: 1.6
-              }}>
-                <strong>On a $250K loan over 5 years:</strong> Expensive capital = $112,500 interest. Bank capital = $37,500 interest. <strong style={{ color: 'var(--primary)' }}>Your potential savings: $75,000</strong>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-          
-          {/* ─────────────────────────────────────────────────────────────────── */}
-          {/* CARD 1: Status + FundScore                                          */}
-          {/* ─────────────────────────────────────────────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="group cursor-pointer"
-            onClick={() => navigate('/app/business-assessment/results')}
-            style={{
-              backgroundColor: 'var(--card)',
-              border: '1px solid var(--border)',
-              borderRadius: '2px',
-              padding: '28px',
-              transition: 'border-color 200ms ease',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
-          >
-            {/* Status Badge */}
-            <div className="flex items-center justify-between mb-6">
-              <div 
-                className="px-3 py-1.5"
-                style={{ 
-                  backgroundColor: statusInfo.bgColor,
-                  border: `1px solid ${statusInfo.color}`,
-                  borderRadius: '2px'
-                }}
-              >
-                <span style={{ 
-                  fontFamily: 'var(--font-display)', 
-                  fontWeight: 700, 
-                  fontSize: '11px',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: statusInfo.color 
-                }}>
-                  {statusInfo.tier}
-                </span>
-              </div>
-              <ChevronRight style={{ color: 'var(--muted-foreground)', width: 18, height: 18 }} />
-            </div>
-
-            {/* Score Display */}
-            <div className="mb-4">
-              <div style={{ 
-                fontFamily: 'var(--font-display)', 
-                fontWeight: 800, 
-                fontSize: 'clamp(32px, 5vw, 56px)',
-                lineHeight: 1,
-                letterSpacing: '-0.03em',
-                color: hasAssessment ? scoreBand.color : 'var(--muted-foreground)'
-              }}>
-                {hasAssessment ? fundScore : '—'}
-              </div>
-              <div style={{ 
-                fontFamily: 'var(--font-body)', 
-                fontSize: '13px',
-                color: 'var(--muted-foreground)',
-                marginTop: '6px'
-              }}>
-                FundScore out of 1000
-              </div>
-            </div>
-
-            {/* Score Bar */}
-            <div 
-              className="h-1.5 w-full overflow-hidden"
-              style={{ backgroundColor: 'var(--border)', borderRadius: '1px' }}
-            >
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${(fundScore / 1000) * 100}%` }}
-                transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                className="h-full"
-                style={{ backgroundColor: scoreBand.color }}
-              />
-            </div>
-
-            {/* Band Name */}
-            <div style={{ 
-              fontFamily: 'var(--font-body)', 
-              fontSize: '12px',
-              color: scoreBand.color,
-              marginTop: '8px',
-              fontWeight: 600
-            }}>
-              {scoreBand.name}
-            </div>
-          </motion.div>
-
-          {/* ─────────────────────────────────────────────────────────────────── */}
-          {/* CARD 2: Capital Access                                              */}
-          {/* ─────────────────────────────────────────────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-            className="group cursor-pointer"
-            onClick={() => navigate('/app/status-reports/estimated-funding')}
-            style={{
-              backgroundColor: 'var(--card)',
-              border: '1px solid var(--border)',
-              borderRadius: '2px',
-              padding: '28px',
-              transition: 'border-color 200ms ease',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <DollarSign style={{ color: 'var(--primary)', width: 18, height: 18 }} />
-                <span style={{ 
-                  fontFamily: 'var(--font-display)', 
-                  fontWeight: 700, 
-                  fontSize: '13px',
-                  letterSpacing: '0.02em',
-                  color: 'var(--foreground)' 
-                }}>
-                  Capital Access
-                </span>
-              </div>
-              <ChevronRight style={{ color: 'var(--muted-foreground)', width: 18, height: 18 }} />
-            </div>
-
-            {/* Current Amount */}
-            <div className="mb-5">
-              <div style={{ 
-                fontFamily: 'var(--font-display)', 
-                fontWeight: 800, 
-                fontSize: 'clamp(28px, 4vw, 40px)',
-                lineHeight: 1,
-                letterSpacing: '-0.02em',
-                color: 'var(--primary)'
-              }}>
-                {formatMoney(capitalPath[0].amount)}
-              </div>
-              <div style={{ 
-                fontFamily: 'var(--font-body)', 
-                fontSize: '13px',
-                color: 'var(--muted-foreground)',
-                marginTop: '4px'
-              }}>
-                Available today
-              </div>
-            </div>
-
-            {/* Tier Potential */}
-            <div 
-              className="flex items-center justify-between p-3"
-              style={{ 
-                backgroundColor: 'var(--muted)',
-                borderRadius: '2px'
-              }}
-            >
-              <div>
-                <div style={{ 
-                  fontFamily: 'var(--font-body)', 
-                  fontSize: '11px',
-                  color: 'var(--muted-foreground)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  marginBottom: '2px'
-                }}>
-                  Tier Potential
-                </div>
-                <div style={{ 
-                  fontFamily: 'var(--font-display)', 
-                  fontWeight: 700, 
-                  fontSize: '18px',
-                  color: 'var(--foreground)'
-                }}>
-                  {statusInfo.capitalRange}
-                </div>
-              </div>
-              <ArrowRight style={{ color: 'var(--muted-foreground)', width: 16, height: 16 }} />
-              <div>
-                <div style={{ 
-                  fontFamily: 'var(--font-body)', 
-                  fontSize: '11px',
-                  color: 'var(--muted-foreground)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  marginBottom: '2px'
-                }}>
-                  At 180 Days
-                </div>
-                <div style={{ 
-                  fontFamily: 'var(--font-display)', 
-                  fontWeight: 700, 
-                  fontSize: '18px',
-                  color: 'var(--success)'
-                }}>
-                  {formatMoney(capitalPath[4].amount)}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* ─────────────────────────────────────────────────────────────────── */}
-          {/* CARD 3: Top Blockers                                                */}
-          {/* ─────────────────────────────────────────────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="group cursor-pointer"
-            onClick={() => navigate('/app/lender-compliance')}
-            style={{
-              backgroundColor: 'var(--card)',
-              border: '1px solid var(--border)',
-              borderRadius: '2px',
-              padding: '28px',
-              transition: 'border-color 200ms ease',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--destructive)'}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
-                <AlertTriangle style={{ color: 'var(--destructive)', width: 18, height: 18 }} />
-                <span style={{ 
-                  fontFamily: 'var(--font-display)', 
-                  fontWeight: 700, 
-                  fontSize: '13px',
-                  letterSpacing: '0.02em',
-                  color: 'var(--foreground)' 
-                }}>
-                  Top Blockers
-                </span>
-              </div>
-              <span style={{ 
-                fontFamily: 'var(--font-display)', 
-                fontWeight: 700, 
-                fontSize: '12px',
-                color: hardBlockers.length > 0 ? 'var(--destructive)' : 'var(--warning)' 
-              }}>
-                {hardBlockers.length > 0 ? `${hardBlockers.length} Blockers` : `${suppressors.length} Suppressors`}
-              </span>
-            </div>
-
-            {/* Blocker List */}
-            <div className="space-y-3">
-              {criticalBlockers.slice(0, 4).map((blocker, idx) => {
-                const isHardBlocker = blocker.severity === 'hard_blocker';
-                const severityColor = isHardBlocker ? 'var(--destructive)' : 'var(--warning)';
-                const severityBg = isHardBlocker ? 'var(--destructive-bg)' : 'var(--warning-bg)';
-                
-                return (
-                  <div 
-                    key={blocker.id}
-                    className="flex items-start gap-3"
-                  >
-                    <div 
-                      className="flex-shrink-0 w-5 h-5 flex items-center justify-center"
-                      style={{ 
-                        backgroundColor: severityBg,
-                        borderRadius: '2px',
-                        marginTop: '1px'
-                      }}
-                    >
-                      <span style={{ 
-                        fontFamily: 'var(--font-display)', 
-                        fontWeight: 700, 
-                        fontSize: '10px',
-                        color: severityColor 
-                      }}>
-                        {idx + 1}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span style={{ 
-                          fontFamily: 'var(--font-body)', 
-                          fontSize: '13px',
-                          color: 'var(--foreground)',
-                          lineHeight: 1.4
-                        }}>
-                          {blocker.title}
-                        </span>
-                        {isHardBlocker && (
-                          <span style={{
-                            fontFamily: 'var(--font-display)',
-                            fontSize: '8px',
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            color: severityColor,
-                            padding: '2px 4px',
-                            backgroundColor: severityBg,
-                            borderRadius: '2px',
-                          }}>
-                            Blocker
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ 
-                        fontFamily: 'var(--font-body)', 
-                        fontSize: '11px',
-                        color: 'var(--muted-foreground)',
-                        marginTop: '2px'
-                      }}>
-                        +{blocker.ficoImpact || 10} pts when resolved
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              {criticalBlockers.length === 0 && (
-                <div 
-                  className="flex items-center gap-2 p-3"
-                  style={{ backgroundColor: 'var(--success-bg)', borderRadius: '2px' }}
-                >
-                  <CheckCircle2 style={{ color: 'var(--success)', width: 16, height: 16 }} />
-                  <span style={{ 
-                    fontFamily: 'var(--font-body)', 
-                    fontSize: '13px',
-                    color: 'var(--success)' 
-                  }}>
-                    No critical blockers
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* View All Link */}
-            <Link
-              to="/app/denial-diagnosis"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                padding: '10px',
-                marginTop: '16px',
-                border: '1px solid var(--border)',
-                borderRadius: '2px',
-                fontFamily: 'var(--font-display)',
-                fontSize: '11px',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: 'var(--muted-foreground)',
-                textDecoration: 'none',
-              }}
-            >
-              View Full Diagnosis
-              <ChevronRight style={{ width: 14, height: 14 }} />
-            </Link>
-          </motion.div>
-
-          {/* ─────────────────────────────────────────────────────────────────── */}
-          {/* CARD 4: Top Actions + Distance to Bankable                          */}
-          {/* ─────────────────────────────────────────────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.25 }}
-            style={{
-              backgroundColor: 'var(--card)',
-              border: '1px solid var(--border)',
-              borderRadius: '2px',
-              padding: '28px',
-            }}
-          >
-            {/* Distance to Bankable */}
-            <div className="mb-5 pb-5" style={{ borderBottom: '1px solid var(--border)' }}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Target style={{ color: 'var(--primary)', width: 18, height: 18 }} />
-                  <span style={{ 
-                    fontFamily: 'var(--font-display)', 
-                    fontWeight: 700, 
-                    fontSize: '13px',
-                    letterSpacing: '0.02em',
-                    color: 'var(--foreground)' 
-                  }}>
-                    Distance to Bankable
-                  </span>
-                </div>
-                <span style={{ 
-                  fontFamily: 'var(--font-display)', 
-                  fontWeight: 700, 
-                  fontSize: '14px',
-                  color: distanceToBankable === 0 ? 'var(--success)' : 'var(--primary)' 
-                }}>
-                  {distanceToBankable === 0 ? 'Achieved!' : `${distanceToBankable} pts`}
-                </span>
-              </div>
-              
-              {/* Progress Bar */}
-              <div 
-                className="h-2 w-full overflow-hidden"
-                style={{ backgroundColor: 'var(--border)', borderRadius: '1px' }}
-              >
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min((bankableScore / 160) * 100, 100)}%` }}
-                  transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                  className="h-full"
-                  style={{ 
-                    backgroundColor: distanceToBankable === 0 ? 'var(--success)' : 'var(--primary)' 
-                  }}
-                />
-              </div>
-              <div className="flex justify-between mt-2">
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
-                  Bankable Score: {bankableScore}
-                </span>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
-                  Threshold: 160
-                </span>
-              </div>
-            </div>
-
-            {/* Priority Actions */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Zap style={{ color: 'var(--warning)', width: 16, height: 16 }} />
-                <span style={{ 
-                  fontFamily: 'var(--font-display)', 
-                  fontWeight: 700, 
-                  fontSize: '12px',
-                  letterSpacing: '0.02em',
-                  color: 'var(--foreground)' 
-                }}>
-                  Priority Actions
-                </span>
-              </div>
-              <div className="space-y-2">
-                {topActions.slice(0, 3).map((action) => (
-                  <div 
-                    key={action.id}
-                    className="flex items-center justify-between p-2.5 cursor-pointer transition-colors"
-                    style={{ 
-                      backgroundColor: 'var(--muted)',
-                      borderRadius: '2px'
-                    }}
-                    onClick={() => navigate('/app/lender-compliance')}
-                  >
-                    <span style={{ 
-                      fontFamily: 'var(--font-body)', 
-                      fontSize: '12px',
-                      color: 'var(--foreground)'
-                    }}>
-                      {action.title}
-                    </span>
-                    <span style={{ 
-                      fontFamily: 'var(--font-display)', 
-                      fontWeight: 700, 
-                      fontSize: '11px',
-                      color: 'var(--primary)'
-                    }}>
-                      +{action.ficoImpact || 10}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
+        {/* ── HEADER ─────────────────────────────────────────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
+          <div>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
+              Good {timeOfDay}, {firstName}
+            </p>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(24px, 3.5vw, 34px)', color: 'var(--foreground)', lineHeight: 1.1, letterSpacing: '-0.02em', margin: 0 }}>
+              Mission Control
+            </h1>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+            <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer' }}>
+              My Progress
+            </button>
+            <button onClick={() => navigate('/business-assessment/results')} style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: 'var(--primary)', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer' }}>
+              Full Report →
+            </button>
+          </div>
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* CARD 5: Capital Path Timeline (Full Width)                             */}
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="cursor-pointer"
-          onClick={() => navigate('/app/status-reports/estimated-funding')}
-          style={{
-            backgroundColor: 'var(--card)',
-            border: '1px solid var(--border)',
-            borderRadius: '2px',
-            padding: '28px',
-            transition: 'border-color 200ms ease',
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
-          onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <TrendingUp style={{ color: 'var(--primary)', width: 18, height: 18 }} />
-              <span style={{ 
-                fontFamily: 'var(--font-display)', 
-                fontWeight: 700, 
-                fontSize: '13px',
-                letterSpacing: '0.02em',
-                color: 'var(--foreground)' 
-              }}>
-                Your Capital Path
-              </span>
-            </div>
-            <span style={{ 
-              fontFamily: 'var(--font-body)', 
-              fontSize: '12px',
-              color: 'var(--muted-foreground)' 
-            }}>
-              Projected growth over 180 days
-            </span>
-          </div>
 
-          {/* Timeline */}
-          <div className="relative">
-            {/* Connection Line */}
-            <div 
-              className="absolute top-6 left-0 right-0 h-0.5"
-              style={{ backgroundColor: 'var(--border)' }}
-            />
-            
-            {/* Milestones */}
-            <div className="grid grid-cols-5 gap-4 relative">
-              {capitalPath.map((milestone, idx) => (
-                <div key={milestone.label} className="text-center">
-                  {/* Dot */}
-                  <div 
-                    className="w-3 h-3 mx-auto mb-3 relative z-10"
-                    style={{ 
-                      backgroundColor: milestone.color,
-                      borderRadius: '50%',
-                      boxShadow: idx === 0 ? `0 0 0 4px ${milestone.color}30` : 'none'
-                    }}
-                  />
-                  
-                  {/* Label */}
-                  <div style={{ 
-                    fontFamily: 'var(--font-display)', 
-                    fontWeight: 700, 
-                    fontSize: '11px',
-                    color: milestone.color,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    marginBottom: '4px'
-                  }}>
-                    {milestone.label}
-                  </div>
-                  
-                  {/* Amount */}
-                  <div style={{ 
-                    fontFamily: 'var(--font-display)', 
-                    fontWeight: 800, 
-                    fontSize: '20px',
-                    color: 'var(--foreground)',
-                    lineHeight: 1.2
-                  }}>
-                    {formatMoney(milestone.amount)}
-                  </div>
-                  
-                  {/* Score */}
-                  <div style={{ 
-                    fontFamily: 'var(--font-body)', 
-                    fontSize: '11px',
-                    color: 'var(--muted-foreground)',
-                    marginTop: '2px'
-                  }}>
-                    Score: {milestone.score}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* CTA */}
-          <div 
-            className="mt-6 pt-5 flex items-center justify-center gap-2"
-            style={{ borderTop: '1px solid var(--border)' }}
-          >
-            <span style={{ 
-              fontFamily: 'var(--font-body)', 
-              fontSize: '13px',
-              color: 'var(--primary)'
-            }}>
-              View full capital roadmap
-            </span>
-            <ArrowRight style={{ color: 'var(--primary)', width: 14, height: 14 }} />
-          </div>
-        </motion.div>
-
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* QUICK STATS ROW                                                        */}
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.35 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5"
-        >
-          {[
-            { label: 'Items Complete', value: `${progress.completed}/${progress.total}`, icon: CheckCircle2, color: 'var(--success)' },
-            { label: 'Overall Progress', value: `${progress.percentage}%`, icon: TrendingUp, color: 'var(--primary)' },
-            { label: 'Hard Blockers', value: hardBlockers.length.toString(), icon: AlertTriangle, color: hardBlockers.length > 0 ? 'var(--destructive)' : 'var(--success)' },
-            { label: 'Days to Bankable', value: distanceToBankable > 0 ? '~60' : '0', icon: Clock, color: 'var(--muted-foreground)' },
-          ].map((stat) => (
-            <div 
-              key={stat.label}
-              className="p-4"
-              style={{
-                backgroundColor: 'var(--card)',
-                border: '1px solid var(--border)',
-                borderRadius: '2px'
-              }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <stat.icon style={{ color: stat.color, width: 14, height: 14 }} />
-                <span style={{ 
-                  fontFamily: 'var(--font-body)', 
-                  fontSize: '11px',
-                  color: 'var(--muted-foreground)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em'
-                }}>
-                  {stat.label}
-                </span>
-              </div>
-              <div style={{ 
-                fontFamily: 'var(--font-display)', 
-                fontWeight: 800, 
-                fontSize: '24px',
-                color: 'var(--foreground)'
-              }}>
-                {stat.value}
-              </div>
-            </div>
-          ))}
-        </motion.div>
-
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* FEATURE 2 + 5: CAPITAL READINESS BY DIMENSION                          */}
-        {/* Status labels (Barrier/Weak/Growing/Strong/Bankable) + action messages  */}
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {hasAssessment && Object.keys(dimAvg).length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="mt-5"
-          >
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              marginBottom: '16px',
-            }}>
-              <div>
-                <h2 style={{
-                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '18px',
-                  color: 'var(--foreground)', letterSpacing: '-0.01em',
-                }}>
-                  Capital Readiness by Dimension
-                </h2>
-                <p style={{
-                  fontFamily: 'var(--font-body)', fontSize: '13px',
-                  color: 'var(--muted-foreground)', marginTop: '3px',
-                }}>
-                  Where you are and exactly what to do next in each area
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {DIM_CONFIG.map((dim) => {
-                const score = dimAvg[dim.key] ?? 0.5;
-                const status = getDimStatus(score);
-                const action = getDimAction(dim.key, score, DIM_CONFIG);
-                const { Icon } = dim;
-                const pct = Math.round(score * 100);
-
-                return (
-                  <div
-                    key={dim.key}
-                    style={{
-                      background: 'var(--card)',
-                      border: `1px solid ${status.border}`,
-                      borderRadius: '14px',
-                      padding: '18px',
-                    }}
-                  >
-                    {/* Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{
-                          width: '32px', height: '32px', borderRadius: '8px',
-                          background: status.bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                          <Icon size={15} style={{ color: status.color }} />
-                        </div>
-                        <span style={{
-                          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px',
-                          color: 'var(--foreground)',
-                        }}>
-                          {dim.label}
-                        </span>
-                      </div>
-                      <span style={{
-                        fontSize: '10px', fontWeight: 700, padding: '3px 9px',
-                        borderRadius: '10px', background: status.bg,
-                        color: status.color, border: `1px solid ${status.border}`,
-                      }}>
-                        {status.label}
-                      </span>
-                    </div>
-
-                    {/* Score bar */}
-                    <div style={{ height: '4px', background: 'var(--border)', borderRadius: '2px', marginBottom: '12px' }}>
-                      <div style={{
-                        height: '100%', width: `${pct}%`,
-                        background: status.color, borderRadius: '2px',
-                        transition: 'width 0.8s ease',
-                      }} />
-                    </div>
-
-                    {/* Action message */}
-                    <p style={{
-                      fontFamily: 'var(--font-body)', fontSize: '12px',
-                      color: 'var(--muted-foreground)', lineHeight: 1.5,
-                    }}>
-                      {action}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* FEATURE 6: SEQUENTIAL CAPITAL UNLOCK PATH                              */}
-        {/* FFP-inspired badge/step progression showing what each action unlocks   */}
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {hasAssessment && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.45 }}
-            className="mt-5 mb-5"
-            style={{
-              background: 'var(--card)',
-              border: '1px solid var(--border)',
-              borderRadius: '16px',
-              padding: '24px 28px',
-            }}
-          >
-            <h2 style={{
-              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px',
-              color: 'var(--foreground)', marginBottom: '4px',
-            }}>
-              Your Capital Unlock Path
-            </h2>
-            <p style={{
-              fontFamily: 'var(--font-body)', fontSize: '13px',
-              color: 'var(--muted-foreground)', marginBottom: '20px',
-            }}>
-              Complete each step to unlock the next tier of capital products
+        {/* ── NO ASSESSMENT STATE ─────────────────────────────────────────────── */}
+        {!hasAssessment && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} style={{ textAlign: 'center', padding: '60px 32px', background: 'var(--card)', border: '2px dashed var(--border)', borderRadius: '20px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎯</div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '24px', color: 'var(--foreground)', marginBottom: '10px' }}>Discover Your FundScore</h2>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '15px', color: 'var(--muted-foreground)', maxWidth: '420px', margin: '0 auto 24px', lineHeight: 1.6 }}>
+              33 questions · 10 minutes · See exactly where you stand with lenders and what capital you can access today.
             </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-              {[
-                {
-                  label: 'FundScore Assessment',
-                  desc: 'Know your baseline across all 6 capital readiness dimensions',
-                  unlocks: 'Personalized capital map + product eligibility',
-                  done: hasAssessment,
-                  cta: '/business-assessment',
-                },
-                {
-                  label: 'Dedicated Business Bank Account',
-                  desc: 'Separate business and personal finances — required by every lender',
-                  unlocks: 'Working Capital Loans, LOC, Merchant Advance',
-                  done: (dimAvg['F'] ?? 0) >= 0.4,
-                  cta: '/app/lender-compliance/business-banking',
-                },
-                {
-                  label: 'Personal Credit Score 680+',
-                  desc: 'FICO above 680 across all 3 bureaus',
-                  unlocks: 'Business Term Loans, SBA Express, Credit Union Loans',
-                  done: (dimAvg['P'] ?? 0) >= 0.6,
-                  cta: '/app/building-credit',
-                },
-                {
-                  label: '2 Years of Filed Tax Returns',
-                  desc: 'Business tax returns on file with the IRS',
-                  unlocks: 'SBA 7(a), Bank Term Loans, Full Product Suite',
-                  done: (dimAvg['N'] ?? 0) >= 0.6,
-                  cta: '/app/document-collection',
-                },
-                {
-                  label: 'Clear All Hard Blockers',
-                  desc: 'No active tax liens, judgments, or recent bankruptcies',
-                  unlocks: 'Elite borrower status — best rates and largest loan amounts',
-                  done: hardBlockers.length === 0,
-                  cta: '/app/lender-compliance',
-                },
-              ].map((step, i, arr) => {
-                const isLast = i === arr.length - 1;
-                return (
-                  <div key={i} style={{ display: 'flex', gap: '16px' }}>
-                    {/* Timeline column */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '32px', flexShrink: 0 }}>
-                      <div style={{
-                        width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
-                        background: step.done ? 'var(--primary)' : 'var(--card)',
-                        border: step.done ? '2px solid var(--primary)' : '2px solid var(--border)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        zIndex: 1,
-                      }}>
-                        {step.done
-                          ? <CheckCircle2 size={14} style={{ color: 'white' }} />
-                          : <Lock size={12} style={{ color: 'var(--muted-foreground)' }} />
-                        }
-                      </div>
-                      {!isLast && (
-                        <div style={{
-                          width: '2px', flex: 1, minHeight: '32px',
-                          background: step.done ? 'var(--primary)' : 'var(--border)',
-                          margin: '4px 0',
-                        }} />
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div
-                      style={{
-                        flex: 1, paddingBottom: isLast ? '0' : '20px', cursor: step.done ? 'default' : 'pointer',
-                      }}
-                      onClick={() => !step.done && navigate(step.cta)}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-                        <span style={{
-                          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px',
-                          color: step.done ? 'var(--muted-foreground)' : 'var(--foreground)',
-                          textDecoration: step.done ? 'line-through' : 'none',
-                        }}>
-                          {step.label}
-                        </span>
-                        {step.done && (
-                          <span style={{
-                            fontSize: '10px', fontWeight: 700, padding: '2px 7px',
-                            borderRadius: '8px', background: 'rgba(16,185,129,0.1)', color: '#10b981',
-                          }}>
-                            Done
-                          </span>
-                        )}
-                      </div>
-                      <p style={{
-                        fontFamily: 'var(--font-body)', fontSize: '12px',
-                        color: 'var(--muted-foreground)', lineHeight: 1.4, marginBottom: '4px',
-                      }}>
-                        {step.desc}
-                      </p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Zap size={11} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                        <span style={{
-                          fontFamily: 'var(--font-body)', fontSize: '11px',
-                          fontWeight: 600, color: 'var(--primary)',
-                        }}>
-                          Unlocks: {step.unlocks}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <button onClick={() => navigate('/business-assessment')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', padding: '14px 32px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '12px', color: 'white', cursor: 'pointer', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}>
+              Start Free Assessment →
+            </button>
           </motion.div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* POTENTIAL SCORE CARD — How high your score can go + what to fix       */}
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {hasAssessment && (() => {
-          const DIM_WEIGHTS: Record<string, number> = { P: 0.20, B: 0.10, F: 0.25, C: 0.20, S: 0.15, N: 0.10 };
-          const DIM_NAMES: Record<string, string> = { P: 'Personal Credit', B: 'Business Profile', F: 'Financial Health', C: 'Compliance', S: 'Stability', N: 'File Strength' };
-          const weakDims = Object.entries(dimAvg).filter(([, v]) => v < 0.8).sort(([, a], [, b]) => a - b).slice(0, 3);
-          const potentialDimAvg = { ...dimAvg };
-          weakDims.forEach(([k]) => { potentialDimAvg[k] = 0.8; });
-          const potentialBase = Object.entries(potentialDimAvg).reduce((sum, [k, v]) => sum + v * (DIM_WEIGHTS[k] || 0), 0);
-          const potentialScore = Math.min(1000, Math.round(potentialBase * 1000 + 80));
-          const scoreGap = potentialScore - fundScore;
-          if (scoreGap <= 0) return null;
-          return (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              style={{ marginTop: '24px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}
-            >
-              {/* Header bar */}
-              <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+        {/* ── ASSESSED LAYOUT ────────────────────────────────────────────────── */}
+        {hasAssessment && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+
+            {/* ROW 1: GAUGE HERO + NEXT RED X */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(230px, 270px) 1fr', gap: '20px', marginBottom: '20px', alignItems: 'stretch' }}>
+
+              {/* BANKABLE GAUGE */}
+              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px 16px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <svg viewBox="0 0 220 190" style={{ width: '100%', maxWidth: '200px' }}>
+                  <path d={bgArcPath} stroke="var(--border)" strokeWidth="14" fill="none" strokeLinecap="round" />
+                  {[300,500,700,800].map(val => {
+                    const deg = 225 + 270*(val/1000);
+                    const toRad2 = (d: number) => ((d-90)*Math.PI/180);
+                    const ix = CX + (R+10)*Math.cos(toRad2(deg)), iy = CY + (R+10)*Math.sin(toRad2(deg));
+                    const ox = CX + (R-2)*Math.cos(toRad2(deg)), oy = CY + (R-2)*Math.sin(toRad2(deg));
+                    return <line key={val} x1={ix.toFixed(1)} y1={iy.toFixed(1)} x2={ox.toFixed(1)} y2={oy.toFixed(1)} stroke="var(--muted-foreground)" strokeWidth="1.5" opacity="0.4" />;
+                  })}
+                  <motion.path
+                    d={bgArcPath}
+                    stroke={gaugeColor}
+                    strokeWidth="14"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeDasharray={arcLen}
+                    initial={{ strokeDashoffset: arcLen }}
+                    animate={{ strokeDashoffset: fillOffset }}
+                    transition={{ duration: 1.4, ease: "easeOut", delay: 0.2 }}
+                  />
+                  <text x="110" y="100" textAnchor="middle" fill="var(--foreground)" fontSize="40" fontWeight="800" fontFamily="var(--font-display)">{fundScore}</text>
+                  <text x="110" y="118" textAnchor="middle" fill="var(--muted-foreground)" fontSize="11" fontFamily="var(--font-body)">out of 1,000</text>
+                </svg>
+                <div style={{ display: 'inline-block', padding: '3px 12px', borderRadius: '20px', background: gaugeColor + '20', border: '1px solid ' + gaugeColor + '50', marginBottom: '8px' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: gaugeColor }}>{scoreBand.name}</span>
+                </div>
+                {nextMilestone && (
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', textAlign: 'center', lineHeight: 1.4, margin: 0 }}>
+                    <span style={{ fontWeight: 700, color: gaugeColor }}>+{nextMilestone.pts} pts</span> to {nextMilestone.label}
+                  </p>
+                )}
+                {nextMilestone && (() => {
+                  const prevMs = fundScore < 300 ? 0 : fundScore < 500 ? 300 : fundScore < 700 ? 500 : fundScore < 800 ? 700 : 800;
+                  const range = nextMilestone.pts + (fundScore - prevMs);
+                  const pct = range > 0 ? Math.round(((fundScore - prevMs) / range) * 100) : 0;
+                  return (
+                    <div style={{ width: '100%', marginTop: '10px' }}>
+                      <div style={{ height: '5px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
+                        <motion.div initial={{ width: 0 }} animate={{ width: pct + '%' }} transition={{ duration: 1, ease: 'easeOut', delay: 0.4 }} style={{ height: '100%', background: gaugeColor, borderRadius: '99px' }} />
+                      </div>
+                      <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', textAlign: 'center', marginTop: '4px' }}>{pct}% to {nextMilestone.label}</p>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* NEXT RED X */}
+              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {lockedCapital && (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '8px', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', alignSelf: 'flex-start' }}>
+                    <Lock size={13} style={{ color: '#ef4444', flexShrink: 0 }} />
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: '#ef4444' }}>{lockedCapital} in capital currently locked</span>
+                  </div>
+                )}
                 <div>
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px', color: 'var(--foreground)', margin: 0 }}>
-                    Your Score Ceiling
-                  </h2>
-                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', margin: '4px 0 0' }}>
-                    Fix your 3 weakest dimensions to reach {potentialScore}
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>
+                    ⚡ Your Next Action
+                  </p>
+                  {topBlocker ? (
+                    <>
+                      <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--foreground)', marginBottom: '8px', lineHeight: 1.2 }}>{topBlocker.title}</h2>
+                      <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', lineHeight: 1.6, marginBottom: '16px' }}>
+                        {topBlocker.description || 'Fixing this unlocks the next tier of capital products for your business.'}
+                      </p>
+                      {topBlocker.ficoImpact && (
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                          <div style={{ padding: '5px 12px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                            <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: '#10b981' }}>+{topBlocker.ficoImpact} score pts</span>
+                          </div>
+                          <div style={{ padding: '5px 12px', borderRadius: '8px', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                            <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: '#3b82f6' }}>~15 min to complete</span>
+                          </div>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <button onClick={() => navigate('/app/lender-compliance')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', padding: '12px 24px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 16px rgba(16,185,129,0.25)' }}>
+                          Fix This Now <ArrowRight size={15} />
+                        </button>
+                        <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}>
+                          See all {criticalBlockers.length} blockers →
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <CheckCircle2 size={28} style={{ color: '#10b981' }} />
+                        <div>
+                          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px', color: 'var(--foreground)' }}>No critical blockers!</div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)' }}>You are ready to apply for capital. Review qualifying products below.</div>
+                        </div>
+                      </div>
+                      <button onClick={() => navigate('/app/access-funding')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', padding: '12px 24px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start' }}>
+                        View Funding Options <ArrowRight size={15} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: 0 }}>
+                    {Object.values(dimAvg as Record<string,number>).filter((v) => v >= 0.6).length} of 6 dimensions Green · Most businesses reach Bankable in 45 days
                   </p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--foreground)' }}>{fundScore}</div>
-                  </div>
-                  <div style={{ fontSize: '18px', color: 'var(--muted-foreground)' }}>→</div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Potential</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: '#10b981' }}>{potentialScore}</div>
-                  </div>
-                  <div style={{ padding: '5px 12px', borderRadius: '20px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: '#10b981' }}>+{scoreGap} pts</span>
-                  </div>
-                </div>
               </div>
+            </div>
 
-              {/* Progress visual */}
-              <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', minWidth: '28px' }}>{fundScore}</span>
-                  <div style={{ flex: 1, height: '10px', borderRadius: '99px', background: 'var(--border)', overflow: 'hidden', position: 'relative' }}>
-                    <div style={{ position: 'absolute', inset: 0, borderRadius: '99px', background: 'var(--border)' }} />
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(fundScore / 1000) * 100}%` }}
-                      transition={{ duration: 0.8, ease: 'easeOut' }}
-                      style={{ position: 'absolute', height: '100%', borderRadius: '99px', background: 'linear-gradient(90deg, #10b981, #3b82f6)' }}
-                    />
-                    {/* Potential marker */}
-                    <div style={{ position: 'absolute', top: '-2px', bottom: '-2px', width: '3px', borderRadius: '2px', background: '#10b981', left: `${(potentialScore / 1000) * 100}%`, boxShadow: '0 0 6px #10b981' }} />
-                  </div>
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#10b981', minWidth: '28px', textAlign: 'right' }}>{potentialScore}</span>
+            {/* ROW 2: CAPITAL ACCESS */}
+            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px' }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                <div>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--foreground)', margin: 0 }}>
+                    {preQualPrograms.length > 0 ? '💰 Capital You Qualify For Now' : '🔑 Capital Products'}
+                  </h3>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: '3px 0 0' }}>
+                    {preQualPrograms.length > 0 ? preQualPrograms.length + ' products you pre-qualify for' : 'Improve your score to unlock funding products'}
+                  </p>
                 </div>
+                <button onClick={() => navigate('/app/access-funding')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: 'var(--primary)', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '7px 14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  View All {preQualPrograms.length > 0 ? preQualPrograms.length : ''} →
+                </button>
               </div>
-
-              {/* Fix list */}
-              <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '2px' }}>
-                  Top moves to close the gap:
-                </div>
-                {weakDims.map(([key, val], i) => {
-                  const gain = Math.round((0.8 - val) * (DIM_WEIGHTS[key] || 0) * 1000);
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                {FEATURED_PROGRAMS.map((prog, i) => {
+                  const isPreQual = preQualPrograms.some((p: { path: string }) => p.path === prog.path);
                   return (
-                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'var(--background)', border: '1px solid var(--border)', borderRadius: '10px' }}>
-                      <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <span style={{ fontSize: '11px', fontWeight: 800, color: 'white' }}>{i + 1}</span>
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)' }}>
-                          Improve {DIM_NAMES[key] || key}
+                    <div key={prog.path} onClick={() => navigate(prog.path)} style={{ padding: '16px 20px', borderRight: i < 2 ? '1px solid var(--border)' : 'none', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--background)')} onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                        <span style={{ fontSize: '20px', flexShrink: 0 }}>{prog.icon}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)' }}>{prog.label}</span>
+                            {isPreQual && <CheckCircle2 size={13} style={{ color: '#10b981', flexShrink: 0 }} />}
+                          </div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>{prog.range}</div>
+                          <div style={{ marginTop: '6px', display: 'inline-block', padding: '2px 8px', borderRadius: '4px', background: isPreQual ? 'rgba(16,185,129,0.1)' : 'rgba(100,116,139,0.1)', border: '1px solid ' + (isPreQual ? 'rgba(16,185,129,0.25)' : 'var(--border)') }}>
+                            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: isPreQual ? '#10b981' : 'var(--muted-foreground)' }}>{isPreQual ? 'Pre-Qualified ✓' : '+' + Math.max(0, 500 - fundScore) + ' pts needed'}</span>
+                          </div>
                         </div>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
-                          Currently {Math.round(val * 100)}% — reach 80% to unlock this gain
-                        </div>
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: '#10b981', whiteSpace: 'nowrap' }}>
-                        +{gain} pts
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </motion.div>
-          );
-        })()}
+            </div>
 
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* ACHIEVEMENTS — Badge grid                                              */}
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.15 }}
-          style={{ marginTop: '24px' }}
-        >
-          <BadgeGrid newBadgeIds={newBadgeIds} />
-        </motion.div>
+            {/* ROW 3: READINESS + TOOLS */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--foreground)', margin: 0 }}>Readiness Breakdown</h3>
+                  <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>Full detail →</button>
+                </div>
+                <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {DIM_ORDER.map((key, idx) => {
+                    const val = (dimAvg as Record<string, number>)[key] ?? 0;
+                    const st = getDimStatus(val);
+                    const dim = DIM_CONFIG.find(d => d.key === key);
+                    const Icon = dim ? dim.Icon : Zap;
+                    return (
+                      <div key={key}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <Icon size={13} style={{ color: st.color, flexShrink: 0 }} />
+                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--foreground)', flex: 1 }}>{DIM_LABELS[key]}</span>
+                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: st.color }}>{st.label}</span>
+                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', minWidth: '32px', textAlign: 'right' }}>{Math.round(val * 100)}%</span>
+                        </div>
+                        <div style={{ height: '5px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
+                          <motion.div initial={{ width: 0 }} animate={{ width: (val * 100) + '%' }} transition={{ duration: 0.8, ease: 'easeOut', delay: idx * 0.08 }} style={{ height: '100%', background: st.color, borderRadius: '99px' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {([
+                  { Icon: BarChart3, label: 'Status Reports', desc: 'Bankable status, FICO, estimated funding', path: '/app/status-reports', color: '#3b82f6' },
+                  { Icon: FileText, label: 'Document Portal', desc: 'Upload and organize your financial documents', path: '/app/document-collection', color: '#8b5cf6' },
+                  { Icon: TrendingUp, label: 'Integrate Reports', desc: 'Connect bank data and credit reports', path: '/app/integrate-reports', color: '#10b981' },
+                ] as const).map(tool => (
+                  <div key={tool.path} onClick={() => navigate(tool.path)} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '14px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px', flex: 1, transition: 'border-color 0.15s' }} onMouseEnter={e => ((e.currentTarget as HTMLElement).style.borderColor = tool.color + '60')} onMouseLeave={e => ((e.currentTarget as HTMLElement).style.borderColor = 'var(--border)')}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: tool.color + '12', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <tool.Icon size={18} style={{ color: tool.color }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)' }}>{tool.label}</div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '2px' }}>{tool.desc}</div>
+                    </div>
+                    <ArrowRight size={14} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                  </div>
+                ))}
+              </div>
+            </div>
 
+            {/* ROW 4: ACHIEVEMENTS */}
+            <BadgeGrid newBadgeIds={newBadgeIds} />
+
+          </motion.div>
+        )}
       </div>
     </div>
   );
