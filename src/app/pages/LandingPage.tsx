@@ -23,7 +23,7 @@ function ScorePreviewCard() {
         borderRadius: '8px',
         padding: '32px',
         maxWidth: '360px',
-        boxShadow: '0 0 60px rgba(138, 184, 32, 0.15)',
+        boxShadow: '0 0 60px rgba(16, 185, 129, 0.15)',
         position: 'relative',
       }}
     >
@@ -238,7 +238,7 @@ export function LandingPage() {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        background: 'rgba(13, 15, 11, 0.9)',
+        background: 'rgba(255, 255, 255, 0.92)',
         backdropFilter: 'blur(8px)',
         borderBottom: '1px solid var(--border)',
       }}>
@@ -268,16 +268,17 @@ export function LandingPage() {
           <Link
             to="/business-assessment"
             style={{
-              padding: '10px 20px',
-              background: 'var(--primary)',
-              color: 'var(--background)',
+              padding: '10px 24px',
+              background: 'linear-gradient(135deg, #9333ea, #3b82f6)',
+              color: '#ffffff',
               fontFamily: 'var(--font-display)',
               fontSize: '12px',
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
               textDecoration: 'none',
-              borderRadius: '0',
+              borderRadius: '1rem',
+              boxShadow: '0 4px 15px rgba(147, 51, 234, 0.3)',
             }}
           >
             See Your FundScore
@@ -369,16 +370,17 @@ export function LandingPage() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '10px',
-                  padding: '16px 32px',
-                  background: 'var(--primary)',
-                  color: 'var(--background)',
+                  padding: '16px 36px',
+                  background: 'linear-gradient(135deg, #9333ea, #3b82f6)',
+                  color: '#ffffff',
                   fontFamily: 'var(--font-display)',
                   fontSize: '14px',
                   fontWeight: 700,
                   textTransform: 'uppercase',
                   letterSpacing: '0.06em',
                   textDecoration: 'none',
-                  borderRadius: '0',
+                  borderRadius: '1rem',
+                  boxShadow: '0 8px 25px rgba(147, 51, 234, 0.35)',
                 }}
               >
                 See What Lenders See — Free
@@ -684,16 +686,17 @@ export function LandingPage() {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '12px',
-            padding: '18px 48px',
-            background: 'var(--primary)',
-            color: 'var(--background)',
+            padding: '18px 52px',
+            background: 'linear-gradient(135deg, #9333ea, #3b82f6)',
+            color: '#ffffff',
             fontFamily: 'var(--font-display)',
             fontSize: '16px',
             fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.06em',
             textDecoration: 'none',
-            borderRadius: '0',
+            borderRadius: '1rem',
+            boxShadow: '0 10px 30px rgba(147, 51, 234, 0.35)',
           }}
         >
           See Your FundScore Free
