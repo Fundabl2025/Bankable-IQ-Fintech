@@ -4,18 +4,23 @@
 // ════════════════════════════════════════════════════════════════════════════════
 
 import { motion } from 'motion/react';
-import { 
-  BarChart3, 
-  DollarSign, 
+import {
+  BarChart3,
+  DollarSign,
   TrendingUp,
-  AlertCircle, 
+  AlertCircle,
   AlertTriangle,
-  CheckCircle2, 
-  Zap, 
+  CheckCircle2,
+  Zap,
   ArrowRight,
   Clock,
   Target,
-  ChevronRight
+  ChevronRight,
+  Building2,
+  CreditCard,
+  Shield,
+  FileText,
+  Lock,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router';
 import { useState, useEffect } from 'react';
@@ -139,6 +144,84 @@ function formatMoney(amount: number): string {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
+// DIMENSION STATUS SYSTEM — FFP-inspired Priority/Strong/Growing labels
+// ════════════════════════════════════════════════════════════════════════════════
+
+function getDimStatus(score: number) {
+  if (score < 0.2) return { label: 'Barrier', color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.2)' };
+  if (score < 0.4) return { label: 'Weak', color: '#f97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.2)' };
+  if (score < 0.6) return { label: 'Growing', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.2)' };
+  if (score < 0.8) return { label: 'Strong', color: '#22c55e', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.2)' };
+  return { label: 'Bankable', color: '#10b981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)' };
+}
+
+const DIM_CONFIG = [
+  {
+    key: 'P', label: 'Personal Credit', Icon: CreditCard,
+    actions: {
+      barrier: 'Check all 3 bureaus for errors — dispute inaccurate items immediately',
+      weak: 'Pay down high-balance cards to get utilization below 30%',
+      growing: 'Avoid new hard inquiries for 6 months to let your score recover',
+      strong: 'Keep utilization below 10% and maintain zero late payments',
+    },
+  },
+  {
+    key: 'B', label: 'Business Profile', Icon: Building2,
+    actions: {
+      barrier: 'Register as LLC or Corp and get an EIN — sole proprietors face heavy lender scrutiny',
+      weak: 'Build a professional website and dedicated business email address',
+      growing: 'Establish 411 listing and Google Business Profile for NAP verification',
+      strong: 'Ensure all filings are current and business address is consistent everywhere',
+    },
+  },
+  {
+    key: 'F', label: 'Financial Health', Icon: TrendingUp,
+    actions: {
+      barrier: 'Open a dedicated business bank account — required for every capital product',
+      weak: 'Eliminate NSF events by keeping a $5K minimum buffer at all times',
+      growing: 'Grow monthly deposits consistently to $15K+ for 3 consecutive months',
+      strong: 'Maintain 3+ months of average daily balance above $25K',
+    },
+  },
+  {
+    key: 'C', label: 'Compliance', Icon: Shield,
+    actions: {
+      barrier: 'Resolve your tax lien or establish an IRS payment plan — this blocks all bank products',
+      weak: 'File any overdue business tax returns before applying for capital',
+      growing: 'Obtain all required industry licenses and permits',
+      strong: 'Verify no active judgments, liens, or collections appear on business record',
+    },
+  },
+  {
+    key: 'S', label: 'Stability', Icon: Clock,
+    actions: {
+      barrier: 'Business is under 6 months — focus on documentation for 90 days before applying',
+      weak: 'Show 2+ consecutive months of consistent revenue to signal stability',
+      growing: 'Reach 12 months in business to unlock traditional lender products',
+      strong: 'Document 2+ years of revenue growth to qualify for SBA loans',
+    },
+  },
+  {
+    key: 'N', label: 'Documentation', Icon: FileText,
+    actions: {
+      barrier: 'File your business tax returns — missing returns disqualify you from 90% of products',
+      weak: 'Prepare a current P&L statement dated within the last 60 days',
+      growing: 'Compile 12 months of business bank statements into one package',
+      strong: 'Complete document folder: returns, P&L, bank statements, EIN, licenses — ready to send',
+    },
+  },
+];
+
+function getDimAction(key: string, score: number, dimConfig: typeof DIM_CONFIG): string {
+  const dim = dimConfig.find(d => d.key === key);
+  if (!dim) return '';
+  if (score < 0.2) return dim.actions.barrier;
+  if (score < 0.4) return dim.actions.weak;
+  if (score < 0.6) return dim.actions.growing;
+  return dim.actions.strong;
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
 // MAIN DASHBOARD COMPONENT
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -149,6 +232,7 @@ export function Dashboard() {
   const [bankableScore, setBankableScore] = useState(0);
   const [scoreBand, setScoreBand] = useState({ name: 'Not Assessed', color: '#64748b' });
   const [hasAssessment, setHasAssessment] = useState(false);
+  const [dimAvg, setDimAvg] = useState<Record<string, number>>({});
   const [refreshKey, setRefreshKey] = useState(0); // Force re-render when data changes
   const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem('fundready_welcomed'));
 
@@ -183,6 +267,7 @@ export function Dashboard() {
           const band = getBand(scoreResult.score);
           
           setFundScore(scoreResult.score);
+          setDimAvg(scoreResult.dimAvg || {});
           setBankableScore(extendedResults.sbssScore || Math.round(scoreResult.score * 0.18));
           setScoreBand(band);
           setHasAssessment(true);
@@ -319,6 +404,66 @@ export function Dashboard() {
             Your capital readiness at a glance. Complete blockers to unlock more funding.
           </p>
         </motion.header>
+
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {/* FEATURE 1: NEXT ACTION HERO BANNER                                     */}
+        {/* Single most important action — FFP "Step 2: Required before unlock"    */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {hasAssessment && criticalBlockers.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="mb-8 cursor-pointer"
+            onClick={() => navigate('/app/lender-compliance')}
+            style={{
+              background: 'linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(59,130,246,0.06) 100%)',
+              border: '2px solid var(--primary)',
+              borderRadius: '16px',
+              padding: '20px 24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+            }}
+          >
+            <div style={{
+              width: '48px', height: '48px', borderRadius: '50%',
+              background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <span style={{ fontSize: '22px' }}>🎯</span>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '0.1em', color: 'var(--primary)', marginBottom: '4px',
+              }}>
+                Your Next Move — Required Before More Capital Opens
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px',
+                color: 'var(--foreground)', lineHeight: 1.3,
+              }}>
+                {criticalBlockers[0]?.title}
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-body)', fontSize: '13px',
+                color: 'var(--muted-foreground)', marginTop: '3px',
+              }}>
+                {hardBlockers.length > 0
+                  ? `This is a hard blocker — lenders auto-decline while this is unresolved`
+                  : `Fixing this unlocks better rates and higher loan amounts`}
+              </div>
+            </div>
+            <div style={{
+              background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+              color: 'white', padding: '9px 20px', borderRadius: '10px',
+              fontSize: '13px', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0,
+            }}>
+              Fix Now →
+            </div>
+          </motion.div>
+        )}
 
         {/* ══════════════════════════════════════════════════════════════════════ */}
         {/* ASSESSMENT CTA (if no assessment taken)                                */}
@@ -1204,6 +1349,244 @@ export function Dashboard() {
             </div>
           ))}
         </motion.div>
+
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {/* FEATURE 2 + 5: CAPITAL READINESS BY DIMENSION                          */}
+        {/* Status labels (Barrier/Weak/Growing/Strong/Bankable) + action messages  */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {hasAssessment && Object.keys(dimAvg).length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="mt-5"
+          >
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginBottom: '16px',
+            }}>
+              <div>
+                <h2 style={{
+                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '18px',
+                  color: 'var(--foreground)', letterSpacing: '-0.01em',
+                }}>
+                  Capital Readiness by Dimension
+                </h2>
+                <p style={{
+                  fontFamily: 'var(--font-body)', fontSize: '13px',
+                  color: 'var(--muted-foreground)', marginTop: '3px',
+                }}>
+                  Where you are and exactly what to do next in each area
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {DIM_CONFIG.map((dim) => {
+                const score = dimAvg[dim.key] ?? 0.5;
+                const status = getDimStatus(score);
+                const action = getDimAction(dim.key, score, DIM_CONFIG);
+                const { Icon } = dim;
+                const pct = Math.round(score * 100);
+
+                return (
+                  <div
+                    key={dim.key}
+                    style={{
+                      background: 'var(--card)',
+                      border: `1px solid ${status.border}`,
+                      borderRadius: '14px',
+                      padding: '18px',
+                    }}
+                  >
+                    {/* Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '8px',
+                          background: status.bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <Icon size={15} style={{ color: status.color }} />
+                        </div>
+                        <span style={{
+                          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px',
+                          color: 'var(--foreground)',
+                        }}>
+                          {dim.label}
+                        </span>
+                      </div>
+                      <span style={{
+                        fontSize: '10px', fontWeight: 700, padding: '3px 9px',
+                        borderRadius: '10px', background: status.bg,
+                        color: status.color, border: `1px solid ${status.border}`,
+                      }}>
+                        {status.label}
+                      </span>
+                    </div>
+
+                    {/* Score bar */}
+                    <div style={{ height: '4px', background: 'var(--border)', borderRadius: '2px', marginBottom: '12px' }}>
+                      <div style={{
+                        height: '100%', width: `${pct}%`,
+                        background: status.color, borderRadius: '2px',
+                        transition: 'width 0.8s ease',
+                      }} />
+                    </div>
+
+                    {/* Action message */}
+                    <p style={{
+                      fontFamily: 'var(--font-body)', fontSize: '12px',
+                      color: 'var(--muted-foreground)', lineHeight: 1.5,
+                    }}>
+                      {action}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {/* FEATURE 6: SEQUENTIAL CAPITAL UNLOCK PATH                              */}
+        {/* FFP-inspired badge/step progression showing what each action unlocks   */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {hasAssessment && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.45 }}
+            className="mt-5 mb-5"
+            style={{
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: '16px',
+              padding: '24px 28px',
+            }}
+          >
+            <h2 style={{
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px',
+              color: 'var(--foreground)', marginBottom: '4px',
+            }}>
+              Your Capital Unlock Path
+            </h2>
+            <p style={{
+              fontFamily: 'var(--font-body)', fontSize: '13px',
+              color: 'var(--muted-foreground)', marginBottom: '20px',
+            }}>
+              Complete each step to unlock the next tier of capital products
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              {[
+                {
+                  label: 'FundScore Assessment',
+                  desc: 'Know your baseline across all 6 capital readiness dimensions',
+                  unlocks: 'Personalized capital map + product eligibility',
+                  done: hasAssessment,
+                  cta: '/business-assessment',
+                },
+                {
+                  label: 'Dedicated Business Bank Account',
+                  desc: 'Separate business and personal finances — required by every lender',
+                  unlocks: 'Working Capital Loans, LOC, Merchant Advance',
+                  done: (dimAvg['F'] ?? 0) >= 0.4,
+                  cta: '/app/lender-compliance/business-banking',
+                },
+                {
+                  label: 'Personal Credit Score 680+',
+                  desc: 'FICO above 680 across all 3 bureaus',
+                  unlocks: 'Business Term Loans, SBA Express, Credit Union Loans',
+                  done: (dimAvg['P'] ?? 0) >= 0.6,
+                  cta: '/app/building-credit',
+                },
+                {
+                  label: '2 Years of Filed Tax Returns',
+                  desc: 'Business tax returns on file with the IRS',
+                  unlocks: 'SBA 7(a), Bank Term Loans, Full Product Suite',
+                  done: (dimAvg['N'] ?? 0) >= 0.6,
+                  cta: '/app/document-collection',
+                },
+                {
+                  label: 'Clear All Hard Blockers',
+                  desc: 'No active tax liens, judgments, or recent bankruptcies',
+                  unlocks: 'Elite borrower status — best rates and largest loan amounts',
+                  done: hardBlockers.length === 0,
+                  cta: '/app/lender-compliance',
+                },
+              ].map((step, i, arr) => {
+                const isLast = i === arr.length - 1;
+                return (
+                  <div key={i} style={{ display: 'flex', gap: '16px' }}>
+                    {/* Timeline column */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '32px', flexShrink: 0 }}>
+                      <div style={{
+                        width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
+                        background: step.done ? 'var(--primary)' : 'var(--card)',
+                        border: step.done ? '2px solid var(--primary)' : '2px solid var(--border)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 1,
+                      }}>
+                        {step.done
+                          ? <CheckCircle2 size={14} style={{ color: 'white' }} />
+                          : <Lock size={12} style={{ color: 'var(--muted-foreground)' }} />
+                        }
+                      </div>
+                      {!isLast && (
+                        <div style={{
+                          width: '2px', flex: 1, minHeight: '32px',
+                          background: step.done ? 'var(--primary)' : 'var(--border)',
+                          margin: '4px 0',
+                        }} />
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div
+                      style={{
+                        flex: 1, paddingBottom: isLast ? '0' : '20px', cursor: step.done ? 'default' : 'pointer',
+                      }}
+                      onClick={() => !step.done && navigate(step.cta)}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                        <span style={{
+                          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px',
+                          color: step.done ? 'var(--muted-foreground)' : 'var(--foreground)',
+                          textDecoration: step.done ? 'line-through' : 'none',
+                        }}>
+                          {step.label}
+                        </span>
+                        {step.done && (
+                          <span style={{
+                            fontSize: '10px', fontWeight: 700, padding: '2px 7px',
+                            borderRadius: '8px', background: 'rgba(16,185,129,0.1)', color: '#10b981',
+                          }}>
+                            Done
+                          </span>
+                        )}
+                      </div>
+                      <p style={{
+                        fontFamily: 'var(--font-body)', fontSize: '12px',
+                        color: 'var(--muted-foreground)', lineHeight: 1.4, marginBottom: '4px',
+                      }}>
+                        {step.desc}
+                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Zap size={11} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                        <span style={{
+                          fontFamily: 'var(--font-body)', fontSize: '11px',
+                          fontWeight: 600, color: 'var(--primary)',
+                        }}>
+                          Unlocks: {step.unlocks}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
 
       </div>
     </div>

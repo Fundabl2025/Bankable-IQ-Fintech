@@ -491,6 +491,41 @@ export function Results() {
         </motion.div>
 
         {/* ═══════════════════════════════════════════════════════════════════════ */}
+        {/* FEATURE 3: HOW THIS WORKS — FFP transparency box                       */}
+        {/* ═══════════════════════════════════════════════════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.1 }}
+          style={{
+            background: 'linear-gradient(135deg, rgba(59,130,246,0.05) 0%, rgba(16,185,129,0.05) 100%)',
+            borderRadius: '14px',
+            border: '1px solid rgba(59,130,246,0.2)',
+            padding: '20px 24px',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '14px',
+          }}
+        >
+          <span style={{ fontSize: '22px', flexShrink: 0, marginTop: '1px' }}>💡</span>
+          <div>
+            <div style={{
+              fontFamily: 'var(--font-display)', fontWeight: 700,
+              fontSize: '14px', color: 'var(--text-primary)', marginBottom: '6px',
+            }}>
+              How This Works
+            </div>
+            <p style={{
+              fontFamily: 'var(--font-body)', fontSize: '13px',
+              color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0,
+            }}>
+              This assessment is based on your self-reported answers. As you connect bank statements and upload documents, your FundScore updates to verified data — most businesses discover they qualify for more than they expected once the right gaps are closed. <strong style={{ color: 'var(--text-primary)' }}>Your score is a starting point, not a verdict.</strong>
+            </p>
+          </div>
+        </motion.div>
+
+        {/* ═══════════════════════════════════════════════════════════════════════ */}
         {/* SECTION 2: WHAT THIS MEANS */}
         {/* ═══════════════════════════════════════════════════════════════════════ */}
         <motion.div
@@ -628,6 +663,135 @@ export function Results() {
             </div>
           </motion.div>
         )}
+
+        {/* ═══════════════════════════════════════════════════════════════════════ */}
+        {/* FEATURE 4: WHAT LENDERS ACTUALLY SEE — self-reported vs. lender view   */}
+        {/* ═══════════════════════════════════════════════════════════════════════ */}
+        {(() => {
+          const revenueLabels: Record<string, string> = {
+            under_5k: '$2,500/mo', '5k_15k': '$10,000/mo',
+            '15k_40k': '$27,500/mo', '40k_100k': '$70,000/mo', over_100k: '$125,000/mo',
+          };
+          const nsfHaircut: Record<string, number> = { '0': 0, '1_2': 0.10, '3_5': 0.25, '5plus': 0.40 };
+          const revLabel = revenueLabels[data.monthlyRevenue] || 'Not reported';
+          const haircut = nsfHaircut[data.nsfCount] || 0;
+          const revNum = { under_5k: 2500, '5k_15k': 10000, '15k_40k': 27500, '40k_100k': 70000, over_100k: 125000 }[data.monthlyRevenue] || 0;
+          const effectiveRev = haircut > 0 ? `$${Math.round(revNum * (1 - haircut)).toLocaleString()}/mo` : revLabel;
+
+          const mapCredit = (c: string) => ({ exceptional: 825, very_good: 770, good: 700, fair: 620, poor: 520, unknown: 580 }[c] || 0);
+          const scores = [mapCredit(data.experian), mapCredit(data.transunion), mapCredit(data.equifax)].filter(Boolean).sort((a, b) => a - b);
+          const middleScore = scores.length >= 2 ? scores[Math.floor(scores.length / 2)] : null;
+          const creditLabel = scores.length ? `${scores[0]}–${scores[scores.length - 1]}` : 'Not reported';
+
+          const entityLabels: Record<string, string> = {
+            llc: 'LLC', scorp: 'S-Corp', ccorp: 'C-Corp', partnership: 'Partnership', sole_prop: 'Sole Proprietorship',
+          };
+          const entityRisk = data.entityType === 'sole_prop'
+            ? 'High personal liability exposure — most banks require LLC or Corp'
+            : data.entityType ? 'Acceptable entity structure' : 'Not reported';
+
+          const bankAgeLabels: Record<string, string> = {
+            '0_6mo': 'Under 6 months', '6_12mo': '6–12 months', '1_2yr': '1–2 years', '2_3yr': '2–3 years', '3plus': '3+ years',
+          };
+          const bankAgeRisk = data.bankAge === '0_6mo'
+            ? 'Too new — most lenders require 6+ months of statements'
+            : data.bankAge === '6_12mo' ? 'Borderline — some lenders want 12+ months' : 'Acceptable history';
+
+          const rows = [
+            {
+              label: 'Monthly Revenue',
+              reported: revLabel,
+              lenderSees: effectiveRev,
+              note: haircut > 0 ? `${Math.round(haircut * 100)}% haircut applied for NSF/overdraft history` : 'No haircut — clean bank history',
+              flag: haircut > 0,
+            },
+            {
+              label: 'Personal Credit',
+              reported: scores.length ? `${scores[scores.length - 1]} (highest)` : 'Not reported',
+              lenderSees: middleScore ? `${middleScore} (middle score)` : 'Not reported',
+              note: 'Lenders use the middle score of all 3 bureaus — not your highest',
+              flag: middleScore !== null && middleScore < scores[scores.length - 1],
+            },
+            {
+              label: 'Business Entity',
+              reported: entityLabels[data.entityType] || 'Not reported',
+              lenderSees: entityRisk,
+              note: data.entityType === 'sole_prop' ? 'Sole proprietors often need a personal guarantee + higher rates' : 'Entity structure meets lender standards',
+              flag: data.entityType === 'sole_prop',
+            },
+            {
+              label: 'Banking History',
+              reported: bankAgeLabels[data.bankAge] || 'Not reported',
+              lenderSees: bankAgeRisk,
+              note: 'Banks evaluate statements month-by-month — gaps or switches reset the clock',
+              flag: data.bankAge === '0_6mo' || data.bankAge === '6_12mo',
+            },
+          ];
+
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.55 }}
+              style={{
+                background: 'var(--bg-surface-1)',
+                borderRadius: '16px',
+                border: '1px solid var(--border-subtle)',
+                padding: '32px 40px',
+                marginBottom: '32px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px' }}>
+                <span style={{ fontSize: '20px' }}>🔍</span>
+                <div>
+                  <h2 style={{
+                    fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 700,
+                    color: 'var(--text-primary)', marginBottom: '4px',
+                  }}>
+                    What Lenders Actually See
+                  </h2>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                    Your self-reported answers vs. how underwriters interpret the same data
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {rows.map((row, i) => (
+                  <div key={i} style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '12px',
+                    padding: '14px 16px',
+                    background: 'var(--bg-surface-2)',
+                    borderRadius: '10px',
+                    border: `1px solid ${row.flag ? 'rgba(245,158,11,0.3)' : 'var(--border-subtle)'}`,
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                        You Reported: {row.label}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>
+                        {row.reported}
+                      </div>
+                    </div>
+                    <div style={{ borderLeft: '1px solid var(--border-subtle)', paddingLeft: '12px' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: row.flag ? '#f59e0b' : 'var(--success)', marginBottom: '4px' }}>
+                        {row.flag ? '⚠ Lender Sees' : '✓ Lender Sees'}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: row.flag ? '#f59e0b' : 'var(--text-primary)' }}>
+                        {row.lenderSees}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.4 }}>
+                        {row.note}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          );
+        })()}
 
         {/* ═══════════════════════════════════════════════════════════════════════ */}
         {/* SECTION 4: PRODUCTS AVAILABLE NOW */}
