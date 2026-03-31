@@ -19,6 +19,7 @@ import {
   ChevronDown,
   ChevronRight,
   Zap,
+  Lightbulb,
   User,
   BookOpen,
   Lock,
@@ -40,6 +41,7 @@ const businessMenuItems = [
   { path: '/business-assessment', label: 'Business Success Scan', icon: ClipboardCheck, badge: 'Start', isAssessment: true },
   { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/app/denial-diagnosis', label: 'Denial Diagnosis', icon: AlertTriangle },
+  { path: '/app/idea-validator', label: 'Idea Validator', icon: Lightbulb },
   { 
     path: '/app/access-funding', 
     label: 'Access Funding', 
