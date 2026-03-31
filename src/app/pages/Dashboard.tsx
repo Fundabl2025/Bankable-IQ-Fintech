@@ -33,6 +33,8 @@ import { computeScore, getBand, computeExtendedResults } from './business-assess
 import { getDataItem } from '../lib/data-adapter';
 import { useAuth } from '../contexts/AuthContext';
 import type { UnifiedAnswers } from './business-assessment/types';
+import { BadgeGrid, BadgeToastContainer } from '../components/BadgeGrid';
+import { checkAndAwardBadges } from '../lib/badges';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // STATUS SYSTEM - Matches Elon's 5-tier progression
@@ -235,6 +237,7 @@ export function Dashboard() {
   const [dimAvg, setDimAvg] = useState<Record<string, number>>({});
   const [refreshKey, setRefreshKey] = useState(0); // Force re-render when data changes
   const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem('fundready_welcomed'));
+  const [newBadgeIds, setNewBadgeIds] = useState<string[]>([]);
 
   const dismissWelcome = () => {
     localStorage.setItem('fundready_welcomed', '1');
@@ -266,11 +269,21 @@ export function Dashboard() {
           const extendedResults = computeExtendedResults(assessmentData);
           const band = getBand(scoreResult.score);
           
+          const bs = extendedResults.sbssScore || Math.round(scoreResult.score * 0.18);
           setFundScore(scoreResult.score);
           setDimAvg(scoreResult.dimAvg || {});
-          setBankableScore(extendedResults.sbssScore || Math.round(scoreResult.score * 0.18));
+          setBankableScore(bs);
           setScoreBand(band);
           setHasAssessment(true);
+
+          // Award any newly-earned badges
+          const newly = checkAndAwardBadges({
+            hasAssessment: true,
+            score: scoreResult.score,
+            bankableScore: bs,
+            dimAvg: scoreResult.dimAvg || {},
+          });
+          if (newly.length > 0) setNewBadgeIds(newly);
         }
       } catch (error) {
         console.error('Error loading scores:', error);
@@ -331,6 +344,9 @@ export function Dashboard() {
     >
       {/* Welcome modal */}
       {showWelcome && <WelcomeModal name={firstName} onDismiss={dismissWelcome} onNavigate={navigate} />}
+
+      {/* Badge unlock toasts */}
+      <BadgeToastContainer newBadgeIds={newBadgeIds} />
 
       {/* Email verification banner */}
       {user && !emailVerified && (
@@ -1587,6 +1603,114 @@ export function Dashboard() {
             </div>
           </motion.div>
         )}
+
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {/* POTENTIAL SCORE CARD — How high your score can go + what to fix       */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {hasAssessment && (() => {
+          const DIM_WEIGHTS: Record<string, number> = { P: 0.20, B: 0.10, F: 0.25, C: 0.20, S: 0.15, N: 0.10 };
+          const DIM_NAMES: Record<string, string> = { P: 'Personal Credit', B: 'Business Profile', F: 'Financial Health', C: 'Compliance', S: 'Stability', N: 'File Strength' };
+          const weakDims = Object.entries(dimAvg).filter(([, v]) => v < 0.8).sort(([, a], [, b]) => a - b).slice(0, 3);
+          const potentialDimAvg = { ...dimAvg };
+          weakDims.forEach(([k]) => { potentialDimAvg[k] = 0.8; });
+          const potentialBase = Object.entries(potentialDimAvg).reduce((sum, [k, v]) => sum + v * (DIM_WEIGHTS[k] || 0), 0);
+          const potentialScore = Math.min(1000, Math.round(potentialBase * 1000 + 80));
+          const scoreGap = potentialScore - fundScore;
+          if (scoreGap <= 0) return null;
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              style={{ marginTop: '24px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}
+            >
+              {/* Header bar */}
+              <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                <div>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px', color: 'var(--foreground)', margin: 0 }}>
+                    Your Score Ceiling
+                  </h2>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', margin: '4px 0 0' }}>
+                    Fix your 3 weakest dimensions to reach {potentialScore}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--foreground)' }}>{fundScore}</div>
+                  </div>
+                  <div style={{ fontSize: '18px', color: 'var(--muted-foreground)' }}>→</div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Potential</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: '#10b981' }}>{potentialScore}</div>
+                  </div>
+                  <div style={{ padding: '5px 12px', borderRadius: '20px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: '#10b981' }}>+{scoreGap} pts</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress visual */}
+              <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', minWidth: '28px' }}>{fundScore}</span>
+                  <div style={{ flex: 1, height: '10px', borderRadius: '99px', background: 'var(--border)', overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ position: 'absolute', inset: 0, borderRadius: '99px', background: 'var(--border)' }} />
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(fundScore / 1000) * 100}%` }}
+                      transition={{ duration: 0.8, ease: 'easeOut' }}
+                      style={{ position: 'absolute', height: '100%', borderRadius: '99px', background: 'linear-gradient(90deg, #10b981, #3b82f6)' }}
+                    />
+                    {/* Potential marker */}
+                    <div style={{ position: 'absolute', top: '-2px', bottom: '-2px', width: '3px', borderRadius: '2px', background: '#10b981', left: `${(potentialScore / 1000) * 100}%`, boxShadow: '0 0 6px #10b981' }} />
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#10b981', minWidth: '28px', textAlign: 'right' }}>{potentialScore}</span>
+                </div>
+              </div>
+
+              {/* Fix list */}
+              <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '2px' }}>
+                  Top moves to close the gap:
+                </div>
+                {weakDims.map(([key, val], i) => {
+                  const gain = Math.round((0.8 - val) * (DIM_WEIGHTS[key] || 0) * 1000);
+                  return (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'var(--background)', border: '1px solid var(--border)', borderRadius: '10px' }}>
+                      <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: 'white' }}>{i + 1}</span>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)' }}>
+                          Improve {DIM_NAMES[key] || key}
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
+                          Currently {Math.round(val * 100)}% — reach 80% to unlock this gain
+                        </div>
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: '#10b981', whiteSpace: 'nowrap' }}>
+                        +{gain} pts
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          );
+        })()}
+
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {/* ACHIEVEMENTS — Badge grid                                              */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+          style={{ marginTop: '24px' }}
+        >
+          <BadgeGrid newBadgeIds={newBadgeIds} />
+        </motion.div>
 
       </div>
     </div>
