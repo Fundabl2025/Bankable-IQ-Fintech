@@ -85,7 +85,8 @@ const businessMenuItems = [
   { path: '/app/building-credit', label: 'Building Credit', icon: CreditCard },
   { path: '/app/organize-financials', label: 'Organize Financials', icon: Briefcase },
   { path: '/app/become-bankable', label: 'Become Bankable', icon: Building },
-  { path: '/app/templates-resources', label: 'Templates & Resources', icon: BookOpen },
+  { path: '/app/capital-glossary', label: 'Capital Glossary', icon: BookOpen },
+  { path: '/app/templates-resources', label: 'Templates & Resources', icon: GraduationCap },
   { path: '/app/business-education', label: 'Business Education', icon: GraduationCap },
   { path: '/app/help-desk', label: 'Help Desk', icon: HelpCircle },
   { path: '/app/settings', label: 'Settings', icon: Settings }

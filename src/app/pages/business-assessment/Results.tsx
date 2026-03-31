@@ -709,6 +709,72 @@ export function Results() {
               </div>
             </div>
           )}
+
+          {/* ── Close to Qualifying — Locked Products with Prerequisite Path ── */}
+          {(() => {
+            const nearMiss = products
+              .filter(p => !p.qualifies && p.blockers.length >= 1 && p.blockers.length <= 2)
+              .slice(0, 4);
+            if (nearMiss.length === 0) return null;
+            return (
+              <div style={{ marginTop: '24px' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: '12px',
+                }}>
+                  <div style={{
+                    width: '20px', height: '20px', borderRadius: '50%',
+                    background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <span style={{ fontSize: '11px' }}>🔒</span>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                    Close to Qualifying — Fix these to unlock
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {nearMiss.map((product) => (
+                    <div key={product.id} style={{
+                      padding: '14px 16px',
+                      background: 'var(--bg-surface-2)',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-subtle)',
+                      opacity: 0.85,
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '8px' }}>
+                        <div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                            {product.name}
+                          </div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            Up to {product.maxAmount} • {product.speed}
+                          </div>
+                        </div>
+                        <div style={{
+                          fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px',
+                          background: 'rgba(245,158,11,0.1)', color: '#f59e0b', whiteSpace: 'nowrap', flexShrink: 0,
+                        }}>
+                          {product.blockers.length === 1 ? '1 blocker away' : `${product.blockers.length} blockers`}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {product.blockers.map((blocker, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                            <span style={{ fontSize: '10px', color: '#ef4444', marginTop: '2px', flexShrink: 0 }}>✗</span>
+                            <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                              {blocker}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </motion.div>
 
         {/* ═══════════════════════════════════════════════════════════════════════ */}

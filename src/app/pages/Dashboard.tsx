@@ -150,6 +150,12 @@ export function Dashboard() {
   const [scoreBand, setScoreBand] = useState({ name: 'Not Assessed', color: '#64748b' });
   const [hasAssessment, setHasAssessment] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // Force re-render when data changes
+  const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem('fundready_welcomed'));
+
+  const dismissWelcome = () => {
+    localStorage.setItem('fundready_welcomed', '1');
+    setShowWelcome(false);
+  };
 
   // Load scores from Supabase (if logged in) or localStorage
   useEffect(() => {
@@ -230,11 +236,53 @@ export function Dashboard() {
   // Progress stats
   const progress = getOverallProgress();
 
+  const firstName = user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'there';
+  const emailVerified = user?.email_confirmed_at;
+
   return (
-    <div 
+    <div
       className="flex-1 min-h-screen overflow-auto"
       style={{ backgroundColor: 'var(--background)' }}
     >
+      {/* Welcome modal */}
+      {showWelcome && <WelcomeModal name={firstName} onDismiss={dismissWelcome} onNavigate={navigate} />}
+
+      {/* Email verification banner */}
+      {user && !emailVerified && (
+        <div style={{
+          background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+          borderBottom: '1px solid #f59e0b',
+          padding: '10px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          flexWrap: 'wrap',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '16px' }}>📧</span>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: '#92400e' }}>
+              Verify your email to save your FundScore and unlock your full capital report
+            </span>
+          </div>
+          <button
+            onClick={() => navigate('/app/settings')}
+            style={{
+              fontSize: '12px',
+              fontWeight: 700,
+              color: '#92400e',
+              background: 'rgba(146,64,14,0.12)',
+              border: '1px solid rgba(146,64,14,0.25)',
+              borderRadius: '6px',
+              padding: '5px 14px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Verify Now →
+          </button>
+        </div>
+      )}
       <div className="max-w-[1400px] mx-auto px-6 py-8 lg:px-8 lg:py-10">
         
         {/* ══════════════════════════════════════════════════════════════════════ */}
@@ -1159,6 +1207,201 @@ export function Dashboard() {
 
       </div>
     </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// WELCOME MODAL — First-login onboarding with gradient header
+// ════════════════════════════════════════════════════════════════════════════════
+
+function WelcomeModal({ name, onDismiss, onNavigate }: { name: string; onDismiss: () => void; onNavigate: (path: string) => void }) {
+  const steps = [
+    {
+      emoji: '🎯',
+      title: 'Take Your Assessment',
+      description: 'Answer 33 questions to get your FundScore and capital readiness rating.',
+      color: '#10b981',
+      bg: 'rgba(16,185,129,0.08)',
+      border: 'rgba(16,185,129,0.25)',
+      action: () => { onDismiss(); onNavigate('/business-assessment'); },
+      cta: 'Start Now',
+    },
+    {
+      emoji: '📊',
+      title: 'Review Your FundScore',
+      description: 'Understand your 0–1000 score across 6 capital readiness dimensions.',
+      color: '#3b82f6',
+      bg: 'rgba(59,130,246,0.08)',
+      border: 'rgba(59,130,246,0.25)',
+    },
+    {
+      emoji: '🔑',
+      title: 'Address Capital Gaps',
+      description: 'Tackle your top blockers to unlock more capital products.',
+      color: '#f59e0b',
+      bg: 'rgba(245,158,11,0.08)',
+      border: 'rgba(245,158,11,0.25)',
+    },
+    {
+      emoji: '📈',
+      title: 'Track Your Path',
+      description: 'Watch your score improve as you complete each recommended action.',
+      color: '#9333ea',
+      bg: 'rgba(147,51,234,0.08)',
+      border: 'rgba(147,51,234,0.25)',
+    },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.55)',
+        backdropFilter: 'blur(4px)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+      }}
+      onClick={onDismiss}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: 'var(--background)',
+          borderRadius: '20px',
+          overflow: 'hidden',
+          width: '100%',
+          maxWidth: '540px',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.25)',
+        }}
+      >
+        {/* Gradient header */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
+            padding: '32px 28px 28px',
+          }}
+        >
+          <div style={{ fontSize: '28px', marginBottom: '12px' }}>👋</div>
+          <h2
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 800,
+              fontSize: '26px',
+              color: 'white',
+              lineHeight: 1.2,
+              marginBottom: '8px',
+            }}
+          >
+            Welcome, {name}!
+          </h2>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.5 }}>
+            FundReady™ maps your business to real capital. Here's how to get the most out of the platform.
+          </p>
+        </div>
+
+        {/* Step cards */}
+        <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {steps.map((step, i) => (
+            <div
+              key={i}
+              onClick={step.action}
+              style={{
+                background: step.bg,
+                border: `1px solid ${step.border}`,
+                borderRadius: '12px',
+                padding: '14px 16px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px',
+                cursor: step.action ? 'pointer' : 'default',
+                transition: 'transform 0.15s',
+              }}
+              onMouseEnter={e => step.action && ((e.currentTarget as HTMLElement).style.transform = 'scale(1.01)')}
+              onMouseLeave={e => step.action && ((e.currentTarget as HTMLElement).style.transform = 'scale(1)')}
+            >
+              <div
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: step.color,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '15px',
+                  flexShrink: 0,
+                }}
+              >
+                {step.emoji}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--foreground)' }}>
+                    {step.title}
+                  </span>
+                  {step.cta && (
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: step.color, whiteSpace: 'nowrap' }}>
+                      {step.cta} →
+                    </span>
+                  )}
+                </div>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '3px', lineHeight: 1.4 }}>
+                  {step.description}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '0 28px 24px', display: 'flex', gap: '10px' }}>
+          <button
+            onClick={() => { onDismiss(); onNavigate('/business-assessment'); }}
+            style={{
+              flex: 1,
+              padding: '13px',
+              background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+              border: 'none',
+              borderRadius: '12px',
+              color: 'white',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: '14px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(16,185,129,0.3)',
+            }}
+          >
+            Take My Assessment
+          </button>
+          <button
+            onClick={onDismiss}
+            style={{
+              padding: '13px 18px',
+              background: 'var(--secondary)',
+              border: '1px solid var(--border)',
+              borderRadius: '12px',
+              color: 'var(--muted-foreground)',
+              fontFamily: 'var(--font-body)',
+              fontWeight: 500,
+              fontSize: '13px',
+              cursor: 'pointer',
+            }}
+          >
+            Skip
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

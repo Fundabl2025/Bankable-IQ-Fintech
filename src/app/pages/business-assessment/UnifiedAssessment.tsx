@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, useSpring } from 'motion/react';
-import { ArrowRight, ArrowLeft, Info } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Info, Building2, FileText, TrendingUp, CreditCard, Shield, DollarSign, Lock, CheckCircle2 } from 'lucide-react';
 import { UnifiedAnswers } from './types';
 import { READINESS_QUESTIONS } from './questions';
 import { calculatePartialScore, getBand } from './engine';
@@ -189,11 +189,11 @@ export function UnifiedAssessment() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
-      {/* Progress Bar */}
-      <ProgressBar progress={progress} currentQuestion={currentQuestion} totalQuestions={totalQuestions} />
+      {/* Assessment Step Track */}
+      <AssessmentStepTrack currentQuestion={currentQuestion} totalQuestions={totalQuestions} />
 
       {/* Content */}
-      <div style={{ paddingTop: '60px', paddingBottom: '80px' }}>
+      <div style={{ paddingTop: '92px', paddingBottom: '80px' }}>
         {!showLoading && isFoundationQuestion && (
           <FoundationQuestion
             step={currentQuestion}
@@ -233,10 +233,29 @@ export function UnifiedAssessment() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
-// PROGRESS BAR COMPONENT
+// ASSESSMENT STEP TRACK — Icon-based category progress header
 // ════════════════════════════════════════════════════════════════════════════════
 
-function ProgressBar({ progress, currentQuestion, totalQuestions }: any) {
+const STEP_TRACK = [
+  { label: 'Business Profile', Icon: Building2, start: 0, end: 9 },
+  { label: 'Documents', Icon: FileText, start: 10, end: 13 },
+  { label: 'Cash Flow', Icon: TrendingUp, start: 14, end: 17 },
+  { label: 'Credit', Icon: CreditCard, start: 18, end: 24 },
+  { label: 'History', Icon: Shield, start: 25, end: 29 },
+  { label: 'Capital', Icon: DollarSign, start: 30, end: 32 },
+  { label: 'Your Score', Icon: Lock, start: 33, end: 33, locked: true },
+];
+
+function AssessmentStepTrack({ currentQuestion, totalQuestions }: { currentQuestion: number; totalQuestions: number }) {
+  const progress = ((currentQuestion + 1) / totalQuestions) * 100;
+
+  const getStatus = (start: number, end: number, locked?: boolean) => {
+    if (locked) return 'locked';
+    if (currentQuestion > end) return 'completed';
+    if (currentQuestion >= start) return 'active';
+    return 'upcoming';
+  };
+
   return (
     <div
       style={{
@@ -244,22 +263,131 @@ function ProgressBar({ progress, currentQuestion, totalQuestions }: any) {
         top: 0,
         left: 0,
         right: 0,
-        height: '8px',
-        background: 'var(--bg-surface-2)',
+        background: 'var(--bg-base)',
         borderBottom: '1px solid var(--border-subtle)',
         zIndex: 100,
       }}
     >
-      <motion.div
+      {/* Brand + Steps row */}
+      <div
         style={{
-          height: '100%',
-          background: 'var(--primary)',
-          borderRadius: '0',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '10px 20px',
+          gap: '6px',
+          overflowX: 'auto',
         }}
-        initial={{ width: '0%' }}
-        animate={{ width: `${progress}%` }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-      />
+      >
+        {/* Logo */}
+        <div
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '13px',
+            fontWeight: 800,
+            background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginRight: '12px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          FundReady™
+        </div>
+
+        {/* Steps */}
+        {STEP_TRACK.map((step, i) => {
+          const status = getStatus(step.start, step.end, step.locked);
+          const { Icon } = step;
+          const isActive = status === 'active';
+          const isCompleted = status === 'completed';
+
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+              {/* Connector line */}
+              {i > 0 && (
+                <div
+                  style={{
+                    width: '20px',
+                    height: '2px',
+                    background: isCompleted ? 'var(--primary)' : 'var(--border-subtle)',
+                    transition: 'background 0.3s',
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+
+              {/* Step item */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '3px',
+                  opacity: status === 'upcoming' ? 0.38 : 1,
+                  transition: 'opacity 0.3s',
+                }}
+              >
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: isActive
+                      ? 'var(--primary)'
+                      : isCompleted
+                      ? 'rgba(16,185,129,0.12)'
+                      : 'var(--bg-surface-2)',
+                    border: isActive || isCompleted
+                      ? '2px solid var(--primary)'
+                      : '2px solid var(--border-subtle)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.3s',
+                  }}
+                >
+                  {isCompleted ? (
+                    <CheckCircle2 size={14} style={{ color: 'var(--primary)' }} />
+                  ) : (
+                    <Icon
+                      size={14}
+                      style={{
+                        color: isActive ? 'white' : 'var(--text-muted)',
+                      }}
+                    />
+                  )}
+                </div>
+                <span
+                  style={{
+                    fontSize: '9px',
+                    fontWeight: isActive ? 700 : 400,
+                    color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.3s',
+                  }}
+                >
+                  {step.label}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Gradient progress line */}
+      <div style={{ height: '3px', background: 'var(--bg-surface-2)' }}>
+        <motion.div
+          style={{
+            height: '100%',
+            background: 'linear-gradient(90deg, var(--primary), #3b82f6)',
+            borderRadius: '0 2px 2px 0',
+          }}
+          initial={{ width: '0%' }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+        />
+      </div>
     </div>
   );
 }
