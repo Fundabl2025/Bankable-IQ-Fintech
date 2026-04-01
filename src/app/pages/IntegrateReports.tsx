@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Download, CheckCircle2, Lock, Shield, TrendingUp, FileText, AlertCircle, ExternalLink } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card-modern';
@@ -5,6 +6,12 @@ import { Badge } from '../components/ui/badge';
 import { motion } from 'motion/react';
 
 export function IntegrateReports() {
+  // Track visit so Finances checklist reflects integration status
+  useEffect(() => {
+    localStorage.setItem('fundready_integrate_visited', '1');
+    window.dispatchEvent(new Event('fundscoreUpdated'));
+  }, []);
+
   return (
     <div className="flex-1 min-h-screen bg-slate-50 overflow-auto">
       <div className="max-w-7xl mx-auto p-8">

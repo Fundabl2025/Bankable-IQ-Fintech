@@ -79,6 +79,98 @@ export function clearPreQualifiedPrograms(): void {
   window.dispatchEvent(new Event('scanDataUpdated'));
 }
 
+// ── Context-aware filtering: loan amount, purpose, ineligible biz type ──────
+
+// Which loan purposes each product is best suited for
+const PROGRAM_PURPOSE_FIT: Record<string, string[]> = {
+  'working-capital-loans':        ['working_capital', 'payroll'],
+  'merchant-advance':             ['working_capital', 'payroll', 'expansion'],
+  'revenue-based-loan':           ['working_capital', 'expansion', 'payroll'],
+  'business-credit-line':         ['working_capital', 'payroll', 'expansion'],
+  'business-credit-cards':        ['working_capital', 'equipment', 'expansion'],
+  'personal-credit-cards':        ['working_capital', 'equipment'],
+  'equipment-financing':          ['equipment'],
+  'construction-loans':           ['real_estate', 'expansion'],
+  'dscr-loans':                   ['real_estate'],
+  'bridge-loans':                 ['real_estate', 'acquisition'],
+  'sba-business-loan':            ['real_estate', 'expansion', 'acquisition', 'working_capital', 'equipment'],
+  'business-term-loan':           ['expansion', 'equipment', 'acquisition', 'working_capital'],
+  'credit-union-loans':           ['working_capital', 'expansion', 'equipment'],
+  'receivable-factoring':         ['working_capital', 'payroll'],
+  'accounts-receivable-finance':  ['working_capital', 'payroll'],
+  'purchase-order-finance':       ['working_capital', 'expansion'],
+  'inventory-line-of-credit':     ['working_capital', 'expansion'],
+};
+
+// Max funding each product can reach
+const PROGRAM_MAX_AMOUNT: Record<string, number> = {
+  'working-capital-loans': 500000,
+  'merchant-advance': 500000,
+  'revenue-based-loan': 500000,
+  'business-credit-line': 250000,
+  'business-credit-cards': 100000,
+  'personal-credit-cards': 50000,
+  'equipment-financing': 5000000,
+  'construction-loans': 10000000,
+  'dscr-loans': 10000000,
+  'bridge-loans': 10000000,
+  'sba-business-loan': 5000000,
+  'business-term-loan': 500000,
+  'credit-union-loans': 500000,
+  'receivable-factoring': 5000000,
+  'accounts-receivable-finance': 1000000,
+  'purchase-order-finance': 1000000,
+  'inventory-line-of-credit': 500000,
+};
+
+const SBA_PRODUCTS = ['sba-business-loan'];
+
+const AMOUNT_MIN_MAP: Record<string, number> = {
+  under_25k: 0, '25k_100k': 25000, '100k_250k': 100000,
+  '250k_500k': 250000, '500k_1m': 500000, over_1m: 1000000,
+};
+
+/**
+ * Apply loan amount, purpose, and ineligibility filters to an eligible program list.
+ * Returns filtered list + purpose-matched subset (for UI highlighting).
+ */
+export function applyContextFilters(
+  eligibleIds: string[],
+  loanAmount: string,
+  loanPurpose: string,
+  isIneligibleBizType: boolean
+): { filtered: string[]; purposeMatches: string[] } {
+  let filtered = [...eligibleIds];
+
+  // Remove SBA if ineligible biz type
+  if (isIneligibleBizType) {
+    filtered = filtered.filter(id => !SBA_PRODUCTS.includes(id));
+  }
+
+  // Remove products that can't reach the requested minimum amount
+  const requestedMin = loanAmount ? (AMOUNT_MIN_MAP[loanAmount] ?? 0) : 0;
+  if (requestedMin > 0) {
+    filtered = filtered.filter(id => (PROGRAM_MAX_AMOUNT[id] ?? 0) >= requestedMin);
+  }
+
+  // Identify purpose-matched products (surface first in UI)
+  const purposeMatches = loanPurpose
+    ? filtered.filter(id => (PROGRAM_PURPOSE_FIT[id] ?? []).includes(loanPurpose))
+    : [];
+
+  return { filtered, purposeMatches };
+}
+
+/** Persist purpose matches so Access Funding and Dashboard can surface them */
+export function storePurposeMatches(ids: string[]): void {
+  localStorage.setItem('purposeMatchPrograms', JSON.stringify(ids));
+}
+
+export function getPurposeMatches(): string[] {
+  try { return JSON.parse(localStorage.getItem('purposeMatchPrograms') || '[]'); }
+  catch { return []; }
+}
+
 // Get all funding programs with their pre-qualified status
 export function getFundingPrograms() {
   const preQualified = getPreQualifiedPrograms();

@@ -36,37 +36,38 @@ function parseScoresFromAssessment(assessmentJson: string): { fund_score: number
 
 /**
  * Always save to localStorage
- * If user is logged in and Supabase is configured, also save to business_profiles.assessment_data
+ * If user is logged in and Supabase is configured, also save to business_profiles
  */
 export async function setDataItem(key: string, value: string): Promise<void> {
   // Always save to localStorage
   localStorage.setItem(key, value)
   window.dispatchEvent(new StorageEvent('storage', { key, newValue: value }))
 
-  // If user is logged in, also save to Supabase
-  if (isSupabaseConfigured && key === 'unified_assessment') {
-    try {
-      const user = await getCurrentUser()
-      if (user) {
-        const { fund_score, bankable_score } = parseScoresFromAssessment(value)
-        
-        await supabase
-          .from('business_profiles')
-          .upsert(
-            {
-              user_id: user.id,
-              assessment_data: value,
-              fund_score,
-              bankable_score,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'user_id' }
-          )
-      }
-    } catch (error) {
-      console.warn('[FundReady] Warning: Could not save assessment to Supabase:', error)
-      // Don't throw - localStorage save succeeded, Supabase is just a bonus
+  if (!isSupabaseConfigured) return
+
+  try {
+    const user = await getCurrentUser()
+    if (!user) return
+
+    if (key === 'unified_assessment') {
+      const { fund_score, bankable_score } = parseScoresFromAssessment(value)
+      await supabase
+        .from('business_profiles')
+        .upsert(
+          { user_id: user.id, assessment_data: value, fund_score, bankable_score, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        )
+    } else if (key === 'fundready_badges') {
+      await supabase
+        .from('business_profiles')
+        .upsert(
+          { user_id: user.id, badges_data: value, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        )
     }
+  } catch (error) {
+    console.warn('[FundReady] Warning: Could not save to Supabase:', error)
+    // Don't throw - localStorage save succeeded, Supabase is just a bonus
   }
 }
 
@@ -74,19 +75,30 @@ export async function setDataItem(key: string, value: string): Promise<void> {
  * Get data from Supabase if logged in, fall back to localStorage
  */
 export async function getDataItem(key: string): Promise<string | null> {
-  // If user is logged in and this is assessment data, try Supabase first
-  if (isSupabaseConfigured && key === 'unified_assessment') {
+  if (isSupabaseConfigured) {
     try {
       const user = await getCurrentUser()
       if (user) {
-        const { data, error } = await supabase
-          .from('business_profiles')
-          .select('assessment_data')
-          .eq('user_id', user.id)
-          .single()
-
-        if (!error && data?.assessment_data) {
-          return data.assessment_data
+        if (key === 'unified_assessment') {
+          const { data, error } = await supabase
+            .from('business_profiles')
+            .select('assessment_data')
+            .eq('user_id', user.id)
+            .single()
+          if (!error && data?.assessment_data) {
+            return data.assessment_data
+          }
+        } else if (key === 'fundready_badges') {
+          const { data, error } = await supabase
+            .from('business_profiles')
+            .select('badges_data')
+            .eq('user_id', user.id)
+            .single()
+          if (!error && data?.badges_data) {
+            // Sync down to localStorage so getEarnedBadges() stays fast
+            localStorage.setItem('fundready_badges', data.badges_data)
+            return data.badges_data
+          }
         }
       }
     } catch (error) {

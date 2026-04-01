@@ -1,526 +1,537 @@
-import { useState } from 'react';
-import { DollarSign, TrendingUp, Clock, CheckCircle2, ChevronDown, ChevronUp, CreditCard as CreditCardIcon, Banknote, Zap, Check, AlertTriangle, Lock, Unlock, Target } from 'lucide-react';
-import { Card } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
+// ════════════════════════════════════════════════════════════════════════════════
+// FUNDREADY™ — Access Funding Pipeline
+// Elon-style: deal pipeline view. Every program has a stage. One click to apply.
+// Pre-qual = prediction. Applied = in lender queue. Offer = real numbers.
+// ════════════════════════════════════════════════════════════════════════════════
+
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate, Outlet, useLocation } from 'react-router';
+import {
+  DollarSign, TrendingUp, ChevronDown, ChevronUp,
+  ArrowRight, CheckCircle2, Lock, Info, Zap,
+  Clock, AlertTriangle, X,
+} from 'lucide-react';
 import { getFundingPrograms, getTotalPreQualifiedAmount } from '../utils/fundingEligibility';
-import { FundingApplicationModal } from '../components/FundingApplicationModal';
 import { RequirementsGapModal } from '../components/RequirementsGapModal';
-import { Outlet, useLocation } from 'react-router';
+import {
+  applyToProgram,
+  withdrawApplication,
+  getUserApplications,
+  getPipelineCounts,
+  STAGE_CONFIG,
+  type FundingApplication,
+  type PipelineCounts,
+  type ApplicationStatus,
+} from '../lib/funding-service';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatDollars(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
+  return `$${n}`;
+}
+
+type ViewFilter = 'all' | 'pre-qualified' | 'applied' | 'offers' | 'future';
+
+// ════════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ════════════════════════════════════════════════════════════════════════════════
 
 export function AccessFunding() {
   const location = useLocation();
-  const [filter, setFilter] = useState<'all' | 'pre-qualified' | 'not-qualified'>('all');
-  const [expandedPrograms, setExpandedPrograms] = useState<Set<number>>(new Set());
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isGapModalOpen, setIsGapModalOpen] = useState(false);
-  const [selectedProgram, setSelectedProgram] = useState<{
-    name: string;
-    amount: string;
-    type: string;
-    gapAnalysis?: any;
-  } | null>(null);
+  const navigate = useNavigate();
 
-  // Check if we're on a child route
-  const isChildRoute = location.pathname !== '/access-funding';
-
-  // If on a child route, render only the Outlet
-  if (isChildRoute) {
-    return <Outlet />;
-  }
+  // ALL hooks must come before any conditional return
+  const [filter, setFilter] = useState<ViewFilter>('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [applications, setApplications] = useState<FundingApplication[]>([]);
+  const [pipeline, setPipeline] = useState<PipelineCounts>({ applied: 0, under_review: 0, offer_received: 0, accepted: 0, funded: 0, declined: 0, total: 0 });
+  const [applying, setApplying] = useState<string | null>(null);
+  const [withdrawing, setWithdrawing] = useState<string | null>(null);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [gapProgram, setGapProgram] = useState<any>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   const allPrograms = getFundingPrograms();
   const totalPreQualified = getTotalPreQualifiedAmount();
+  const preQualCount = allPrograms.filter(p => p.status === 'pre-qualified').length;
 
-  const toggleProgramDetails = (index: number) => {
-    const newExpanded = new Set(expandedPrograms);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
+  // Load applications & pipeline
+  const loadData = async () => {
+    const [apps, counts] = await Promise.all([getUserApplications(), getPipelineCounts()]);
+    setApplications(apps);
+    setPipeline(counts);
+  };
+
+  useEffect(() => {
+    loadData();
+    const handler = () => loadData();
+    window.addEventListener('fundingPipelineUpdated', handler);
+    window.addEventListener('fundscoreUpdated', handler);
+    return () => {
+      window.removeEventListener('fundingPipelineUpdated', handler);
+      window.removeEventListener('fundscoreUpdated', handler);
+    };
+  }, []);
+
+  // Child routes render via Outlet only — AFTER all hooks
+  const isChildRoute = location.pathname !== '/app/access-funding' && location.pathname !== '/access-funding';
+  if (isChildRoute) return <Outlet />;
+
+  // Build lookup: programId → application
+  const appMap = new Map(applications.map(a => [a.program_id, a]));
+
+  // Filter programs
+  const filteredPrograms = allPrograms.filter(p => {
+    const app = appMap.get(p.id);
+    if (filter === 'all') return true;
+    if (filter === 'pre-qualified') return p.status === 'pre-qualified' && !app;
+    if (filter === 'applied') return !!app && app.status !== 'offer_received' && app.status !== 'funded';
+    if (filter === 'offers') return app?.status === 'offer_received' || app?.status === 'accepted';
+    if (filter === 'future') return p.status !== 'pre-qualified';
+    return true;
+  });
+
+  // Show toast briefly
+  const showToast = (msg: string, type: 'success' | 'error') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const handleApply = async (program: any) => {
+    setApplying(program.id);
+    const result = await applyToProgram(program.id, program.name, program.amount, program.rate);
+    setApplying(null);
+    if (result.success) {
+      showToast(`Applied to ${program.name} — your profile is in the lender queue`, 'success');
+      loadData();
     } else {
-      newExpanded.add(index);
+      showToast(result.error || 'Could not submit application', 'error');
     }
-    setExpandedPrograms(newExpanded);
   };
 
-  const handleApply = (program: any) => {
-    setSelectedProgram({
-      name: program.name,
-      amount: program.amount,
-      type: program.type
-    });
-    setIsModalOpen(true);
+  const handleWithdraw = async (programId: string, programName: string) => {
+    if (!confirm(`Withdraw your application for ${programName}?`)) return;
+    setWithdrawing(programId);
+    await withdrawApplication(programId);
+    setWithdrawing(null);
+    showToast(`Application withdrawn`, 'success');
+    loadData();
   };
 
-  const handleViewRequirements = (program: any) => {
-    setSelectedProgram({
-      name: program.name,
-      amount: program.amount,
-      type: program.type,
-      gapAnalysis: program.gapAnalysis
-    });
-    setIsGapModalOpen(true);
-  };
-
-  const filteredPrograms = filter === 'all' 
-    ? allPrograms 
-    : filter === 'pre-qualified'
-    ? allPrograms.filter(p => p.status === 'pre-qualified')
-    : allPrograms.filter(p => p.status === 'not-qualified');
-
-  const preQualifiedCount = allPrograms.filter(p => p.status === 'pre-qualified').length;
-
-  // Helper function to determine proximity status
-  const getProximityStatus = (program: any) => {
-    if (program.status === 'pre-qualified') return 'qualified';
-    if (!program.gapAnalysis) return 'locked';
-    
-    const progress = program.gapAnalysis.matchScore || 0;
-    if (progress >= 70) return 'close'; // 1-2 requirements away
-    if (progress >= 50) return 'almost'; // Making progress
-    return 'locked';
-  };
+  // Pipeline stage tabs
+  const stageTabs: { key: ViewFilter; label: string; count: number; color: string }[] = [
+    { key: 'all',           label: 'All Programs',   count: allPrograms.length,    color: 'var(--foreground)' },
+    { key: 'pre-qualified', label: 'Pre-Qualified',  count: preQualCount,          color: '#10b981' },
+    { key: 'applied',       label: 'Applied',        count: pipeline.applied + pipeline.under_review, color: '#3b82f6' },
+    { key: 'offers',        label: 'Offers',         count: pipeline.offer_received + pipeline.accepted, color: '#f59e0b' },
+    { key: 'future',        label: 'Future Goals',   count: allPrograms.length - preQualCount, color: '#94a3b8' },
+  ];
 
   return (
-    <div className="flex-1 min-h-screen bg-slate-50 overflow-auto">
-      <div className="max-w-7xl mx-auto p-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-4xl font-bold text-gray-900">Access Funding</h1>
-            <Badge variant="info" className="text-sm px-3 py-1">
-              {filteredPrograms.length} Programs Available
-            </Badge>
-          </div>
-          <p className="text-gray-600">Explore pre-qualified funding opportunities for your business</p>
-        </motion.div>
+    <div style={{ flex: 1, minHeight: '100vh', overflowY: 'auto', backgroundColor: 'var(--background)' }}>
+      {/* Toast */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            style={{
+              position: 'fixed', top: '20px', right: '24px', zIndex: 9999,
+              padding: '12px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: 600,
+              background: toast.type === 'success' ? '#10b981' : '#ef4444',
+              color: 'white', boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+              display: 'flex', alignItems: 'center', gap: '8px',
+            }}
+          >
+            {toast.type === 'success' ? <CheckCircle2 size={15} /> : <AlertTriangle size={15} />}
+            {toast.msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {/* Hero Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
-        >
-          <div className="bg-gradient-to-br from-emerald-600 to-green-600 rounded-2xl p-6 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <DollarSign className="w-6 h-6" />
-              </div>
-              <TrendingUp className="w-6 h-6 text-emerald-200" />
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
+
+        {/* ── HEADER ──────────────────────────────────────────────────────── */}
+        <div style={{ marginBottom: '28px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '6px' }}>
+            <div>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
+                Capital Access
+              </p>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(24px, 3vw, 32px)', color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
+                Funding Pipeline
+              </h1>
             </div>
-            <h3 className="text-3xl font-bold mb-1">
-              ${(totalPreQualified / 1000).toFixed(0)}K+
-            </h3>
-            <p className="text-sm text-emerald-100">Total Pre-Qualified Amount</p>
+            <button
+              onClick={() => setShowDisclaimer(d => !d)}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}
+            >
+              <Info size={13} /> How this works
+            </button>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl p-6 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-            </div>
-            <h3 className="text-3xl font-bold mb-1">{preQualifiedCount}</h3>
-            <p className="text-sm text-blue-100">Pre-Qualified Programs</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl p-6 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <Clock className="w-6 h-6" />
-              </div>
-            </div>
-            <h3 className="text-3xl font-bold mb-1">24-48hrs</h3>
-            <p className="text-sm text-purple-100">Fastest Approval Time</p>
-          </div>
-        </motion.div>
-
-        {/* Filter Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 sticky top-0 z-10"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setFilter('all')}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                  filter === 'all'
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-slate-100 text-gray-700 hover:bg-slate-200'
-                }`}
+          <AnimatePresence>
+            {showDisclaimer && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                style={{ overflow: 'hidden' }}
               >
-                All Programs ({allPrograms.length})
-              </button>
-              <button
-                onClick={() => setFilter('pre-qualified')}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                  filter === 'pre-qualified'
-                    ? 'bg-emerald-600 text-white shadow-md'
-                    : 'bg-slate-100 text-gray-700 hover:bg-slate-200'
-                }`}
-              >
-                Pre-Qualified ({preQualifiedCount})
-              </button>
-              <button
-                onClick={() => setFilter('not-qualified')}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                  filter === 'not-qualified'
-                    ? 'bg-slate-600 text-white shadow-md'
-                    : 'bg-slate-100 text-gray-700 hover:bg-slate-200'
-                }`}
-              >
-                Future Goals ({allPrograms.length - preQualifiedCount})
-              </button>
-            </div>
-          </div>
-        </motion.div>
+                <div style={{ padding: '14px 16px', borderRadius: '10px', background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)', marginTop: '12px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                  <Info size={14} style={{ color: '#3b82f6', flexShrink: 0, marginTop: '2px' }} />
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
+                    <strong style={{ color: 'var(--foreground)' }}>Pre-Qualified = prediction, not a promise.</strong> Your FundScore engine scans your profile against lender criteria. Clicking Apply submits your profile to the lender's soft-pull queue — no hard credit inquiry, no obligation to accept. Lenders review and send back real offers (amount, rate, term) which appear here. You decide what to accept.
+                    <button onClick={() => setShowDisclaimer(false)} style={{ marginLeft: '8px', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>Got it ✕</button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-        {/* Programs Grid */}
-        <div className="space-y-4">
+        {/* ── PIPELINE SUMMARY STRIP ───────────────────────────────────────── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+          {[
+            { label: 'Pre-Qualified', value: preQualCount, sub: 'Estimated eligible', color: '#10b981', icon: <Zap size={16} /> },
+            { label: 'Applied', value: pipeline.applied, sub: 'In lender queue', color: '#3b82f6', icon: <ArrowRight size={16} /> },
+            { label: 'Under Review', value: pipeline.under_review, sub: 'Lender evaluating', color: '#f59e0b', icon: <Clock size={16} /> },
+            { label: 'Offers Received', value: pipeline.offer_received, sub: 'Real numbers in', color: '#10b981', icon: <DollarSign size={16} /> },
+            { label: 'Funded', value: pipeline.funded, sub: 'Capital deployed', color: '#10b981', icon: <CheckCircle2 size={16} /> },
+          ].map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              style={{
+                background: 'var(--card)',
+                border: `1px solid ${stat.value > 0 ? stat.color + '30' : 'var(--border)'}`,
+                borderRadius: '12px',
+                padding: '14px 16px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <div style={{ color: stat.value > 0 ? stat.color : 'var(--muted-foreground)' }}>{stat.icon}</div>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '22px', color: stat.value > 0 ? stat.color : 'var(--muted-foreground)' }}>
+                  {stat.value}
+                </span>
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: 'var(--foreground)' }}>{stat.label}</div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>{stat.sub}</div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* ── OFFER ALERT — appears when offers are waiting ────────────────── */}
+        {pipeline.offer_received > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{ padding: '16px 20px', borderRadius: '12px', background: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(59,130,246,0.08))', border: '1.5px solid #10b98140', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '20px' }}>💰</span>
+              <div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--foreground)' }}>
+                  {pipeline.offer_received} funding offer{pipeline.offer_received !== 1 ? 's' : ''} waiting for your review
+                </div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
+                  Real amounts, rates, and terms from lenders — no obligation to accept
+                </div>
+              </div>
+            </div>
+            <button onClick={() => setFilter('offers')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '9px 18px', background: '#10b981', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              View Offers <ArrowRight size={13} />
+            </button>
+          </motion.div>
+        )}
+
+        {/* ── FILTER TABS ──────────────────────────────────────────────────── */}
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', flexWrap: 'wrap' }}>
+          {stageTabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              style={{
+                fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '13px',
+                padding: '7px 14px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.15s',
+                background: filter === tab.key ? tab.color : 'var(--card)',
+                color: filter === tab.key ? 'white' : 'var(--muted-foreground)',
+                border: filter === tab.key ? `1px solid ${tab.color}` : '1px solid var(--border)',
+              }}
+            >
+              {tab.label}
+              <span style={{ marginLeft: '6px', fontWeight: 700, opacity: 0.85 }}>({tab.count})</span>
+            </button>
+          ))}
+        </div>
+
+        {/* ── PROGRAM LIST ─────────────────────────────────────────────────── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {filteredPrograms.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '48px 24px', background: 'var(--card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔍</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px', color: 'var(--foreground)', marginBottom: '6px' }}>No programs in this view</div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)' }}>Try a different filter above</div>
+            </div>
+          )}
+
           {filteredPrograms.map((program, index) => {
-            const isExpanded = expandedPrograms.has(index);
-            const isPreQualified = program.status === 'pre-qualified';
-            const proximityStatus = getProximityStatus(program);
+            const app = appMap.get(program.id);
+            const isPreQual = program.status === 'pre-qualified';
+            const isApplied = !!app;
+            const isExpanded = expandedId === program.id;
+            const matchPct = program.gapAnalysis?.matchScore ?? 0;
+            const stage = app ? STAGE_CONFIG[app.status] : null;
+            const hasOffer = app?.status === 'offer_received' || app?.status === 'accepted';
 
             return (
               <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
+                key={program.id || index}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 * (index % 5) }}
+                transition={{ delay: Math.min(index * 0.04, 0.3) }}
+                style={{
+                  background: hasOffer ? 'linear-gradient(135deg, rgba(16,185,129,0.06), rgba(59,130,246,0.04))' : 'var(--card)',
+                  border: hasOffer ? '1.5px solid #10b98135' : isApplied ? '1px solid #3b82f630' : isPreQual ? '1px solid #10b98120' : '1px solid var(--border)',
+                  borderRadius: '14px',
+                  overflow: 'hidden',
+                  opacity: !isPreQual && !isApplied && matchPct < 30 ? 0.65 : 1,
+                }}
               >
-                <Card className={`overflow-hidden border-2 transition-all ${
-                  isPreQualified 
-                    ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50' 
-                    : proximityStatus === 'close'
-                    ? 'border-yellow-200 bg-gradient-to-r from-yellow-50 to-amber-50'
-                    : 'border-slate-200 bg-white opacity-90'
-                }`}>
-                  {/* Collapsed View */}
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          {!isPreQualified && (
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                              proximityStatus === 'close'
-                                ? 'bg-yellow-100'
-                                : 'bg-slate-100'
-                            }`}>
-                              {proximityStatus === 'close' ? (
-                                <Target className="w-5 h-5 text-yellow-600" />
-                              ) : (
-                                <Lock className="w-5 h-5 text-slate-400" />
-                              )}
-                            </div>
-                          )}
-                          <h3 className={`text-xl font-bold ${
-                            isPreQualified ? 'text-gray-900' : 'text-gray-600'
-                          }`}>
-                            {program.name}
-                          </h3>
-                          <Badge variant={
-                            isPreQualified ? 'success' : proximityStatus === 'close' ? 'warning' : 'default'
-                          }>
-                            {isPreQualified 
-                              ? '✓ Pre-Qualified' 
-                              : proximityStatus === 'close'
-                              ? '⚡ Almost There!'
-                              : '🔒 Locked'}
-                          </Badge>
-                        </div>
-                        <p className={`text-sm mb-3 ${
-                          isPreQualified ? 'text-gray-600' : 'text-gray-500'
-                        }`}>
-                          {program.description}
-                        </p>
-                        
-                        {/* Quick-Scan Metrics Bar */}
-                        <div className="flex items-center gap-6 text-sm">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                              isPreQualified ? 'bg-blue-100' : 'bg-slate-100'
-                            }`}>
-                              <CreditCardIcon className={`w-4 h-4 ${
-                                isPreQualified ? 'text-blue-600' : 'text-slate-400'
-                              }`} />
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500">Min FICO</p>
-                              <p className={`font-bold ${
-                                isPreQualified ? 'text-gray-900' : 'text-gray-500'
-                              }`}>
-                                {program.minFICO || 'N/A'}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                              isPreQualified ? 'bg-emerald-100' : 'bg-slate-100'
-                            }`}>
-                              <Banknote className={`w-4 h-4 ${
-                                isPreQualified ? 'text-emerald-600' : 'text-slate-400'
-                              }`} />
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500">Min Revenue</p>
-                              <p className={`font-bold ${
-                                isPreQualified ? 'text-gray-900' : 'text-gray-500'
-                              }`}>
-                                {program.minRevenue || 'N/A'}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                              isPreQualified ? 'bg-purple-100' : 'bg-slate-100'
-                            }`}>
-                              <Zap className={`w-4 h-4 ${
-                                isPreQualified ? 'text-purple-600' : 'text-slate-400'
-                              }`} />
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500">Funding Speed</p>
-                              <p className={`font-bold ${
-                                isPreQualified ? 'text-gray-900' : 'text-gray-500'
-                              }`}>
-                                {program.fundingSpeed || 'Varies'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                {/* Card header row */}
+                <div
+                  style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }}
+                  onClick={() => setExpandedId(isExpanded ? null : (program.id || String(index)))}
+                >
+                  {/* Status indicator dot */}
+                  <div style={{
+                    width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0,
+                    background: hasOffer ? '#10b981' : isApplied ? '#3b82f6' : isPreQual ? '#10b98160' : matchPct >= 70 ? '#f59e0b' : '#94a3b8',
+                  }} />
 
-                        {/* Progress Indicator for Close Programs */}
-                        {!isPreQualified && program.gapAnalysis && proximityStatus === 'close' && (
-                          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs font-semibold text-yellow-900">
-                                {program.gapAnalysis.passedRequirements.length} of {program.gapAnalysis.passedRequirements.length + program.gapAnalysis.failedRequirements.length} Requirements Met
-                              </span>
-                              <span className="text-xs font-bold text-yellow-900">
-                                {program.gapAnalysis.matchScore}%
-                              </span>
-                            </div>
-                            <div className="h-2 bg-yellow-200 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full"
-                                style={{ width: `${program.gapAnalysis.matchScore}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                  {/* Name + badges */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '2px' }}>
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--foreground)' }}>
+                        {program.name}
+                      </span>
 
-                      <div className="flex flex-col items-end gap-2 ml-6">
-                        <div className="text-right">
-                          <p className={`text-2xl font-bold ${
-                            isPreQualified ? 'text-gray-900' : 'text-gray-500'
-                          }`}>
-                            {program.amount}
-                          </p>
-                          <p className={`text-sm ${
-                            isPreQualified ? 'text-gray-500' : 'text-gray-400'
-                          }`}>
-                            {program.rate}
-                          </p>
-                        </div>
-                      </div>
+                      {/* Application stage badge */}
+                      {stage && (
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: stage.bg, color: stage.color }}>
+                          {stage.label}
+                        </span>
+                      )}
+
+                      {/* Pre-qual badge (only if not applied) */}
+                      {!isApplied && isPreQual && (
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: 'rgba(16,185,129,0.1)', color: '#10b981' }}>
+                          Pre-Qualified
+                        </span>
+                      )}
+
+                      {/* Close badge */}
+                      {!isApplied && !isPreQual && matchPct >= 70 && (
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>
+                          Almost There
+                        </span>
+                      )}
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-                      <button
-                        onClick={() => toggleProgramDetails(index)}
-                        className={`flex items-center gap-2 font-medium text-sm transition-colors ${
-                          isPreQualified 
-                            ? 'text-blue-600 hover:text-blue-700' 
-                            : 'text-slate-600 hover:text-slate-700'
-                        }`}
-                      >
-                        {isExpanded ? (
-                          <>
-                            <ChevronUp className="w-4 h-4" />
-                            <span>Show Less</span>
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="w-4 h-4" />
-                            <span>Learn More</span>
-                          </>
-                        )}
-                      </button>
-                      
-                      {isPreQualified ? (
-                        <Button
-                          onClick={() => handleApply(program)}
-                          className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
-                        >
-                          Apply Now
-                        </Button>
+                    {/* Estimated amount + offer amount if available */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      {hasOffer && app?.offer_amount ? (
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px', color: '#10b981' }}>
+                          Offer: {formatDollars(app.offer_amount)}
+                          {app.offer_rate ? ` @ ${app.offer_rate}` : ''}
+                          {app.offer_term ? ` · ${app.offer_term}` : ''}
+                        </span>
                       ) : (
-                        <Button
-                          onClick={() => handleViewRequirements(program)}
-                          variant="outline"
-                          className={`${
-                            proximityStatus === 'close'
-                              ? 'border-yellow-300 text-yellow-700 hover:bg-yellow-50'
-                              : 'border-slate-300 text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          View Requirements
-                        </Button>
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
+                          {isPreQual ? `Est. ${program.amount}` : program.amount}
+                          {program.rate ? ` · ${program.rate}` : ''}
+                          {!isPreQual && matchPct > 0 && (
+                            <span style={{ marginLeft: '6px', color: matchPct >= 70 ? '#f59e0b' : '#94a3b8' }}>
+                              {matchPct}% match
+                            </span>
+                          )}
+                        </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Expanded Details */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
+                  {/* Action button */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                    {hasOffer ? (
+                      <button
+                        onClick={() => setExpandedId(isExpanded ? null : (program.id || String(index)))}
+                        style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', padding: '8px 16px', background: '#10b981', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
                       >
-                        <div className="px-6 pb-6 pt-0 border-t border-slate-200 bg-white">
-                          {/* What It Is */}
-                          {program.whatItIs && (
-                            <div className="mb-6 mt-6">
-                              <h4 className="font-bold text-gray-900 mb-2">What It Is</h4>
-                              <p className="text-sm text-gray-700">{program.whatItIs}</p>
-                            </div>
-                          )}
+                        View Offer <ArrowRight size={12} />
+                      </button>
+                    ) : isApplied ? (
+                      <button
+                        onClick={() => handleWithdraw(program.id, program.name)}
+                        disabled={withdrawing === program.id}
+                        style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '11px', padding: '6px 12px', background: 'none', border: '1px solid var(--border)', borderRadius: '7px', color: 'var(--muted-foreground)', cursor: 'pointer' }}
+                      >
+                        {withdrawing === program.id ? '...' : 'Withdraw'}
+                      </button>
+                    ) : isPreQual ? (
+                      <button
+                        onClick={() => handleApply(program)}
+                        disabled={applying === program.id}
+                        style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', padding: '8px 16px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', boxShadow: '0 2px 10px rgba(16,185,129,0.25)', opacity: applying === program.id ? 0.7 : 1 }}
+                      >
+                        {applying === program.id ? 'Applying…' : <><Zap size={12} /> Apply</>}
+                      </button>
+                    ) : matchPct >= 50 ? (
+                      <button
+                        onClick={() => setGapProgram(program)}
+                        style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '11px', padding: '7px 12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '7px', color: '#f59e0b', cursor: 'pointer' }}
+                      >
+                        See Gap
+                      </button>
+                    ) : (
+                      <Lock size={14} style={{ color: 'var(--muted-foreground)' }} />
+                    )}
+                    <div style={{ color: 'var(--muted-foreground)' }}>
+                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </div>
+                  </div>
+                </div>
 
-                          {/* Ideal For */}
-                          {program.idealUseCase && (
-                            <div className="mb-6">
-                              <h4 className="font-bold text-gray-900 mb-2">Ideal For</h4>
-                              <p className="text-sm text-gray-700">{program.idealUseCase}</p>
-                            </div>
-                          )}
+                {/* Expanded detail panel */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <div style={{ padding: '0 20px 20px', borderTop: '1px solid var(--border)' }}>
 
-                          {/* Pros and Cons - Two Column Layout */}
-                          {(program.pros || program.cons) && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                              {/* Pros */}
-                              {program.pros && (
-                                <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
-                                  <h4 className="font-bold text-emerald-900 mb-3 flex items-center gap-2">
-                                    <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
-                                      <Check className="w-4 h-4 text-white" />
-                                    </div>
-                                    Advantages
-                                  </h4>
-                                  <ul className="space-y-2">
-                                    {program.pros.map((pro, idx) => (
-                                      <li key={idx} className="flex items-start gap-2 text-sm text-emerald-900">
-                                        <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                                        <span>{pro}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
+                        {/* Offer details (if offer received) */}
+                        {hasOffer && app && (
+                          <div style={{ padding: '14px', borderRadius: '10px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', margin: '16px 0' }}>
+                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: '#10b981', marginBottom: '10px' }}>💰 Lender Offer</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                              {[
+                                { label: 'Amount', value: app.offer_amount ? formatDollars(app.offer_amount) : '—' },
+                                { label: 'Rate', value: app.offer_rate || '—' },
+                                { label: 'Term', value: app.offer_term || '—' },
+                              ].map(item => (
+                                <div key={item.label} style={{ textAlign: 'center' }}>
+                                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '18px', color: 'var(--foreground)' }}>{item.value}</div>
+                                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>{item.label}</div>
                                 </div>
-                              )}
-
-                              {/* Cons */}
-                              {program.cons && (
-                                <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-                                  <h4 className="font-bold text-amber-900 mb-3 flex items-center gap-2">
-                                    <div className="w-6 h-6 bg-amber-600 rounded-full flex items-center justify-center">
-                                      <AlertTriangle className="w-4 h-4 text-white" />
-                                    </div>
-                                    Considerations
-                                  </h4>
-                                  <ul className="space-y-2">
-                                    {program.cons.map((con, idx) => (
-                                      <li key={idx} className="flex items-start gap-2 text-sm text-amber-900">
-                                        <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                                        <span>{con}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Requirements Checklist */}
-                          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                            <h4 className="font-bold text-gray-900 mb-3">Requirements</h4>
-                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              {program.requirements.split(',').map((req, idx) => (
-                                <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                                  <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                                  <span>{req.trim()}</span>
-                                </li>
                               ))}
-                            </ul>
-                          </div>
-
-                          {/* Apply/Requirements Button at Bottom */}
-                          <div className="mt-6 flex justify-end">
-                            {isPreQualified ? (
-                              <Button
-                                onClick={() => handleApply(program)}
-                                size="lg"
-                                className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
-                              >
-                                Apply Now for {program.name}
-                              </Button>
-                            ) : (
-                              <Button
-                                onClick={() => handleViewRequirements(program)}
-                                size="lg"
-                                variant="outline"
-                                className={`${
-                                  proximityStatus === 'close'
-                                    ? 'border-yellow-300 text-yellow-700 hover:bg-yellow-50'
-                                    : 'border-slate-300 text-slate-700 hover:bg-slate-50'
-                                }`}
-                              >
-                                View Gap Analysis for {program.name}
-                              </Button>
+                            </div>
+                            {app.lender_notes && (
+                              <div style={{ marginTop: '10px', fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', fontStyle: 'italic' }}>
+                                "{app.lender_notes}"
+                              </div>
+                            )}
+                            {app.status === 'offer_received' && (
+                              <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+                                <button
+                                  onClick={() => navigate('/app/access-funding/' + program.id)}
+                                  style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '10px 20px', background: '#10b981', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer' }}
+                                >
+                                  Accept Offer
+                                </button>
+                                <button
+                                  onClick={() => handleWithdraw(program.id, program.name)}
+                                  style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '12px', padding: '10px 16px', background: 'none', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--muted-foreground)', cursor: 'pointer' }}
+                                >
+                                  Decline
+                                </button>
+                              </div>
                             )}
                           </div>
+                        )}
+
+                        {/* Program info grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '16px' }}>
+                          <div>
+                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>What It Is</div>
+                            <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', lineHeight: 1.6, margin: 0 }}>
+                              {program.description || 'No description available.'}
+                            </p>
+                          </div>
+                          <div>
+                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>Requirements</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              {[
+                                { label: 'Min FICO', value: program.minFICO },
+                                { label: 'Min Revenue', value: program.minRevenue },
+                                { label: 'Time in Business', value: program.minTimeInBusiness },
+                              ].filter(r => r.value).map(req => (
+                                <div key={req.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-body)', fontSize: '12px' }}>
+                                  <span style={{ color: 'var(--muted-foreground)' }}>{req.label}</span>
+                                  <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>{req.value}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </Card>
+
+                        {/* Progress bar for non-qualified */}
+                        {!isPreQual && matchPct > 0 && (
+                          <div style={{ marginTop: '16px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>Qualification progress</span>
+                              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '11px', color: matchPct >= 70 ? '#f59e0b' : 'var(--muted-foreground)' }}>{matchPct}%</span>
+                            </div>
+                            <div style={{ height: '5px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
+                              <div style={{ width: `${matchPct}%`, height: '100%', background: matchPct >= 70 ? '#f59e0b' : '#94a3b8', borderRadius: '99px', transition: 'width 0.6s ease' }} />
+                            </div>
+                            <button
+                              onClick={e => { e.stopPropagation(); setGapProgram(program); }}
+                              style={{ marginTop: '8px', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '12px', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                            >
+                              See what's missing →
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Apply button at bottom of expanded card */}
+                        {!isApplied && isPreQual && (
+                          <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <button
+                              onClick={() => handleApply(program)}
+                              disabled={applying === program.id}
+                              style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '10px 22px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '9px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px', boxShadow: '0 3px 12px rgba(16,185,129,0.25)' }}
+                            >
+                              <Zap size={14} /> {applying === program.id ? 'Submitting…' : 'Apply Now — Soft Pull Only'}
+                            </button>
+                            <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>No hard inquiry · No obligation</span>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             );
           })}
         </div>
       </div>
 
-      {/* Application Modal */}
-      {selectedProgram && isModalOpen && (
-        <FundingApplicationModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          programName={selectedProgram.name}
-          programAmount={selectedProgram.amount}
-          programType={selectedProgram.type}
-        />
-      )}
-
-      {/* Requirements Gap Modal */}
-      {selectedProgram && isGapModalOpen && (
+      {/* Gap analysis modal */}
+      {gapProgram && (
         <RequirementsGapModal
-          isOpen={isGapModalOpen}
-          onClose={() => setIsGapModalOpen(false)}
-          programName={selectedProgram.name}
-          programAmount={selectedProgram.amount}
-          gapAnalysis={selectedProgram.gapAnalysis}
+          isOpen={!!gapProgram}
+          onClose={() => setGapProgram(null)}
+          program={{ name: gapProgram.name, amount: gapProgram.amount, type: gapProgram.type, gapAnalysis: gapProgram.gapAnalysis }}
         />
       )}
     </div>

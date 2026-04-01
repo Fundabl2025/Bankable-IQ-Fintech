@@ -21,7 +21,7 @@ export function UnifiedAssessment() {
   
   // Current question (0-32 for 33 total questions)
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const totalQuestions = 33; // 10 foundation + 23 readiness
+  const totalQuestions = 35; // 12 foundation + 23 readiness
 
   // Live score
   const [liveScore, setLiveScore] = useState(0);
@@ -103,7 +103,7 @@ export function UnifiedAssessment() {
   
   const calculateApplicableQuestions = (): number => {
     // Calculate total applicable questions for accurate progress tracking
-    let count = 10; // Foundation questions always shown
+    let count = 12; // Foundation questions always shown (12 total)
     
     // Check each readiness question for applicability
     for (let i = 0; i < 23; i++) {
@@ -117,21 +117,21 @@ export function UnifiedAssessment() {
   
   const getNextApplicableQuestion = (startFrom: number): number => {
     let nextQuestion = startFrom + 1;
-    
-    while (nextQuestion < 33) {
-      if (nextQuestion < 10) {
+
+    while (nextQuestion < 35) {
+      if (nextQuestion < 12) {
         // Foundation questions always applicable
         return nextQuestion;
       } else {
-        const readinessIdx = nextQuestion - 10;
+        const readinessIdx = nextQuestion - 12;
         if (shouldShowReadinessQuestion(readinessIdx)) {
           return nextQuestion;
         }
       }
       nextQuestion++;
     }
-    
-    return 33; // Reached end
+
+    return 35; // Reached end
   };
   
   const getPreviousApplicableQuestion = (startFrom: number): number => {
@@ -156,7 +156,7 @@ export function UnifiedAssessment() {
   const handleNext = () => {
     const nextQuestion = getNextApplicableQuestion(currentQuestion);
     
-    if (nextQuestion < 33) {
+    if (nextQuestion < 35) {
       setCurrentQuestion(nextQuestion);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
@@ -184,8 +184,8 @@ export function UnifiedAssessment() {
   const [showLoading, setShowLoading] = useState(false);
 
   // Determine which component to render based on question number
-  const isFoundationQuestion = currentQuestion < 10; // Q0-9 are foundation
-  const readinessIndex = currentQuestion - 10; // Q10-32 map to readiness 0-22
+  const isFoundationQuestion = currentQuestion < 12; // Q0-11 are foundation (12 questions)
+  const readinessIndex = currentQuestion - 12; // Q12-34 map to readiness 0-22
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
@@ -237,13 +237,13 @@ export function UnifiedAssessment() {
 // ════════════════════════════════════════════════════════════════════════════════
 
 const STEP_TRACK = [
-  { label: 'Business Profile', Icon: Building2, start: 0, end: 9 },
-  { label: 'Documents', Icon: FileText, start: 10, end: 13 },
-  { label: 'Cash Flow', Icon: TrendingUp, start: 14, end: 17 },
-  { label: 'Credit', Icon: CreditCard, start: 18, end: 24 },
-  { label: 'History', Icon: Shield, start: 25, end: 29 },
-  { label: 'Capital', Icon: DollarSign, start: 30, end: 32 },
-  { label: 'Your Score', Icon: Lock, start: 33, end: 33, locked: true },
+  { label: 'Business Profile', Icon: Building2, start: 0, end: 11 },
+  { label: 'Documents', Icon: FileText, start: 12, end: 15 },
+  { label: 'Cash Flow', Icon: TrendingUp, start: 16, end: 19 },
+  { label: 'Credit', Icon: CreditCard, start: 20, end: 26 },
+  { label: 'History', Icon: Shield, start: 27, end: 31 },
+  { label: 'Capital', Icon: DollarSign, start: 32, end: 34 },
+  { label: 'Your Score', Icon: Lock, start: 35, end: 35, locked: true },
 ];
 
 function AssessmentStepTrack({ currentQuestion, totalQuestions }: { currentQuestion: number; totalQuestions: number }) {

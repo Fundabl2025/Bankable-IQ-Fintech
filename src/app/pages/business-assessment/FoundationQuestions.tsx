@@ -21,7 +21,8 @@ interface FoundationQuestionProps {
 export function FoundationQuestion({ step, data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions }: FoundationQuestionProps) {
   const questions = [
     QuestionF1, QuestionF2, QuestionF3, QuestionF4, QuestionF5,
-    QuestionF6, QuestionF7, QuestionF8, QuestionF9, QuestionF10, QuestionF11,
+    QuestionF6, QuestionF7, QuestionF8, QuestionF9, QuestionF10,
+    QuestionF11_Capital, QuestionF12_Eligibility,
   ];
 
   const CurrentQuestion = questions[step];
@@ -304,6 +305,20 @@ function QuestionF1({ data, updateData, onNext, onBack, currentQuestionNumber, t
 // Q_F2: Business Name + Entity Type
 // ════════════════════════════════════════════════════════════════════════════════
 
+const HIGH_RISK_WORDS = [
+  'adult','alcohol','ammo','auction','bail','banking','billing','beer','booking',
+  'broker','cannabis','capital','cashing','check','cigarette','collection','credit',
+  'dating','dealer','debt','dropship','fantasy','financial','financing','firearm',
+  'fitness','gambling','gun','gym','insurance','lending','liquor','loan','media',
+  'mortgage','pawn','psychic','realtor','repair','smoking','telemarket','tobacco',
+  'travel','vape','vending','warrant','wine',
+];
+
+function getHighRiskWord(name: string): string | null {
+  const lower = name.toLowerCase();
+  return HIGH_RISK_WORDS.find(w => lower.includes(w)) || null;
+}
+
 function QuestionF2({ data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions, step }: any) {
   const entityTypes = [
     { value: 'sole_prop', label: 'Sole Proprietorship', sub: 'No legal separation' },
@@ -313,6 +328,7 @@ function QuestionF2({ data, updateData, onNext, onBack, currentQuestionNumber, t
   ];
 
   const isValid = (data.businessName || '').trim() && data.entityType;
+  const highRiskWord = getHighRiskWord(data.businessName || '');
 
   return (
     <>
@@ -354,6 +370,20 @@ function QuestionF2({ data, updateData, onNext, onBack, currentQuestionNumber, t
             color: 'var(--text-primary)',
           }}
         />
+        {/* High-risk name warning */}
+        {highRiskWord && (
+          <div style={{ marginTop: '10px', padding: '12px 16px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '8px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '16px', flexShrink: 0 }}>⚠️</span>
+            <div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: '#92400e', marginBottom: '2px' }}>
+                "{highRiskWord}" may trigger lender auto-declines
+              </div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: '#78350f', lineHeight: 1.5 }}>
+                Lenders use automated underwriting that flags certain keywords in business names. This doesn't disqualify you, but it reduces your approved options. Consider a DBA (doing business as) name if possible.
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Entity Type */}
@@ -433,6 +463,26 @@ function QuestionF2({ data, updateData, onNext, onBack, currentQuestionNumber, t
           </motion.div>
         ))}
       </div>
+
+      {/* Sole prop upgrade notice with referral */}
+      {data.entityType === 'sole_prop' && (
+        <div style={{ marginTop: '16px', padding: '14px 16px', background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '10px' }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: '#1d4ed8', marginBottom: '4px' }}>
+            Sole proprietors access 10× fewer capital products
+          </div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: '#1e40af', lineHeight: 1.5, marginBottom: '8px' }}>
+            An LLC or Corp creates the legal separation lenders require. It also protects your personal assets. You can form one in as little as 24 hours.
+          </div>
+          <a
+            href="https://www.zenbusiness.com/?utm_source=fundready"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: '#1d4ed8', textDecoration: 'none', background: 'rgba(59,130,246,0.1)', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(59,130,246,0.25)' }}
+          >
+            Form your LLC with ZenBusiness → <span style={{ fontSize: '10px', opacity: 0.7 }}>starts at $0 + state fee</span>
+          </a>
+        </div>
+      )}
 
       <NavigationButtons onNext={onNext} onBack={onBack} disabled={!isValid} step={1} />
     </>
@@ -2209,6 +2259,226 @@ function QuestionF11({ data, updateData, onNext, onBack, currentQuestionNumber, 
       </div>
 
       <NavigationButtons onNext={onNext} onBack={onBack} disabled={!data.bizCreditFile || !data.inquiries30d} step={10} />
+    </>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Q_F11 (Capital Request): How much do you need + what for?
+// ════════════════════════════════════════════════════════════════════════════════
+
+const LOAN_AMOUNTS = [
+  { value: 'under_25k',   label: 'Under $25K',      sub: 'Starter & working capital' },
+  { value: '25k_100k',    label: '$25K – $100K',     sub: 'Growth & equipment' },
+  { value: '100k_250k',   label: '$100K – $250K',    sub: 'Expansion capital' },
+  { value: '250k_500k',   label: '$250K – $500K',    sub: 'Scale operations' },
+  { value: '500k_1m',     label: '$500K – $1M',      sub: 'Major growth round' },
+  { value: 'over_1m',     label: '$1M+',             sub: 'Enterprise / real estate' },
+];
+
+const LOAN_PURPOSES = [
+  { value: 'working_capital', label: 'Working Capital',    icon: '💵', sub: 'Day-to-day operations, cash flow' },
+  { value: 'equipment',       label: 'Equipment Purchase', icon: '🔧', sub: 'Machinery, vehicles, tech' },
+  { value: 'real_estate',     label: 'Real Estate',        icon: '🏢', sub: 'Buy, build, or renovate' },
+  { value: 'expansion',       label: 'Business Expansion', icon: '📈', sub: 'New location, market entry' },
+  { value: 'payroll',         label: 'Payroll & Staff',    icon: '👥', sub: 'Hire, retain, scale team' },
+  { value: 'acquisition',     label: 'Buy a Business',     icon: '🤝', sub: 'Acquire existing business' },
+  { value: 'other',           label: 'Other',              icon: '✦',  sub: 'Debt consolidation, other' },
+];
+
+function QuestionF11_Capital({ data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions, step }: any) {
+  const isValid = data.loanAmount && data.loanPurpose;
+
+  return (
+    <>
+      <QuestionHeader
+        number={11}
+        title="How much capital are you looking for, and what's it for?"
+        why="The amount you need and its purpose determine which funding products fit your situation. A $25K working capital need has completely different solutions than a $500K real estate play. We use this to build your personalized roadmap."
+        currentQuestionNumber={currentQuestionNumber}
+        totalQuestions={totalQuestions}
+      />
+
+      {/* Loan Amount */}
+      <div style={{ marginBottom: '32px' }}>
+        <label style={{ display: 'block', fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '11px' }}>
+          Capital Amount Needed
+        </label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+          {LOAN_AMOUNTS.map((opt) => (
+            <motion.div
+              key={opt.value}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => updateData({ loanAmount: opt.value as any })}
+              style={{
+                background: data.loanAmount === opt.value ? 'var(--primary-alpha)' : 'var(--bg-surface-2)',
+                border: data.loanAmount === opt.value ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
+                borderRadius: '12px',
+                padding: '14px 16px',
+                cursor: 'pointer',
+                position: 'relative',
+              }}
+            >
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>{opt.label}</div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-secondary)' }}>{opt.sub}</div>
+              {data.loanAmount === opt.value && (
+                <div style={{ position: 'absolute', top: '10px', right: '12px', width: '18px', height: '18px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg-base)', fontSize: '11px', fontWeight: 700 }}>✓</div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Loan Purpose */}
+      <div style={{ marginBottom: '8px' }}>
+        <label style={{ display: 'block', fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Primary Use of Funds
+        </label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+          {LOAN_PURPOSES.map((opt) => (
+            <motion.div
+              key={opt.value}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => updateData({ loanPurpose: opt.value as any })}
+              style={{
+                background: data.loanPurpose === opt.value ? 'var(--primary-alpha)' : 'var(--bg-surface-2)',
+                border: data.loanPurpose === opt.value ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
+                borderRadius: '12px',
+                padding: '14px 16px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                position: 'relative',
+              }}
+            >
+              <span style={{ fontSize: '22px', flexShrink: 0 }}>{opt.icon}</span>
+              <div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>{opt.label}</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-secondary)' }}>{opt.sub}</div>
+              </div>
+              {data.loanPurpose === opt.value && (
+                <div style={{ position: 'absolute', top: '10px', right: '12px', width: '18px', height: '18px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg-base)', fontSize: '11px', fontWeight: 700 }}>✓</div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      <NavigationButtons onNext={onNext} onBack={onBack} disabled={!isValid} step={step} />
+    </>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Q_F12 (Eligibility Check): Restricted / ineligible business types
+// ════════════════════════════════════════════════════════════════════════════════
+
+const INELIGIBLE_TYPES = [
+  { value: 'cannabis',     label: 'Cannabis / Marijuana',           impact: 'Blocked from all SBA + bank products' },
+  { value: 'gambling',     label: 'Gambling / Casino',              impact: 'SBA ineligible; very limited bank options' },
+  { value: 'lending',      label: 'Money Lending / Finance Co.',    impact: 'SBA ineligible by law' },
+  { value: 'nonprofit',    label: 'Non-Profit Organization',        impact: 'SBA and most commercial products not available' },
+  { value: 'adult',        label: 'Adult Entertainment',            impact: 'Blocked from most mainstream lenders' },
+  { value: 'life_ins',     label: 'Life Insurance Sales',           impact: 'SBA ineligible' },
+  { value: 'firearms',     label: 'Firearms Dealer',                impact: 'Restricted lender pool' },
+  { value: 'pyramid',      label: 'MLM / Pyramid Scheme',           impact: 'SBA ineligible; major lender flags' },
+  { value: 'crypto_spec',  label: 'Crypto / Speculative Investment', impact: 'SBA ineligible; most banks decline' },
+  { value: 'political',    label: 'Political / Lobbying Org.',      impact: 'SBA ineligible' },
+  { value: 'foreign',      label: 'Foreign-Owned (non-US)',         impact: 'SBA ineligible; limited bank access' },
+];
+
+function QuestionF12_Eligibility({ data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions, step }: any) {
+  const selected: string[] = data.ineligibleBizTypes || [];
+
+  const toggle = (value: string) => {
+    const next = selected.includes(value)
+      ? selected.filter(v => v !== value)
+      : [...selected, value];
+    updateData({ ineligibleBizTypes: next, isIneligibleBizType: next.length > 0 });
+  };
+
+  const noneApply = selected.length === 0;
+
+  return (
+    <>
+      <QuestionHeader
+        number={12}
+        title="Does your business operate in any restricted categories?"
+        why="Federal law and lender policies block certain business types from SBA loans, bank financing, and most commercial products. Knowing this upfront lets us route you to the funding options that actually apply to your business — and saves you weeks of wasted applications."
+        currentQuestionNumber={currentQuestionNumber}
+        totalQuestions={totalQuestions}
+      />
+
+      <div style={{ marginBottom: '12px' }}>
+        <label style={{ display: 'block', fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Select all that apply to your business (leave blank if none apply)
+        </label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {INELIGIBLE_TYPES.map((type) => {
+            const isChecked = selected.includes(type.value);
+            return (
+              <motion.div
+                key={type.value}
+                whileHover={{ x: 3 }}
+                onClick={() => toggle(type.value)}
+                style={{
+                  background: isChecked ? 'rgba(239,68,68,0.06)' : 'var(--bg-surface-2)',
+                  border: isChecked ? '2px solid rgba(239,68,68,0.4)' : '1px solid var(--border-subtle)',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                }}
+              >
+                <div style={{
+                  width: '20px', height: '20px', borderRadius: '4px', flexShrink: 0,
+                  background: isChecked ? '#ef4444' : 'var(--bg-base)',
+                  border: isChecked ? '2px solid #ef4444' : '2px solid var(--border-subtle)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'white', fontSize: '12px', fontWeight: 700,
+                }}>
+                  {isChecked ? '✓' : ''}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>{type.label}</div>
+                  {isChecked && (
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#ef4444', marginTop: '2px' }}>{type.impact}</div>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Ineligible warning */}
+      {selected.length > 0 && (
+        <div style={{ marginBottom: '16px', padding: '14px 16px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '10px' }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700, color: '#dc2626', marginBottom: '4px' }}>
+            Restricted category detected — your options are narrowed
+          </div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: '#7f1d1d', lineHeight: 1.6 }}>
+            We'll remove ineligible products from your roadmap and focus you on funding paths that work for your business type. You can still access alternative capital, equipment financing, and select commercial lenders.
+          </div>
+        </div>
+      )}
+
+      {/* None apply — positive confirmation */}
+      {noneApply && (
+        <div style={{ marginBottom: '16px', padding: '12px 16px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <span style={{ fontSize: '18px' }}>✓</span>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#065f46' }}>
+            No restricted categories selected — you have access to the full funding landscape including SBA and bank products.
+          </div>
+        </div>
+      )}
+
+      <NavigationButtons onNext={onNext} onBack={onBack} disabled={false} step={step} />
     </>
   );
 }

@@ -73,7 +73,15 @@ export interface UnifiedAnswers {
   // Q_F11: Business Credit & Inquiries
   bizCreditFile: 'paydex_80plus' | 'below_80' | 'building' | 'none' | '';
   inquiries30d: '0' | '1_2' | '3_4' | '5plus' | 'unknown' | '';
-  
+
+  // Q_F12: Capital Request — how much + what for
+  loanAmount: 'under_25k' | '25k_100k' | '100k_250k' | '250k_500k' | '500k_1m' | 'over_1m' | '';
+  loanPurpose: 'working_capital' | 'equipment' | 'real_estate' | 'expansion' | 'payroll' | 'acquisition' | 'other' | '';
+
+  // Q_F13: Business Eligibility — ineligible/restricted type flag
+  isIneligibleBizType: boolean;
+  ineligibleBizTypes: string[]; // which categories selected
+
   // Additional contact data
   businessAddress?: string;
   businessCity?: string;
@@ -250,6 +258,10 @@ export function getDefaultAnswers(): UnifiedAnswers {
     noDerogItems: '', // FIXED: was false (boolean), now empty string (matching type)
     bizCreditFile: '',
     inquiries30d: '',
+    loanAmount: '',
+    loanPurpose: '',
+    isIneligibleBizType: false,
+    ineligibleBizTypes: [],
 
     // Readiness
     readinessAnswers: Array(23).fill(undefined), // FIXED: was 14, now 23

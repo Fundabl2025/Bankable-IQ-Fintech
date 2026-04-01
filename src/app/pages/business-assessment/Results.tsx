@@ -130,6 +130,12 @@ export function Results() {
   const [displayScore, setDisplayScore] = useState(0);
 
   useEffect(() => {
+    // Mark results as viewed — unlocks the "Report Reviewed" badge
+    localStorage.setItem('fundready_results_viewed', '1');
+    window.dispatchEvent(new Event('fundscoreUpdated'));
+  }, []);
+
+  useEffect(() => {
     // Load assessment data from localStorage
     const saved = localStorage.getItem('unified_assessment');
     if (!saved || !saved.trim()) {
@@ -151,6 +157,11 @@ export function Results() {
       // Calculate final score
       const scoreResult = computeScore(assessmentData);
       setResult(scoreResult);
+
+      // Record baseline score for Score Climber badge (only saves once — never overwritten)
+      if (!localStorage.getItem('fundready_initial_score')) {
+        localStorage.setItem('fundready_initial_score', String(scoreResult.score));
+      }
 
       // Compute extended results for reports
       const extended = computeExtendedResults(assessmentData);

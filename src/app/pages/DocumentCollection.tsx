@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, FileText, CheckCircle, Clock, AlertCircle, Download, Trash2, Eye } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -6,6 +6,18 @@ import { Badge } from '../components/ui/badge';
 import { motion } from 'motion/react';
 
 export function DocumentCollection() {
+  // Persist doc portal visit so Finances checklist reflects state
+  useEffect(() => {
+    localStorage.setItem('fundready_doc_portal_visited', '1');
+    // Mark specific categories based on uploaded docs in state
+    const hasBankDoc = documents.some(d => d.category === 'Bank Statements' && d.status === 'uploaded');
+    const hasTaxDoc = documents.some(d => d.category === 'Tax Returns' && d.status === 'uploaded');
+    if (hasBankDoc) localStorage.setItem('fundready_bank_statements_uploaded', '1');
+    if (hasTaxDoc) localStorage.setItem('fundready_tax_returns_uploaded', '1');
+    window.dispatchEvent(new Event('fundscoreUpdated'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [documents, setDocuments] = useState([
     { 
       category: 'Tax Returns', 

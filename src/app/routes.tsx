@@ -52,6 +52,8 @@ const CapitalAccessMap = lazy(() => import('./pages/CapitalAccessMap').then(m =>
 const DenialDiagnosis = lazy(() => import('./pages/DenialDiagnosis'));
 const CapitalGlossary = lazy(() => import('./pages/CapitalGlossary').then(m => ({ default: m.CapitalGlossary })));
 const MyProgress = lazy(() => import('./pages/MyProgress').then(m => ({ default: m.MyProgress })));
+const Finances = lazy(() => import('./pages/Finances').then(m => ({ default: m.Finances })));
+const LenderPortal = lazy(() => import('./pages/admin/LenderPortal').then(m => ({ default: m.LenderPortal })));
 const EntityFilings = lazy(() => import('./pages/LenderCompliance/EntityFilings').then(m => ({ default: m.EntityFilings })));
 
 // LenderCompliance sub-pages
@@ -297,6 +299,14 @@ export const router = createBrowserRouter([
       {
         path: 'my-progress',
         element: <LazyComponent Component={MyProgress} />,
+      },
+      {
+        path: 'finances',
+        element: <LazyComponent Component={Finances} />,
+      },
+      {
+        path: 'admin/lender-portal',
+        element: <LazyComponent Component={LenderPortal} />,
       },
       {
         path: 'capital-glossary',

@@ -1,7 +1,9 @@
 // ════════════════════════════════════════════════════════════════════════════════
 // FUNDREADY™ — Badge System
-// Milestone-based gamification layer tied to FundScore dimensions
+// Milestone-based gamification layer tied to real user actions + FundScore
 // ════════════════════════════════════════════════════════════════════════════════
+
+import { setDataItem, getDataItem } from './data-adapter';
 
 export interface Badge {
   id: string;
@@ -14,7 +16,7 @@ export interface Badge {
   /** Color for glow/border */
   color: string;
   /** Category grouping */
-  category: 'assessment' | 'credit' | 'financial' | 'compliance' | 'score';
+  category: 'assessment' | 'credit' | 'financial' | 'compliance' | 'score' | 'action';
   /** Check if this badge is earned given current state */
   isEarned: (ctx: BadgeContext) => boolean;
   /** Human-readable hint shown when locked */
@@ -26,6 +28,12 @@ export interface BadgeContext {
   score: number;
   bankableScore: number;
   dimAvg: Record<string, number>;
+  resultsViewed?: boolean;
+  // Action-based context
+  completedModuleCount: number;   // # of compliance modules fully completed
+  totalApplications: number;      // # of lender pipeline applications ever submitted
+  fundedCount: number;            // # of applications with status === 'funded'
+  initialScore?: number;          // score from very first assessment (for improvement badge)
 }
 
 export interface EarnedBadge {
@@ -37,7 +45,8 @@ const STORAGE_KEY = 'fundready_badges';
 
 // ── Badge Definitions ──────────────────────────────────────────────────────────
 export const BADGES: Badge[] = [
-  // Assessment milestones
+
+  // ── Assessment milestones ────────────────────────────────────────────────────
   {
     id: 'first_step',
     name: 'First Step',
@@ -47,21 +56,21 @@ export const BADGES: Badge[] = [
     color: '#10b981',
     category: 'assessment',
     isEarned: (ctx) => ctx.hasAssessment,
-    hint: 'Complete your business assessment to earn this',
+    hint: 'Complete the business assessment to earn this',
   },
   {
-    id: 'score_revealed',
-    name: 'Score Revealed',
-    description: 'Viewed your full FundScore report',
+    id: 'report_reviewed',
+    name: 'Report Reviewed',
+    description: 'Opened your full FundScore results report',
     icon: '🔍',
     gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
     color: '#3b82f6',
     category: 'assessment',
-    isEarned: (ctx) => ctx.hasAssessment && ctx.score > 0,
-    hint: 'Complete your assessment and view your results',
+    isEarned: (ctx) => ctx.resultsViewed === true,
+    hint: 'Complete the assessment and open your full results report',
   },
 
-  // Credit milestones
+  // ── Credit milestones ────────────────────────────────────────────────────────
   {
     id: 'club_680',
     name: '680 Club',
@@ -74,18 +83,18 @@ export const BADGES: Badge[] = [
     hint: 'Reach a Strong personal credit score (680+)',
   },
   {
-    id: 'no_derogs',
-    name: 'Clean Slate',
-    description: 'No bankruptcies, judgments, or active collections',
-    icon: '✅',
+    id: 'strong_credit',
+    name: 'Strong Credit',
+    description: 'Personal credit profile is excellent — 740+ territory',
+    icon: '⚡',
     gradient: 'linear-gradient(135deg, #22c55e, #16a34a)',
     color: '#22c55e',
     category: 'credit',
-    isEarned: (ctx) => (ctx.dimAvg?.P ?? 0) >= 0.8,
-    hint: 'Clear all derogatory marks from your credit profile',
+    isEarned: (ctx) => (ctx.dimAvg?.P ?? 0) >= 0.80,
+    hint: 'Build your personal credit profile to 740+ with no major derogatories',
   },
 
-  // Financial health milestones
+  // ── Financial health milestones ──────────────────────────────────────────────
   {
     id: 'cash_flow_champion',
     name: 'Cash Flow Champion',
@@ -95,7 +104,7 @@ export const BADGES: Badge[] = [
     color: '#f59e0b',
     category: 'financial',
     isEarned: (ctx) => (ctx.dimAvg?.F ?? 0) >= 0.75,
-    hint: 'Demonstrate consistent revenue and low NSF activity',
+    hint: 'Demonstrate consistent revenue and clean banking history',
   },
   {
     id: 'two_year_track',
@@ -109,31 +118,89 @@ export const BADGES: Badge[] = [
     hint: 'Show 2+ years in business with stable operations',
   },
 
-  // Compliance milestones
+  // ── Compliance action milestones ─────────────────────────────────────────────
+  {
+    id: 'first_module',
+    name: 'First Module',
+    description: 'Completed your first lender compliance module',
+    icon: '🎯',
+    gradient: 'linear-gradient(135deg, #10b981, #3b82f6)',
+    color: '#10b981',
+    category: 'compliance',
+    isEarned: (ctx) => ctx.completedModuleCount >= 1,
+    hint: 'Complete any one of the 13 lender compliance modules',
+  },
   {
     id: 'compliance_pro',
     name: 'Compliance Pro',
-    description: 'Compliance dimension is Strong or Bankable',
+    description: 'Completed 7 or more lender compliance modules',
     icon: '🛡️',
-    gradient: 'linear-gradient(135deg, #ef4444, #dc2626)',
-    color: '#ef4444',
+    gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+    color: '#3b82f6',
     category: 'compliance',
-    isEarned: (ctx) => (ctx.dimAvg?.C ?? 0) >= 0.75,
-    hint: 'Have EIN, business license, and registered entity',
+    isEarned: (ctx) => ctx.completedModuleCount >= 7,
+    hint: 'Complete 7 of the 13 lender compliance modules',
+  },
+  {
+    id: 'compliance_complete',
+    name: 'Compliance Complete',
+    description: 'Completed all 13 lender compliance modules — fully bankable',
+    icon: '🏅',
+    gradient: 'linear-gradient(135deg, #f59e0b, #10b981)',
+    color: '#f59e0b',
+    category: 'compliance',
+    isEarned: (ctx) => ctx.completedModuleCount >= 13,
+    hint: 'Complete all 13 lender compliance modules',
   },
   {
     id: 'file_ready',
     name: 'File Ready',
     description: 'File strength dimension is Strong or Bankable',
     icon: '📁',
-    gradient: 'linear-gradient(135deg, #64748b, #475569)',
-    color: '#64748b',
+    gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+    color: '#8b5cf6',
     category: 'compliance',
     isEarned: (ctx) => (ctx.dimAvg?.N ?? 0) >= 0.75,
     hint: 'Complete your financial documentation package',
   },
 
-  // Score milestones
+  // ── Action milestones — funding pipeline ─────────────────────────────────────
+  {
+    id: 'first_application',
+    name: 'First Application',
+    description: 'Submitted your first lender application',
+    icon: '📬',
+    gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+    color: '#6366f1',
+    category: 'action',
+    isEarned: (ctx) => ctx.totalApplications >= 1,
+    hint: 'Submit your first application through the funding pipeline',
+  },
+  {
+    id: 'funded',
+    name: 'Funded!',
+    description: 'Capital secured — a lender funded your business',
+    icon: '💸',
+    gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+    color: '#f59e0b',
+    category: 'action',
+    isEarned: (ctx) => ctx.fundedCount >= 1,
+    hint: 'Get a funding offer accepted and funded through the pipeline',
+  },
+
+  // ── Score milestones ─────────────────────────────────────────────────────────
+  {
+    id: 'score_climber',
+    name: 'Score Climber',
+    description: 'Improved your FundScore by 100+ points since first assessment',
+    icon: '📊',
+    gradient: 'linear-gradient(135deg, #10b981, #06b6d4)',
+    color: '#10b981',
+    category: 'score',
+    isEarned: (ctx) =>
+      ctx.initialScore !== undefined && ctx.score - ctx.initialScore >= 100,
+    hint: 'Improve your FundScore by 100+ points from your starting baseline',
+  },
   {
     id: 'capital_ready',
     name: 'Capital Ready',
@@ -171,7 +238,7 @@ export const BADGES: Badge[] = [
     id: 'sbss_bankable',
     name: 'SBSS Bankable',
     description: 'Bank Readiness Score crossed the 160 threshold',
-    icon: '🎯',
+    icon: '🎖️',
     gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
     color: '#6366f1',
     category: 'score',
@@ -182,6 +249,7 @@ export const BADGES: Badge[] = [
 
 // ── Persistence ────────────────────────────────────────────────────────────────
 
+/** Synchronous read from localStorage — fast, used by BadgeGrid at render time */
 export function getEarnedBadges(): EarnedBadge[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -191,17 +259,35 @@ export function getEarnedBadges(): EarnedBadge[] {
   }
 }
 
+/**
+ * Save badges to localStorage AND Supabase (via data-adapter).
+ * Fire-and-forget for Supabase — localStorage is always written synchronously.
+ */
 export function saveEarnedBadges(badges: EarnedBadge[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(badges));
+    const json = JSON.stringify(badges);
+    localStorage.setItem(STORAGE_KEY, json);
+    setDataItem(STORAGE_KEY, json).catch(() => {});
   } catch {
     // storage full or unavailable
   }
 }
 
 /**
+ * Load badges from Supabase into localStorage on login.
+ */
+export async function syncBadgesFromCloud(): Promise<void> {
+  try {
+    await getDataItem(STORAGE_KEY);
+  } catch {
+    // non-fatal
+  }
+}
+
+/**
  * Evaluate all badges against current context.
- * Returns an array of newly-earned badge IDs (not previously earned).
+ * Returns newly-earned badge IDs (not previously earned).
+ * Also dispatches 'badgeNewlyEarned' window event for cross-component toasts.
  */
 export function checkAndAwardBadges(ctx: BadgeContext): string[] {
   const earned = getEarnedBadges();
@@ -217,6 +303,9 @@ export function checkAndAwardBadges(ctx: BadgeContext): string[] {
 
   if (newlyEarned.length > 0) {
     saveEarnedBadges(earned);
+    window.dispatchEvent(
+      new CustomEvent('badgeNewlyEarned', { detail: { ids: newlyEarned } })
+    );
   }
 
   return newlyEarned;
@@ -224,4 +313,23 @@ export function checkAndAwardBadges(ctx: BadgeContext): string[] {
 
 export function getBadgeById(id: string): Badge | undefined {
   return BADGES.find((b) => b.id === id);
+}
+
+// ── Initial score tracking ─────────────────────────────────────────────────────
+
+/**
+ * Call this the first time an assessment score is computed.
+ * Saves the baseline score once — never overwritten — for the Score Climber badge.
+ */
+export function recordInitialScore(score: number): void {
+  if (!localStorage.getItem('fundready_initial_score')) {
+    localStorage.setItem('fundready_initial_score', String(score));
+  }
+}
+
+export function getInitialScore(): number | undefined {
+  const raw = localStorage.getItem('fundready_initial_score');
+  if (!raw) return undefined;
+  const n = parseInt(raw, 10);
+  return isNaN(n) ? undefined : n;
 }

@@ -1,527 +1,405 @@
+// ════════════════════════════════════════════════════════════════════════════════
+// FUNDREADY™ — Sidebar
+// Elon: flat hierarchy, every item one tap from where it matters
+// Chase Hughes: score confirmation at top, primary action prominent
+// Mobile: slides in as overlay drawer
+// ════════════════════════════════════════════════════════════════════════════════
+
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   LayoutDashboard,
-  FileText,
-  BarChart3,
   DollarSign,
-  FolderOpen,
-  Shield,
   TrendingUp,
-  LineChart,
-  CreditCard,
-  Briefcase,
-  Building,
-  GraduationCap,
-  HelpCircle,
-  ClipboardCheck,
-  ChevronDown,
-  ChevronRight,
-  Zap,
-  User,
-  BookOpen,
-  Lock,
-  Heart,
   Wallet,
-  Home,
-  ShieldCheck,
-  Target,
+  ChevronDown,
+  ClipboardCheck,
+  Shield,
+  BarChart3,
+  FolderOpen,
+  Map,
+  AlertCircle,
+  BookOpen,
+  FileText,
   Settings,
-  CheckCircle,
-  XCircle,
-  AlertTriangle
+  X,
+  Zap,
 } from 'lucide-react';
-import { getPreQualifiedPrograms, isProgramPathPreQualified } from '../utils/fundingEligibility';
-import { getFoundationFirstData } from '../utils/foundationFirstData';
+import { getPreQualifiedPrograms } from '../utils/fundingEligibility';
+import { computeScore } from '../pages/business-assessment/engine';
 
-// Business Success module — 6 primary nav items (Elon-style: minimal, purposeful)
-const businessMenuItems = [
-  { path: '/business-assessment', label: 'Business Success Scan', icon: ClipboardCheck, badge: 'Start', isAssessment: true },
-  { path: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  {
-    path: '/app/access-funding',
-    label: 'Get Funded',
-    icon: DollarSign,
-    showPreQualifiedBadge: true,
-    subItems: [
-      { path: '/app/access-funding/business-credit-cards', label: 'Syndicated Line of Credit (SLOC)' },
-      { path: '/app/access-funding/business-credit-line', label: 'Business Credit Line' },
-      { path: '/app/access-funding/business-term-loan', label: 'Business Term Loan' },
-      { path: '/app/access-funding/credit-union-loans', label: 'Credit Union Loans' },
-      { path: '/app/access-funding/equipment-financing', label: 'Equipment Financing' },
-      { path: '/app/access-funding/merchant-advance', label: 'Merchant Advance' },
-      { path: '/app/access-funding/personal-credit-cards', label: 'Personal Credit Cards' },
-      { path: '/app/access-funding/receivable-factoring', label: 'Receivable Factoring' },
-      { path: '/app/access-funding/revenue-based-loan', label: 'Revenue Based Loan' },
-      { path: '/app/access-funding/working-capital-loans', label: 'Working Capital Loans' },
-      { path: '/app/access-funding/sba-business-loan', label: 'SBA Loans: 7a & 504' },
-      { path: '/app/access-funding/accounts-receivable-finance', label: 'Accounts Receivable Finance' },
-      { path: '/app/access-funding/inventory-line-of-credit', label: 'Inventory Line of Credit' },
-      { path: '/app/access-funding/purchase-order-finance', label: 'Purchase Order Finance' },
-      { path: '/app/access-funding/bridge-loans', label: 'Bridge Loans' },
-      { path: '/app/access-funding/dscr-loans', label: 'DSCR Loans' },
-      { path: '/app/access-funding/construction-loans', label: 'Construction Loans' },
-    ]
-  },
-  { path: '/app/my-progress', label: 'My Progress', icon: TrendingUp },
-  {
-    path: '/app/my-tools',
-    label: 'My Tools',
-    icon: FolderOpen,
-    subItems: [
-      { path: '/app/status-reports', label: 'Status Reports' },
-      { path: '/app/document-collection', label: 'Document Portal' },
-      { path: '/app/integrate-reports', label: 'Integrate Reports' },
-      { path: '/app/lender-compliance', label: 'Lender Compliance' },
-      { path: '/app/capital-access-map', label: 'Capital Access Map' },
-      { path: '/app/denial-diagnosis', label: 'Denial Diagnosis' },
-      { path: '/app/capital-glossary', label: 'Capital Glossary' },
-      { path: '/app/templates-resources', label: 'Templates & Resources' },
-    ]
-  },
-  { path: '/app/settings', label: 'Settings', icon: Settings },
+// ── Primary nav — flat, one tap deep ─────────────────────────────────────────
+const PRIMARY_NAV = [
+  { path: '/business-assessment', label: 'Business Success Scan', icon: ClipboardCheck, isAssessment: true },
+  { path: '/app/dashboard',       label: 'Dashboard',             icon: LayoutDashboard },
+  { path: '/app/access-funding',  label: 'Access Funding',        icon: DollarSign, showFunding: true },
+  { path: '/app/my-progress',     label: 'My Progress',           icon: TrendingUp },
+  { path: '/app/finances',        label: 'Finances',              icon: Wallet },
 ];
 
-// FoundationFirst module items
-const foundationFirstMenuItems = [
-  { path: '/foundation-first/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/foundation-first/financial-profile', label: 'Financial Profile', icon: User },
-  { path: '/foundation-first/income-savings', label: 'Income & Savings', icon: Wallet },
-  { path: '/foundation-first/assets-debt', label: 'Assets & Debt', icon: Home },
-  { path: '/foundation-first/risk-management', label: 'Risk Management', icon: ShieldCheck },
-  { path: '/foundation-first/retirement-planning', label: 'Retirement Planning', icon: Target },
-  { path: '/foundation-first/settings', label: 'Settings', icon: Settings }
+// ── Tools section — direct links, no accordion needed ────────────────────────
+const TOOLS_NAV = [
+  { path: '/app/lender-compliance',   label: 'Lender Compliance', icon: Shield },
+  { path: '/app/status-reports',      label: 'Capital Intelligence', icon: BarChart3 },
+  { path: '/app/document-collection', label: 'Document Portal',   icon: FolderOpen },
+  { path: '/app/capital-access-map',  label: 'Capital Access Map',icon: Map },
+  { path: '/app/denial-diagnosis',    label: 'Denial Diagnosis',  icon: AlertCircle },
+  { path: '/app/integrate-reports',   label: 'Integrate Reports', icon: Zap },
+  { path: '/app/capital-glossary',    label: 'Capital Glossary',  icon: BookOpen },
+  { path: '/app/templates-resources', label: 'Templates',         icon: FileText },
 ];
 
-export function Sidebar() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [expandedItem, setExpandedItem] = useState<string | null>(() => {
-    if (location.pathname.startsWith('/status-reports')) return '/status-reports';
-    if (location.pathname.startsWith('/access-funding')) return '/access-funding';
-    return null;
-  });
-  const [businessModuleExpanded, setBusinessModuleExpanded] = useState(true);
-  const [foundationFirstModuleExpanded, setFoundationFirstModuleExpanded] = useState(false);
-  const [preQualifiedCount, setPreQualifiedCount] = useState(0);
-  const [hasFoundationFirstAccess, setHasFoundationFirstAccess] = useState(false);
-
-  useEffect(() => {
-    // Update pre-qualified count and module access
-    const updateData = () => {
-      const preQualified = getPreQualifiedPrograms();
-      setPreQualifiedCount(preQualified.length);
-      
-      const foundationData = getFoundationFirstData();
-      setHasFoundationFirstAccess(foundationData.hasAccess);
-    };
-
-    updateData();
-
-    // Listen for storage changes
-    window.addEventListener('storage', updateData);
-    window.addEventListener('scanDataUpdated', updateData);
-    window.addEventListener('foundationFirstDataUpdated', updateData);
-
-    return () => {
-      window.removeEventListener('storage', updateData);
-      window.removeEventListener('scanDataUpdated', updateData);
-      window.removeEventListener('foundationFirstDataUpdated', updateData);
-    };
-  }, [location.pathname]);
-
-  // Auto-expand modules based on current route
-  useEffect(() => {
-    if (location.pathname.startsWith('/foundation-first')) {
-      setFoundationFirstModuleExpanded(true);
-      setBusinessModuleExpanded(false);
-    } else {
-      setBusinessModuleExpanded(true);
-      setFoundationFirstModuleExpanded(false);
-    }
-  }, [location.pathname]);
-
-  const toggleExpanded = (path: string) => {
-    setExpandedItem(expandedItem === path ? null : path);
-  };
-
-  // Handle Business Success Scan navigation - check if assessment already exists
-  const handleAssessmentClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    const assessmentData = localStorage.getItem('unified_assessment');
-    
-    if (assessmentData) {
-      // Assessment exists - navigate to results page instead
-      e.preventDefault();
-      navigate('/business-assessment/results');
-    } else {
-      // No assessment - proceed to new assessment
-      navigate('/business-assessment');
-    }
-  };
-
+function NavItem({
+  path, label, icon: Icon, isActive, badge, onClick,
+}: {
+  path: string; label: string; icon: any; isActive: boolean;
+  badge?: React.ReactNode; onClick?: () => void;
+}) {
   return (
-    <div 
-      className="min-h-screen shadow-xl relative flex flex-col"
-      style={{ 
-        width: 'var(--sidebar-width)',
-        backgroundColor: 'var(--sidebar-bg)',
-        borderRight: '1px solid var(--sidebar-border)',
-        color: 'var(--sidebar-text)'
+    <Link
+      to={path}
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '10px',
+        padding: '9px 12px', borderRadius: '10px',
+        textDecoration: 'none',
+        background: isActive ? 'rgba(16,185,129,0.1)' : 'transparent',
+        border: isActive ? '1px solid rgba(16,185,129,0.2)' : '1px solid transparent',
+        transition: 'all 0.12s',
+      }}
+      onMouseEnter={e => {
+        if (!isActive) (e.currentTarget as HTMLElement).style.background = 'var(--card)';
+      }}
+      onMouseLeave={e => {
+        if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent';
       }}
     >
-      {/* Logo/Brand Section */}
-      <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--sidebar-border)' }}>
-        <Link to="/" style={{ display: 'block', textDecoration: 'none' }}>
-          <img 
-            src="/images/fundready-logo.png" 
-            alt="FundReady - Unlocking Your Potential" 
-            style={{ 
-              width: '100%', 
-              maxWidth: '180px',
-              height: 'auto',
-              objectFit: 'contain',
-            }} 
+      <Icon
+        size={16}
+        style={{ color: isActive ? '#10b981' : 'var(--muted-foreground)', flexShrink: 0 }}
+      />
+      <span style={{
+        fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: isActive ? 600 : 400,
+        color: isActive ? '#10b981' : 'var(--foreground)', flex: 1, lineHeight: 1.2,
+      }}>
+        {label}
+      </span>
+      {badge}
+    </Link>
+  );
+}
+
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [toolsExpanded, setToolsExpanded] = useState(() =>
+    TOOLS_NAV.some(t => location.pathname.startsWith(t.path))
+  );
+  const [preQualifiedCount, setPreQualifiedCount] = useState(0);
+  const [hasAssessment, setHasAssessment] = useState(false);
+  const [fundScore, setFundScore] = useState(0);
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const update = () => {
+      const preQ = getPreQualifiedPrograms();
+      setPreQualifiedCount(preQ.length);
+      const raw = localStorage.getItem('unified_assessment');
+      setHasAssessment(!!raw);
+      if (raw) {
+        try {
+          const data = JSON.parse(raw);
+          const result = computeScore(data);
+          setFundScore(result.score);
+          setUserName(data.ownerName || data.firstName || data.businessName || '');
+        } catch { /* non-fatal */ }
+      }
+    };
+    update();
+    window.addEventListener('storage', update);
+    window.addEventListener('fundscoreUpdated', update);
+    return () => {
+      window.removeEventListener('storage', update);
+      window.removeEventListener('fundscoreUpdated', update);
+    };
+  }, [location.pathname]);
+
+  // Auto-expand tools if on a tools route
+  useEffect(() => {
+    if (TOOLS_NAV.some(t => location.pathname.startsWith(t.path))) {
+      setToolsExpanded(true);
+    }
+  }, [location.pathname]);
+
+  const close = () => onMobileClose?.();
+
+  const initials = userName
+    ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'JD';
+
+  const scoreColor = fundScore >= 800 ? '#10b981' : fundScore >= 650 ? '#f59e0b' : '#ef4444';
+
+  const sidebarContent = (
+    <div style={{
+      display: 'flex', flexDirection: 'column', height: '100%',
+      backgroundColor: 'var(--background)',
+      borderRight: '1px solid var(--border)',
+      overflowY: 'auto', overflowX: 'hidden',
+    }}>
+      {/* Logo + mobile close */}
+      <div style={{
+        padding: '16px', borderBottom: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexShrink: 0,
+      }}>
+        <Link to="/" onClick={close} style={{ textDecoration: 'none', lineHeight: 0 }}>
+          <img
+            src="/images/fundready-logo.png"
+            alt="FundReady"
+            style={{ height: '32px', width: 'auto', objectFit: 'contain' }}
           />
         </Link>
+        <button
+          onClick={close}
+          className="sidebar-close-btn"
+          style={{
+            display: 'none', alignItems: 'center', justifyContent: 'center',
+            width: '30px', height: '30px', borderRadius: '8px',
+            border: '1px solid var(--border)', background: 'var(--card)',
+            cursor: 'pointer', color: 'var(--muted-foreground)',
+          }}
+        >
+          <X size={16} />
+        </button>
       </div>
-      
-      {/* Navigation */}
-      <nav className="p-4 space-y-1 overflow-y-auto flex-1">
-        {/* Business Success Module */}
-        <div className="mb-4">
-          <motion.button
-            whileHover={{ x: 4 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setBusinessModuleExpanded(!businessModuleExpanded)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-200"
+
+      {/* FundScore identity anchor — confirms who user is immediately */}
+      {fundScore > 0 && (
+        <div
+          onClick={() => { navigate('/app/status-reports'); close(); }}
+          style={{
+            margin: '12px', padding: '12px 14px', borderRadius: '12px',
+            background: `${scoreColor}0e`, border: `1px solid ${scoreColor}25`,
+            cursor: 'pointer', transition: 'opacity 0.15s',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              FundScore™
+            </span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>
+              / 1,000
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{
+              fontFamily: 'var(--font-display)', fontWeight: 800,
+              fontSize: '28px', lineHeight: 1, color: scoreColor,
+            }}>
+              {fundScore}
+            </span>
+            <div style={{ flex: 1 }}>
+              <div style={{ height: '4px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', width: `${fundScore / 10}%`,
+                  background: scoreColor, borderRadius: '99px',
+                  transition: 'width 1s ease',
+                }} />
+              </div>
+              <div style={{ marginTop: '3px', fontFamily: 'var(--font-body)', fontSize: '10px', color: scoreColor, fontWeight: 600 }}>
+                {fundScore >= 900 ? 'Elite — top 5%' : fundScore >= 800 ? 'Bankable' : fundScore >= 650 ? 'Approaching' : 'Building'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Primary nav */}
+      <div style={{ padding: '8px 8px 0', flex: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {PRIMARY_NAV.map(item => {
+            const isActive = item.path === '/app/dashboard'
+              ? location.pathname === item.path
+              : location.pathname.startsWith(item.path) && item.path !== '/business-assessment'
+                ? true
+                : location.pathname === item.path;
+
+            let badge: React.ReactNode = null;
+            if (item.isAssessment) {
+              badge = (
+                <span style={{
+                  fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '5px',
+                  background: hasAssessment ? 'rgba(59,130,246,0.1)' : 'rgba(16,185,129,0.1)',
+                  color: hasAssessment ? '#3b82f6' : '#10b981',
+                  border: `1px solid ${hasAssessment ? 'rgba(59,130,246,0.25)' : 'rgba(16,185,129,0.25)'}`,
+                  textTransform: 'uppercase' as const, letterSpacing: '0.06em',
+                }}>
+                  {hasAssessment ? 'Edit' : 'Start'}
+                </span>
+              );
+            }
+            if (item.showFunding && preQualifiedCount > 0) {
+              badge = (
+                <span style={{
+                  fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '5px',
+                  background: 'rgba(16,185,129,0.1)', color: '#10b981',
+                  border: '1px solid rgba(16,185,129,0.25)',
+                }}>
+                  {preQualifiedCount} ready
+                </span>
+              );
+            }
+
+            return (
+              <NavItem
+                key={item.path}
+                path={item.path}
+                label={item.label}
+                icon={item.icon}
+                isActive={isActive}
+                badge={badge}
+                onClick={close}
+              />
+            );
+          })}
+        </div>
+
+        {/* Tools section */}
+        <div style={{ marginTop: '16px' }}>
+          <button
+            onClick={() => setToolsExpanded(e => !e)}
             style={{
-              backgroundColor: businessModuleExpanded ? 'var(--sidebar-accent-hover)' : 'transparent',
-              color: businessModuleExpanded ? 'var(--sidebar-text-active)' : 'var(--sidebar-text)',
-              borderLeft: businessModuleExpanded ? '2px solid var(--primary)' : '2px solid transparent',
-              fontFamily: 'var(--font-body)',
-              fontSize: '13px',
-              fontWeight: 400
+              width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '6px 12px', background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--muted-foreground)',
             }}
           >
-            <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
-            <span className="flex-1 text-left">Business Success</span>
-            <motion.div
-              animate={{ rotate: businessModuleExpanded ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ChevronDown className="w-4 h-4" />
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1, textAlign: 'left' }}>
+              My Tools
+            </span>
+            <motion.div animate={{ rotate: toolsExpanded ? 180 : 0 }} transition={{ duration: 0.18 }}>
+              <ChevronDown size={13} />
             </motion.div>
-          </motion.button>
-          
+          </button>
+
           <AnimatePresence>
-            {businessModuleExpanded && (
+            {toolsExpanded && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
+                transition={{ duration: 0.18 }}
+                style={{ overflow: 'hidden' }}
               >
-                <div className="ml-4 mt-1 space-y-1 pl-4" style={{ borderLeft: '1px solid var(--border)' }}>
-                  {businessMenuItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = item.path === '/settings' 
-                      ? location.pathname.startsWith('/settings')
-                      : location.pathname === item.path;
-                    const isExpanded = expandedItem === item.path;
-                    const hasSubItems = item.subItems && item.subItems.length > 0;
-                    const isSubItemActive = hasSubItems && item.subItems.some(sub => location.pathname === sub.path);
-                    
-                    return (
-                      <div key={item.path}>
-                        {hasSubItems ? (
-                          <>
-                            <motion.button
-                              whileHover={{ x: 4 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => toggleExpanded(item.path)}
-                              className="w-full flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-200"
-                              style={{
-                                backgroundColor: (isActive || isSubItemActive || isExpanded) ? 'var(--sidebar-accent-hover)' : 'transparent',
-                                color: (isActive || isSubItemActive || isExpanded) ? 'var(--sidebar-text-active)' : 'var(--sidebar-text)',
-                                borderLeft: (isActive || isSubItemActive || isExpanded) ? '2px solid var(--primary)' : '2px solid transparent',
-                                fontFamily: 'var(--font-body)',
-                                fontSize: '13px',
-                                fontWeight: 400
-                              }}
-                            >
-                              <Icon className="w-5 h-5 flex-shrink-0" />
-                              <span className="flex-1 text-left">{item.label}</span>
-                              {item.showPreQualifiedBadge && preQualifiedCount > 0 && (
-                                <span 
-                                  className="px-2 py-0.5 rounded-sm text-[9px] uppercase tracking-[0.15em]"
-                                  style={{
-                                    backgroundColor: 'var(--primary-bg)',
-                                    color: 'var(--primary)',
-                                    border: '1px solid var(--primary-border)',
-                                    fontFamily: 'var(--font-body)',
-                                    fontWeight: 400
-                                  }}
-                                >
-                                  {preQualifiedCount}
-                                </span>
-                              )}
-                              <motion.div
-                                animate={{ rotate: isExpanded ? 180 : 0 }}
-                                transition={{ duration: 0.2 }}
-                              >
-                                <ChevronDown className="w-4 h-4" />
-                              </motion.div>
-                            </motion.button>
-                            
-                            <AnimatePresence>
-                              {isExpanded && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: 'auto', opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.2 }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="ml-4 mt-1 space-y-1 pl-4" style={{ borderLeft: '1px solid var(--border)' }}>
-                                    {item.subItems.map((subItem) => {
-                                      const isSubActive = location.pathname === subItem.path;
-                                      const isPreQualified = isProgramPathPreQualified(subItem.path);
-                                      return (
-                                        <motion.div
-                                          key={subItem.path}
-                                          whileHover={{ x: 4 }}
-                                        >
-                                          <Link
-                                            to={subItem.path}
-                                            className="flex items-center gap-2 px-4 py-2.5 rounded-sm transition-all duration-200 text-sm"
-                                            style={{
-                                              backgroundColor: isSubActive ? 'var(--primary-bg)' : 'transparent',
-                                              color: isSubActive ? 'var(--primary)' : 'var(--sidebar-text)',
-                                              borderLeft: isSubActive ? '2px solid var(--primary)' : '2px solid transparent',
-                                              fontFamily: 'var(--font-body)',
-                                              fontSize: '13px',
-                                              fontWeight: 400
-                                            }}
-                                          >
-                                            {isPreQualified ? (
-                                              <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--success)' }} />
-                                            ) : (
-                                              <XCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--destructive)' }} />
-                                            )}
-                                            <span className="flex-1">{subItem.label}</span>
-                                          </Link>
-                                        </motion.div>
-                                      );
-                                    })}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </>
-                        ) : (
-                          <motion.div
-                            whileHover={{ x: 4 }}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            <Link
-                              to={item.path}
-                              onClick={item.isAssessment ? handleAssessmentClick : undefined}
-                              className="flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-200 relative"
-                              style={{
-                                backgroundColor: isActive ? 'var(--sidebar-accent-hover)' : 'transparent',
-                                color: isActive ? 'var(--sidebar-text-active)' : 'var(--sidebar-text)',
-                                borderLeft: isActive ? '2px solid var(--primary)' : '2px solid transparent',
-                                fontFamily: 'var(--font-body)',
-                                fontSize: '13px',
-                                fontWeight: 400
-                              }}
-                            >
-                              <Icon className="w-5 h-5 flex-shrink-0" />
-                              <span>{item.label}</span>
-                              {item.badge && (
-                                <span 
-                                  className="ml-auto px-2 py-0.5 rounded-sm text-[9px] uppercase tracking-[0.15em]"
-                                  style={{
-                                    backgroundColor: 'var(--primary-bg)',
-                                    color: 'var(--primary)',
-                                    border: '1px solid var(--primary-border)',
-                                    fontFamily: 'var(--font-body)',
-                                    fontWeight: 400
-                                  }}
-                                >
-                                  {item.badge}
-                                </span>
-                              )}
-                            </Link>
-                          </motion.div>
-                        )}
-                      </div>
-                    );
-                  })}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingTop: '2px' }}>
+                  {TOOLS_NAV.map(item => (
+                    <NavItem
+                      key={item.path}
+                      path={item.path}
+                      label={item.label}
+                      icon={item.icon}
+                      isActive={location.pathname.startsWith(item.path)}
+                      onClick={close}
+                    />
+                  ))}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
+      </div>
 
-        {/* FoundationFirst Module */}
-        {hasFoundationFirstAccess && (
-          <div>
-            <motion.button
-              whileHover={{ x: 4 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                setFoundationFirstModuleExpanded(!foundationFirstModuleExpanded);
-                if (!foundationFirstModuleExpanded || !location.pathname.startsWith('/foundation-first')) {
-                  navigate('/foundation-first/dashboard');
-                }
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-200"
-              style={{
-                backgroundColor: foundationFirstModuleExpanded ? 'var(--sidebar-accent-hover)' : 'transparent',
-                color: foundationFirstModuleExpanded ? 'var(--sidebar-text-active)' : 'var(--sidebar-text)',
-                borderLeft: foundationFirstModuleExpanded ? '2px solid var(--primary)' : '2px solid transparent',
-                fontFamily: 'var(--font-body)',
-                fontSize: '13px',
-                fontWeight: 400
-              }}
-            >
-              <Heart className="w-5 h-5 flex-shrink-0" />
-              <span className="flex-1 text-left">FoundationFirst</span>
-              <motion.div
-                animate={{ rotate: foundationFirstModuleExpanded ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ChevronDown className="w-4 h-4" />
-              </motion.div>
-            </motion.button>
-            
-            <AnimatePresence>
-              {foundationFirstModuleExpanded && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div className="ml-4 mt-1 space-y-1 pl-4" style={{ borderLeft: '1px solid var(--border)' }}>
-                    {foundationFirstMenuItems.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = location.pathname === item.path;
-                      
-                      return (
-                        <motion.div
-                          key={item.path}
-                          whileHover={{ x: 4 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <Link
-                            to={item.path}
-                            className="flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-200 relative"
-                            style={{
-                              backgroundColor: isActive ? 'var(--sidebar-accent-hover)' : 'transparent',
-                              color: isActive ? 'var(--sidebar-text-active)' : 'var(--sidebar-text)',
-                              borderLeft: isActive ? '2px solid var(--primary)' : '2px solid transparent',
-                              fontFamily: 'var(--font-body)',
-                              fontSize: '13px',
-                              fontWeight: 400
-                            }}
-                          >
-                            <Icon className="w-5 h-5 flex-shrink-0" />
-                            <span>{item.label}</span>
-                          </Link>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
+      {/* Bottom: Settings + User */}
+      <div style={{
+        padding: '8px', borderTop: '1px solid var(--border)', flexShrink: 0,
+        display: 'flex', flexDirection: 'column', gap: '4px',
+      }}>
+        <NavItem
+          path="/app/settings"
+          label="Settings"
+          icon={Settings}
+          isActive={location.pathname.startsWith('/app/settings')}
+          onClick={close}
+        />
 
-        {/* FoundationFirst Module - Locked State */}
-        {!hasFoundationFirstAccess && (
-          <div>
-            <motion.div
-              whileHover={{ x: 4 }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-sm transition-all duration-200 cursor-not-allowed opacity-60"
-              style={{
-                color: 'var(--muted-foreground)',
-                fontFamily: 'var(--font-body)',
-                fontSize: '13px',
-                fontWeight: 400
-              }}
-            >
-              <Heart className="w-5 h-5 flex-shrink-0" />
-              <span className="flex-1 text-left">FoundationFirst</span>
-              <div className="flex items-center gap-2">
-                <span 
-                  className="px-2 py-0.5 rounded-sm text-[9px] uppercase tracking-[0.15em]"
-                  style={{
-                    backgroundColor: 'var(--warning-bg)',
-                    color: 'var(--warning)',
-                    border: '1px solid var(--warning-border)',
-                    fontFamily: 'var(--font-body)',
-                    fontWeight: 400
-                  }}
-                >
-                  Upgrade
-                </span>
-                <Lock className="w-4 h-4" />
-              </div>
-            </motion.div>
+        {/* User profile */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px',
+          padding: '10px 12px', borderRadius: '10px',
+          background: 'var(--card)', border: '1px solid var(--border)',
+          marginTop: '4px',
+        }}>
+          <div style={{
+            width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
+            background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '12px', color: 'white',
+          }}>
+            {initials}
           </div>
-        )}
-      </nav>
-
-      {/* User Profile Section */}
-      <div 
-        className="absolute bottom-0 left-0 right-0 p-4 border-t"
-        style={{ 
-          borderColor: 'var(--sidebar-border)',
-          backgroundColor: 'var(--sidebar-bg)'
-        }}
-      >
-        <div 
-          className="flex items-center gap-3 p-3 rounded-sm hover:bg-[var(--sidebar-accent)] transition-colors cursor-pointer"
-        >
-          <div 
-            className="w-10 h-10 rounded-full flex items-center justify-center font-semibold"
-            style={{ 
-              backgroundColor: 'var(--primary)',
-              color: 'var(--primary-foreground)',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700
-            }}
-          >
-            JD
-          </div>
-          <div className="flex-1">
-            <p 
-              className="text-sm font-semibold"
-              style={{ 
-                fontFamily: 'var(--font-body)',
-                color: 'var(--sidebar-text-active)'
-              }}
-            >
-              John Doe
-            </p>
-            <p 
-              className="text-xs"
-              style={{ 
-                fontFamily: 'var(--font-body)',
-                color: 'var(--muted-foreground)'
-              }}
-            >
-              john@business.com
-            </p>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {userName || 'My Account'}
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>
+              {fundScore > 0 ? `FundScore ${fundScore}` : 'Start assessment'}
+            </div>
           </div>
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <div
+        className="sidebar-desktop"
+        style={{ width: 'var(--sidebar-width)', flexShrink: 0, height: '100vh', position: 'sticky', top: 0 }}
+      >
+        {sidebarContent}
+      </div>
+
+      {/* Mobile drawer overlay */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={close}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 1000,
+                background: 'rgba(0,0,0,0.5)',
+              }}
+            />
+            <motion.div
+              initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
+              transition={{ type: 'spring', stiffness: 340, damping: 32 }}
+              style={{
+                position: 'fixed', top: 0, left: 0, bottom: 0,
+                width: '280px', zIndex: 1001,
+              }}
+            >
+              {sidebarContent}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Responsive CSS */}
+      <style>{`
+        @media (max-width: 768px) {
+          .sidebar-desktop { display: none !important; }
+          .sidebar-close-btn { display: flex !important; }
+        }
+      `}</style>
+    </>
   );
 }
