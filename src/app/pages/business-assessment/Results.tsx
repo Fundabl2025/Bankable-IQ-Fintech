@@ -197,6 +197,33 @@ export function Results() {
   const products = evaluateProducts(data, result.score);
   const eligibleProducts = products.filter(p => p.qualifies);
 
+  // ── Sync eligible products → preQualifiedPrograms ─────────────────────────
+  // productEligibility IDs → fundingEligibility program IDs used by Access Funding
+  const PRODUCT_TO_PROGRAM_ID: Record<string, string> = {
+    mca:          'merchant-advance',
+    term_alt:     'business-term-loan',
+    loc_alt:      'business-credit-line',
+    sba_7a:       'sba-business-loan',
+    sba_express:  'sba-business-loan',
+    bank_term:    'business-term-loan',
+    bank_loc:     'business-credit-line',
+    bcc:          'business-credit-cards',
+    bcc_0apr:     'business-credit-cards',
+    pgcl:         'personal-credit-cards',
+    factoring:    'receivable-factoring',
+    equipment:    'equipment-financing',
+    po_financing: 'purchase-order-finance',
+    cre:          'dscr-loans',
+    rbf:          'revenue-based-loan',
+    inventory:    'inventory-line-of-credit',
+    acquisition:  'bridge-loans',
+  };
+  const qualifiedProgramIds = [
+    ...new Set(eligibleProducts.map(p => PRODUCT_TO_PROGRAM_ID[p.id]).filter(Boolean))
+  ];
+  localStorage.setItem('preQualifiedPrograms', JSON.stringify(qualifiedProgramIds));
+  window.dispatchEvent(new Event('fundscoreUpdated'));
+
   // Get audit items for blockers
   const auditItems = getAllAuditItems();
   const incompleteItems = auditItems.filter(item => item.status === 'incomplete');
