@@ -13,6 +13,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m
 const FoundationFirstDashboard = lazy(() => import('./pages/FoundationFirst/Dashboard').then(m => ({ default: m.Dashboard })));
 const IntegrateReports = lazy(() => import('./pages/IntegrateReports').then(m => ({ default: m.IntegrateReports })));
 const StatusReports = lazy(() => import('./pages/StatusReports').then(m => ({ default: m.StatusReports })));
+const AICoach = lazy(() => import('./pages/AICoach').then(m => ({ default: m.AICoach })));
 const BankableStatus = lazy(() => import('./pages/StatusReports/BankableStatus').then(m => ({ default: m.BankableStatus })));
 const BusinessFICO = lazy(() => import('./pages/StatusReports/BusinessFICO').then(m => ({ default: m.BusinessFICO })));
 const EstimatedFunding = lazy(() => import('./pages/StatusReports/EstimatedFunding').then(m => ({ default: m.EstimatedFunding })));
@@ -126,6 +127,10 @@ export const router = createBrowserRouter([
       {
         path: 'my-business-profile',
         element: <Navigate to="/app/settings/my-business-profile" replace />,
+      },
+      {
+        path: 'ai-coach',
+        element: <LazyComponent Component={AICoach} />,
       },
       {
         path: 'status-reports',

@@ -25,6 +25,7 @@ import {
   Settings,
   X,
   Zap,
+  Brain,
 } from 'lucide-react';
 import { getPreQualifiedPrograms } from '../utils/fundingEligibility';
 import { computeScore } from '../pages/business-assessment/engine';
@@ -35,13 +36,13 @@ const PRIMARY_NAV = [
   { path: '/app/dashboard',       label: 'Dashboard',             icon: LayoutDashboard },
   { path: '/app/access-funding',  label: 'Access Funding',        icon: DollarSign, showFunding: true },
   { path: '/app/my-progress',     label: 'My Progress',           icon: TrendingUp },
+  { path: '/app/ai-coach',        label: 'FORGE™ AI Coach',       icon: Brain, isCoach: true },
   { path: '/app/finances',        label: 'Finances',              icon: Wallet },
 ];
 
 // ── Tools section — direct links, no accordion needed ────────────────────────
 const TOOLS_NAV = [
   { path: '/app/lender-compliance',   label: 'Lender Compliance', icon: Shield },
-  { path: '/app/status-reports',      label: 'Capital Intelligence', icon: BarChart3 },
   { path: '/app/document-collection', label: 'Document Portal',   icon: FolderOpen },
   { path: '/app/capital-access-map',  label: 'Capital Access Map',icon: Map },
   { path: '/app/denial-diagnosis',    label: 'Denial Diagnosis',  icon: AlertCircle },
