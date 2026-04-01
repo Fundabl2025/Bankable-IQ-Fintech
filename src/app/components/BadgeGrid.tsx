@@ -328,7 +328,7 @@ export function BadgeGrid({ newBadgeIds = [] }: BadgeGridProps) {
 // Shows: earned count + last 3 earned + next 2 to unlock + "View all" link
 // Replaces the full grid on dashboard — saves ~600px of vertical scroll
 
-export function BadgeStrip({ newBadgeIds = [] }: { newBadgeIds?: string[] }) {
+export function BadgeStrip({ newBadgeIds = [], onViewAll }: { newBadgeIds?: string[]; onViewAll?: () => void }) {
   const navigate = useNavigate();
   const earnedList = getEarnedBadges();
   const earnedMap = new Map(earnedList.map(e => [e.id, e.earnedAt]));
@@ -379,7 +379,7 @@ export function BadgeStrip({ newBadgeIds = [] }: { newBadgeIds?: string[] }) {
           </div>
         </div>
         <button
-          onClick={() => navigate('/app/my-progress')}
+          onClick={() => { if (onViewAll) { onViewAll(); } else { navigate('/app/my-progress'); } }}
           style={{
             fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600,
             color: '#3b82f6', background: 'none', border: 'none',

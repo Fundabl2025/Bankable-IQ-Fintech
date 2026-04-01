@@ -1197,7 +1197,7 @@ export function Dashboard() {
             </div>
 
             {/* ROW 4: ACHIEVEMENTS STRIP — compact, actionable, links to full page */}
-            <BadgeStrip newBadgeIds={newBadgeIds} />
+            <BadgeStrip newBadgeIds={newBadgeIds} onViewAll={() => navigate('/app/my-progress')} />
 
           </motion.div>
         )}
