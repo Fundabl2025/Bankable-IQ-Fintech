@@ -4,7 +4,7 @@
 // ════════════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { BADGES, getEarnedBadges, getBadgeById, type Badge } from '../lib/badges';
 
@@ -329,6 +329,7 @@ export function BadgeGrid({ newBadgeIds = [] }: BadgeGridProps) {
 // Replaces the full grid on dashboard — saves ~600px of vertical scroll
 
 export function BadgeStrip({ newBadgeIds = [] }: { newBadgeIds?: string[] }) {
+  const navigate = useNavigate();
   const earnedList = getEarnedBadges();
   const earnedMap = new Map(earnedList.map(e => [e.id, e.earnedAt]));
   const earnedCount = BADGES.filter(b => earnedMap.has(b.id)).length;
@@ -377,15 +378,16 @@ export function BadgeStrip({ newBadgeIds = [] }: { newBadgeIds?: string[] }) {
             </span>
           </div>
         </div>
-        <Link
-          to="/app/my-progress"
+        <button
+          onClick={() => navigate('/app/my-progress')}
           style={{
             fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600,
-            color: '#3b82f6', textDecoration: 'none', whiteSpace: 'nowrap',
+            color: '#3b82f6', background: 'none', border: 'none',
+            cursor: 'pointer', padding: 0, whiteSpace: 'nowrap',
           }}
         >
           View all →
-        </Link>
+        </button>
       </div>
 
       <div style={{ padding: '16px 20px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
