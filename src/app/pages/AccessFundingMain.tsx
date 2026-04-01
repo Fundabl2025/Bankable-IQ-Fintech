@@ -318,7 +318,12 @@ export function AccessFunding() {
                   {/* Name + badges */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '2px' }}>
-                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--foreground)' }}>
+                      <span
+                        onClick={e => { e.stopPropagation(); navigate(`/app/access-funding/${program.id}`); }}
+                        style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--foreground)', cursor: 'pointer', textDecoration: 'none' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = '#10b981')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--foreground)')}
+                      >
                         {program.name}
                       </span>
 
@@ -368,6 +373,14 @@ export function AccessFunding() {
 
                   {/* Action button */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                    {/* Always-visible Details link */}
+                    <button
+                      onClick={() => navigate(`/app/access-funding/${program.id}`)}
+                      style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '11px', padding: '6px 10px', background: 'none', border: '1px solid var(--border)', borderRadius: '7px', color: 'var(--muted-foreground)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
+                    >
+                      Details <ArrowRight size={11} />
+                    </button>
+
                     {hasOffer ? (
                       <button
                         onClick={() => setExpandedId(isExpanded ? null : (program.id || String(index)))}
@@ -503,9 +516,9 @@ export function AccessFunding() {
                           </div>
                         )}
 
-                        {/* Apply button at bottom of expanded card */}
-                        {!isApplied && isPreQual && (
-                          <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {/* Apply button + Full Details at bottom of expanded card */}
+                        <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                          {!isApplied && isPreQual && (
                             <button
                               onClick={() => handleApply(program)}
                               disabled={applying === program.id}
@@ -513,9 +526,17 @@ export function AccessFunding() {
                             >
                               <Zap size={14} /> {applying === program.id ? 'Submitting…' : 'Apply Now — Soft Pull Only'}
                             </button>
+                          )}
+                          <button
+                            onClick={e => { e.stopPropagation(); navigate(`/app/access-funding/${program.id}`); }}
+                            style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '12px', padding: '9px 16px', background: 'var(--background)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--foreground)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                          >
+                            Full Details <ArrowRight size={12} />
+                          </button>
+                          {!isApplied && isPreQual && (
                             <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>No hard inquiry · No obligation</span>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </motion.div>
                   )}
