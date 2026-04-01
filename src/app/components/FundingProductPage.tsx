@@ -143,20 +143,38 @@ export function FundingProductPage({ config }: { config: ProductPageConfig }) {
 
         {/* CTA */}
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          {/* Apply Now — always visible, opens modal regardless of pre-qual status */}
           <button
-            onClick={() => isPreQualified ? setIsModalOpen(true) : navigate('/app/lender-compliance')}
+            onClick={() => setIsModalOpen(true)}
             style={{
               flex: 1, minWidth: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               padding: '14px 24px', borderRadius: '12px', cursor: 'pointer', border: 'none',
-              background: isPreQualified ? 'linear-gradient(135deg, #10b981, #059669)' : `${statusColor}12`,
-              color: isPreQualified ? 'white' : statusColor,
+              background: isPreQualified ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #3b82f6, #6366f1)',
+              color: 'white',
               fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px',
-              ...(isPreQualified ? {} : { border: `1px solid ${statusBorder}` }),
+              boxShadow: isPreQualified ? '0 4px 16px rgba(16,185,129,0.3)' : '0 4px 16px rgba(59,130,246,0.3)',
             }}
           >
-            {isPreQualified ? 'Apply Now' : 'See What You Need'}
+            Apply Now
             <ArrowRight size={16} />
           </button>
+
+          {/* See What You Need — only shown when not pre-qualified */}
+          {!isPreQualified && (
+            <button
+              onClick={() => navigate('/app/lender-compliance')}
+              style={{
+                padding: '14px 20px', borderRadius: '12px', cursor: 'pointer',
+                background: `${statusColor}10`, border: `1px solid ${statusBorder}`,
+                color: statusColor,
+                fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '13px',
+                display: 'flex', alignItems: 'center', gap: '6px',
+              }}
+            >
+              See What You Need
+            </button>
+          )}
+
           <button
             onClick={() => navigate('/app/access-funding')}
             style={{
