@@ -76,6 +76,16 @@ export function AccessFunding() {
     };
   }, []);
 
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'unified_assessment' || e.key === 'lenderComplianceProgress') {
+        loadData();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   // Child routes render via Outlet only — AFTER all hooks
   const isChildRoute = location.pathname !== '/app/access-funding' && location.pathname !== '/access-funding';
   if (isChildRoute) return <Outlet />;
@@ -83,16 +93,27 @@ export function AccessFunding() {
   // Build lookup: programId → application
   const appMap = new Map(applications.map(a => [a.program_id, a]));
 
-  // Filter programs
-  const filteredPrograms = allPrograms.filter(p => {
-    const app = appMap.get(p.id);
-    if (filter === 'all') return true;
-    if (filter === 'pre-qualified') return p.status === 'pre-qualified' && !app;
-    if (filter === 'applied') return !!app && app.status !== 'offer_received' && app.status !== 'funded';
-    if (filter === 'offers') return app?.status === 'offer_received' || app?.status === 'accepted';
-    if (filter === 'future') return p.status !== 'pre-qualified';
-    return true;
-  });
+  // Derived counts for hero banner
+  const almostThereCount = allPrograms.filter(p => p.status !== 'pre-qualified' && (p.gapAnalysis?.matchScore ?? 0) >= 60).length;
+
+  // Filter programs and auto-sort: pre-qualified → applied → almost there → locked
+  const filteredPrograms = allPrograms
+    .filter(p => {
+      const app = appMap.get(p.id);
+      if (filter === 'all') return true;
+      if (filter === 'pre-qualified') return p.status === 'pre-qualified' && !app;
+      if (filter === 'applied') return !!app && app.status !== 'offer_received' && app.status !== 'funded';
+      if (filter === 'offers') return app?.status === 'offer_received' || app?.status === 'accepted';
+      if (filter === 'future') return p.status !== 'pre-qualified';
+      return true;
+    })
+    .sort((a, b) => {
+      const aApp = appMap.get(a.id);
+      const bApp = appMap.get(b.id);
+      const aScore = a.status === 'pre-qualified' ? 200 : (aApp ? 150 : (a.gapAnalysis?.matchScore ?? 0));
+      const bScore = b.status === 'pre-qualified' ? 200 : (bApp ? 150 : (b.gapAnalysis?.matchScore ?? 0));
+      return bScore - aScore;
+    });
 
   // Show toast briefly
   const showToast = (msg: string, type: 'success' | 'error') => {
@@ -155,24 +176,80 @@ export function AccessFunding() {
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
 
-        {/* ── HEADER ──────────────────────────────────────────────────────── */}
-        <div style={{ marginBottom: '28px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '6px' }}>
-            <div>
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
-                Capital Access
-              </p>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(24px, 3vw, 32px)', color: 'var(--foreground)', margin: 0, lineHeight: 1.1 }}>
-                Funding Pipeline
-              </h1>
+        {/* ── HERO IDENTITY BANNER ─────────────────────────────────────────── */}
+        <div style={{ marginBottom: '24px' }}>
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              padding: '24px 28px',
+              borderRadius: '16px',
+              background: preQualCount > 0
+                ? 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(59,130,246,0.05))'
+                : 'rgba(59,130,246,0.05)',
+              border: preQualCount > 0
+                ? '1px solid rgba(16,185,129,0.2)'
+                : '1px solid rgba(59,130,246,0.15)',
+              marginBottom: '0',
+            }}
+          >
+            {/* Top row: headline + how-this-works */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: preQualCount > 0 ? '#10b981' : '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px 0' }}>
+                  Capital Access · Funding Pipeline
+                </p>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(20px, 2.8vw, 28px)', color: 'var(--foreground)', margin: '0 0 6px 0', lineHeight: 1.15 }}>
+                  {preQualCount > 0
+                    ? `Your profile qualifies for ${preQualCount} funding program${preQualCount !== 1 ? 's' : ''} right now`
+                    : 'Complete compliance modules to unlock funding programs'}
+                </h1>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+                  {preQualCount > 0
+                    ? `Est. ${formatDollars(totalPreQualified)} available · Apply today — soft pull only, no credit impact`
+                    : 'Your profile is being evaluated. Complete lender compliance to qualify.'}
+                </p>
+                <button
+                  onClick={() => preQualCount > 0 ? setFilter('pre-qualified') : navigate('/app/lender-compliance')}
+                  style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px',
+                    padding: '10px 20px', borderRadius: '9px', border: 'none', cursor: 'pointer',
+                    background: preQualCount > 0 ? 'linear-gradient(135deg, #10b981, #3b82f6)' : '#3b82f6',
+                    color: 'white', display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    boxShadow: preQualCount > 0 ? '0 3px 14px rgba(16,185,129,0.25)' : '0 3px 14px rgba(59,130,246,0.2)',
+                  }}
+                >
+                  {preQualCount > 0 ? <>Apply to All Pre-Qualified <ArrowRight size={13} /></> : <>Start Compliance <ArrowRight size={13} /></>}
+                </button>
+              </div>
+              <button
+                onClick={() => setShowDisclaimer(d => !d)}
+                style={{ display: 'flex', alignItems: 'center', gap: '5px', fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', flexShrink: 0 }}
+              >
+                <Info size={13} /> How this works
+              </button>
             </div>
-            <button
-              onClick={() => setShowDisclaimer(d => !d)}
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}
-            >
-              <Info size={13} /> How this works
-            </button>
-          </div>
+
+            {/* Stat pills row */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '12px', padding: '5px 12px', borderRadius: '20px', background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.25)' }}>
+                {preQualCount} Pre-Qualified
+              </span>
+              {preQualCount > 0 && (
+                <span style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '12px', padding: '5px 12px', borderRadius: '20px', background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.25)' }}>
+                  Est. {formatDollars(totalPreQualified)} available
+                </span>
+              )}
+              {almostThereCount > 0 && (
+                <span style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '12px', padding: '5px 12px', borderRadius: '20px', background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)' }}>
+                  {almostThereCount} Almost Ready
+                </span>
+              )}
+              <span style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '12px', padding: '5px 12px', borderRadius: '20px', background: 'var(--card)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}>
+                {allPrograms.length} Total Programs
+              </span>
+            </div>
+          </motion.div>
 
           <AnimatePresence>
             {showDisclaimer && (
@@ -197,11 +274,11 @@ export function AccessFunding() {
         {/* ── PIPELINE SUMMARY STRIP ───────────────────────────────────────── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
           {[
-            { label: 'Pre-Qualified', value: preQualCount, sub: 'Estimated eligible', color: '#10b981', icon: <Zap size={16} /> },
-            { label: 'Applied', value: pipeline.applied, sub: 'In lender queue', color: '#3b82f6', icon: <ArrowRight size={16} /> },
-            { label: 'Under Review', value: pipeline.under_review, sub: 'Lender evaluating', color: '#f59e0b', icon: <Clock size={16} /> },
-            { label: 'Offers Received', value: pipeline.offer_received, sub: 'Real numbers in', color: '#10b981', icon: <DollarSign size={16} /> },
-            { label: 'Funded', value: pipeline.funded, sub: 'Capital deployed', color: '#10b981', icon: <CheckCircle2 size={16} /> },
+            { label: 'Pre-Qualified', value: preQualCount, sub: 'Estimated eligible', color: '#10b981', icon: <Zap size={16} />, isPreQual: true },
+            { label: 'Applied', value: pipeline.applied, sub: 'In lender queue', color: '#3b82f6', icon: <ArrowRight size={16} />, isPreQual: false },
+            { label: 'Under Review', value: pipeline.under_review, sub: 'Lender evaluating', color: '#f59e0b', icon: <Clock size={16} />, isPreQual: false },
+            { label: 'Offers Received', value: pipeline.offer_received, sub: 'Real numbers in', color: '#10b981', icon: <DollarSign size={16} />, isPreQual: false },
+            { label: 'Funded', value: pipeline.funded, sub: 'Capital deployed', color: '#10b981', icon: <CheckCircle2 size={16} />, isPreQual: false },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -209,7 +286,7 @@ export function AccessFunding() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
               style={{
-                background: 'var(--card)',
+                background: stat.isPreQual && stat.value > 0 ? 'rgba(16,185,129,0.06)' : 'var(--card)',
                 border: `1px solid ${stat.value > 0 ? stat.color + '30' : 'var(--border)'}`,
                 borderRadius: '12px',
                 padding: '14px 16px',
@@ -217,12 +294,20 @@ export function AccessFunding() {
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                 <div style={{ color: stat.value > 0 ? stat.color : 'var(--muted-foreground)' }}>{stat.icon}</div>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '22px', color: stat.value > 0 ? stat.color : 'var(--muted-foreground)' }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: stat.isPreQual && stat.value > 0 ? '28px' : '22px', color: stat.value > 0 ? stat.color : 'var(--muted-foreground)' }}>
                   {stat.value}
                 </span>
               </div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: 'var(--foreground)' }}>{stat.label}</div>
               <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>{stat.sub}</div>
+              {stat.isPreQual && stat.value > 0 && (
+                <button
+                  onClick={() => setFilter('pre-qualified')}
+                  style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '11px', color: '#10b981', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0 0 0', display: 'block' }}
+                >
+                  Apply Now →
+                </button>
+              )}
             </motion.div>
           ))}
         </div>
@@ -281,7 +366,9 @@ export function AccessFunding() {
             </div>
           )}
 
-          {filteredPrograms.map((program, index) => {
+          {(() => {
+            let dividerInserted = false;
+            return filteredPrograms.map((program, index) => {
             const app = appMap.get(program.id);
             const isPreQual = program.status === 'pre-qualified';
             const isApplied = !!app;
@@ -290,9 +377,23 @@ export function AccessFunding() {
             const stage = app ? STAGE_CONFIG[app.status] : null;
             const hasOffer = app?.status === 'offer_received' || app?.status === 'accepted';
 
+            // Section divider between pre-qual/applied group and the rest
+            const shouldShowDivider = filter === 'all' && !dividerInserted && !isPreQual && !isApplied;
+            if (shouldShowDivider) dividerInserted = true;
+
             return (
+              <div key={program.id || index}>
+                {shouldShowDivider && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '8px 0' }}>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                      {almostThereCount > 0 ? `${almostThereCount} Almost Ready` : 'Future Goals'}
+                    </span>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                  </div>
+                )}
               <motion.div
-                key={program.id || index}
+                key={`card-${program.id || index}`}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: Math.min(index * 0.04, 0.3) }}
@@ -542,8 +643,10 @@ export function AccessFunding() {
                   )}
                 </AnimatePresence>
               </motion.div>
+              </div>
             );
-          })}
+          });
+          })()}
         </div>
       </div>
 
