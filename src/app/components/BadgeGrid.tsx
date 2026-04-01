@@ -4,6 +4,7 @@
 // ════════════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { BADGES, getEarnedBadges, getBadgeById, type Badge } from '../lib/badges';
 
@@ -376,15 +377,15 @@ export function BadgeStrip({ newBadgeIds = [] }: { newBadgeIds?: string[] }) {
             </span>
           </div>
         </div>
-        <a
-          href="/app/my-progress"
+        <Link
+          to="/app/my-progress"
           style={{
             fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600,
             color: '#3b82f6', textDecoration: 'none', whiteSpace: 'nowrap',
           }}
         >
           View all →
-        </a>
+        </Link>
       </div>
 
       <div style={{ padding: '16px 20px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
