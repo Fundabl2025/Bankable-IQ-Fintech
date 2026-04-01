@@ -426,7 +426,11 @@ export function Dashboard() {
   // Progress stats
   const progress = getOverallProgress();
 
-  const firstName = user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'there';
+  const firstName = user?.user_metadata?.first_name
+    || storedAssessment?.ownerName
+    || storedAssessment?.businessName
+    || user?.email?.split('@')[0]
+    || 'there';
   const emailVerified = user?.email_confirmed_at;
 
   // Gauge math
