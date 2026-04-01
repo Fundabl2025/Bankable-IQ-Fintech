@@ -4,7 +4,7 @@
 // Score scale: 0–1000 FundScore. Projections based on real score + audit data.
 // ════════════════════════════════════════════════════════════════════════════════
 
-import { Download, TrendingUp, ArrowRight, CheckCircle, AlertCircle, Zap } from 'lucide-react';
+import { Download, TrendingUp, ArrowRight, CheckCircle, AlertCircle, Zap, Lock, Unlock, DollarSign } from 'lucide-react';
 import { ExtendedResultsOutput, UnifiedAnswers } from '../business-assessment/types';
 import { useEffect, useState } from 'react';
 import { computeExtendedResults } from '../business-assessment/engine';
@@ -274,32 +274,120 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
         </button>
       </div>
 
+      {/* ── TWO-SYSTEM IDENTITY FRAME (Elon's Core Thesis + Chase Identity) ─── */}
+      {(() => {
+        const isBankable = currentScore >= 800;
+        const isApproaching = currentScore >= 650 && currentScore < 800;
+        const tierLabel = isBankable ? 'Bankable' : isApproaching ? 'Approaching Bankable' : 'Fundable';
+        const tierColor = isBankable ? '#10b981' : isApproaching ? '#f59e0b' : '#3b82f6';
+        const tierBg = isBankable ? 'rgba(16,185,129,0.06)' : isApproaching ? 'rgba(245,158,11,0.06)' : 'rgba(59,130,246,0.06)';
+        const aprToday = isBankable ? '8–15%' : isApproaching ? '15–25%' : '35%+';
+        const aprPotential = '8–12%';
+        // Cost comparison on $250K: expensive vs bank
+        const expensiveCost = isBankable ? 250000 * 0.10 : 250000 * 0.35;
+        const bankCost = 250000 * 0.10;
+        const annualSavings = expensiveCost - bankCost;
+
+        return (
+          <div style={{ marginBottom: '20px' }}>
+            {/* Identity banner */}
+            <div style={{
+              padding: '20px 24px', borderRadius: '14px',
+              background: tierBg, border: `1.5px solid ${tierColor}40`,
+              marginBottom: '12px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{
+                      fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700,
+                      color: tierColor, textTransform: 'uppercase', letterSpacing: '0.1em',
+                      background: `${tierColor}18`, border: `1px solid ${tierColor}30`,
+                      padding: '2px 8px', borderRadius: '4px',
+                    }}>
+                      {tierLabel}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Current Capital Tier
+                    </span>
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(16px, 2.5vw, 20px)', color: 'var(--text-primary)', lineHeight: 1.2 }}>
+                    {isBankable
+                      ? 'You have reached bankable status — institutional capital is available to you.'
+                      : `You're currently in the Fundable tier. Your path to Bankable capital starts here.`}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '2px' }}>
+                    Today's APR
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: isBankable ? '#10b981' : '#ef4444' }}>
+                    {aprToday}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--text-muted)' }}>
+                    {isBankable ? 'institutional rate' : 'expensive capital'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* APR cost comparison — Elon: tie status to money */}
+            {!isBankable && (
+              <div style={{
+                display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '0', borderRadius: '12px',
+                border: '1px solid var(--border-subtle)', overflow: 'hidden',
+              }}>
+                <div style={{ padding: '16px 20px', background: 'rgba(239,68,68,0.05)' }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+                    Expensive Capital — Today
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: '#ef4444', lineHeight: 1 }}>
+                    {aprToday} APR
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                    $250K loan = <strong style={{ color: '#ef4444' }}>${Math.round(expensiveCost / 1000)}K/yr</strong> in interest
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    MCA · Revenue-Based · Working Capital
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 12px', background: 'var(--bg-surface-2)', borderLeft: '1px solid var(--border-subtle)', borderRight: '1px solid var(--border-subtle)' }}>
+                  <ArrowRight style={{ width: '18px', height: '18px', color: 'var(--text-muted)' }} />
+                </div>
+                <div style={{ padding: '16px 20px', background: 'rgba(16,185,129,0.05)' }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+                    Bank Capital — 240 Days
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: '#10b981', lineHeight: 1 }}>
+                    {aprPotential} APR
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                    $250K loan = <strong style={{ color: '#10b981' }}>${Math.round(bankCost / 1000)}K/yr</strong> in interest
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#10b981', marginTop: '4px', fontWeight: 600 }}>
+                    Save ${Math.round(annualSavings / 1000)}K/year on every $250K borrowed
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* ── CURRENT ELIGIBILITY HERO ─────────────────────────────────────────── */}
       <div
         style={{
           background: 'var(--bg-surface-1)',
-          border: '2px solid var(--primary)',
-          borderRadius: '10px',
-          padding: '24px',
+          border: '1.5px solid var(--border-subtle)',
+          borderRadius: '12px',
+          padding: '20px 24px',
           marginBottom: '20px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-          <div
-            style={{
-              width: '36px', height: '36px', borderRadius: '50%',
-              background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <Zap style={{ width: '18px', height: '18px', color: '#000' }} />
-          </div>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Your Funding Today vs. Potential
-            </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)' }}>
-              What you can access now vs. what you unlock by addressing blockers
-            </div>
+          <Zap style={{ width: '16px', height: '16px', color: 'var(--primary)', flexShrink: 0 }} />
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
+            Your Funding Today
           </div>
         </div>
 
@@ -372,73 +460,223 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
         )}
       </div>
 
-      {/* ── CAPITAL GROWTH TIMELINE ──────────────────────────────────────────── */}
-      <div
-        style={{
-          background: 'var(--bg-surface-1)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '10px',
-          padding: '24px',
-          marginBottom: '20px',
-        }}
-      >
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
-          Your Capital Growth Path
-        </h2>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 20px 0' }}>
-          Projected funding eligibility as you complete audit items and improve your FundScore. Timeline: Today (current) → 60 days (quick wins + 1st cycle) → 120 days (tradelines reporting) → 240 days (full bankability).
-        </p>
+      {/* ── CAPITAL PROGRESSION SEQUENCE ─────────────────────────────────────── */}
+      {/* Elon: precise milestones tied to capital cost. Chase: identity per stage. */}
+      <div style={{ marginBottom: '20px' }}>
+        <div style={{ marginBottom: '16px' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '17px', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
+            Your Capital Progression Sequence
+          </h2>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+            After first funding, this is your path from expensive capital to institutional bank capital — each milestone unlocks cheaper funding at higher amounts.
+          </p>
+        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-          {snapshots.map((snap) => (
-            <div
-              key={snap.label}
-              style={{
-                borderRadius: '8px',
-                padding: '16px',
-                border: `2px solid ${snap.isCurrent ? 'var(--primary)' : snap.border}`,
-                background: snap.isCurrent ? 'var(--primary-alpha)' : 'var(--bg-surface-2)',
-                position: 'relative',
-              }}
-            >
-              {snap.isCurrent && (
-                <div
-                  style={{
-                    position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)',
-                    background: 'var(--primary)', borderRadius: '4px',
-                    fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700,
-                    color: '#000', padding: '2px 8px', whiteSpace: 'nowrap',
-                  }}
-                >
-                  YOU ARE HERE
+        {/* Connector line behind stages on desktop */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+          {[
+            {
+              label: 'TODAY',
+              sublabel: 'First Funding Unlocked',
+              tierName: 'Fundable Capital',
+              tierColor: '#3b82f6',
+              tierBg: 'rgba(59,130,246,0.06)',
+              tierBorder: 'rgba(59,130,246,0.25)',
+              isCurrent: true,
+              score: currentScore,
+              capitalRange: fmtRange(
+                actualMaxFunding > 0 ? Math.round(actualMaxFunding * 0.4) : 5000,
+                actualMaxFunding > 0 ? actualMaxFunding : 50000
+              ),
+              apr: '35–50%+',
+              aprColor: '#ef4444',
+              aprLabel: 'EXPENSIVE CAPITAL',
+              products: ['Merchant Cash Advance', 'Working Capital Loan', 'Revenue-Based Loan', 'Credit Cards (Business)', 'Invoice Factoring'],
+              whatHappens: 'You have access to alternative funding now. These are fast-approval products with higher cost. Use this capital to build cash flow history and fund growth.',
+              milestone: 'Start here — apply for first product',
+              icon: <Zap style={{ width: '14px', height: '14px' }} />,
+            },
+            {
+              label: '60 DAYS',
+              sublabel: 'After First Funding',
+              tierName: 'Building Phase',
+              tierColor: '#06b6d4',
+              tierBg: 'rgba(6,182,212,0.06)',
+              tierBorder: 'rgba(6,182,212,0.25)',
+              isCurrent: false,
+              score: score60,
+              capitalRange: fmtRange(tierAt60.bizMin, tierAt60.bizMax),
+              apr: '25–35%',
+              aprColor: '#f97316',
+              aprLabel: 'IMPROVING',
+              products: ['Business Credit Line', 'Credit Union Loans', 'Equipment Financing', 'Purchase Order Finance', '+ All Day 1 products'],
+              whatHappens: 'EIN registered and reporting. Business bank account established with 60 days of history. NAP consistency confirmed. First credit card opened — completing 1st reporting cycle. Lenders can now verify your business exists.',
+              milestone: 'Complete: EIN · Business Bank · NAP · First Credit Card',
+              icon: <TrendingUp style={{ width: '14px', height: '14px' }} />,
+            },
+            {
+              label: '120 DAYS',
+              sublabel: 'Approaching Bankable',
+              tierName: 'Approaching Bankable',
+              tierColor: '#10b981',
+              tierBg: 'rgba(16,185,129,0.06)',
+              tierBorder: 'rgba(16,185,129,0.25)',
+              isCurrent: false,
+              score: score120,
+              capitalRange: fmtRange(tierAt120.bizMin, tierAt120.bizMax),
+              apr: '15–25%',
+              aprColor: '#f59e0b',
+              aprLabel: 'TRANSITIONING',
+              products: ['Business Term Loan', 'AR Finance', 'Inventory Line of Credit', 'SBA Loan (approaching)', '+ All prior products'],
+              whatHappens: '2–3 tradeline cycles complete. 3 months of bank statements available. Compliance modules 3–6 done. Business credit profile forming with Dun & Bradstreet and Experian Business. SBSS score climbing toward 160 threshold.',
+              milestone: 'Complete: 6 compliance modules · 3 bank statement months · 3 tradeline cycles',
+              icon: <Unlock style={{ width: '14px', height: '14px' }} />,
+            },
+            {
+              label: '240 DAYS',
+              sublabel: 'Full Bankability Achieved',
+              tierName: 'Bankable — Institutional Capital',
+              tierColor: '#8b5cf6',
+              tierBg: 'rgba(139,92,246,0.06)',
+              tierBorder: 'rgba(139,92,246,0.25)',
+              isCurrent: false,
+              score: score240,
+              capitalRange: fmtRange(tierAt240.bizMin, tierAt240.bizMax),
+              apr: '8–15%',
+              aprColor: '#10b981',
+              aprLabel: 'BANK CAPITAL',
+              products: ['SBA 7(a) & 504 Loans', 'Bank Term Loans', 'DSCR / Real Estate Loans', 'Construction Financing', 'Full institutional suite'],
+              whatHappens: 'SBSS score 160+ threshold crossed. 8+ months bank statements on file. Full compliance suite complete. Business credit established with 3+ reporting agencies. You now qualify for the lowest-cost, longest-term institutional capital available to businesses.',
+              milestone: 'Complete: All 13 compliance modules · SBSS 160+ · 3 tradeline agencies',
+              icon: <DollarSign style={{ width: '14px', height: '14px' }} />,
+            },
+          ].map((stage, idx, arr) => (
+            <div key={stage.label}>
+              {/* Stage card */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: '120px 1fr', gap: '0',
+                border: `1.5px solid ${stage.isCurrent ? stage.tierColor : stage.tierBorder}`,
+                borderRadius: '12px', overflow: 'hidden',
+                background: stage.isCurrent ? stage.tierBg : 'var(--bg-surface-1)',
+                boxShadow: stage.isCurrent ? `0 0 0 2px ${stage.tierColor}20` : 'none',
+              }}>
+                {/* Left: stage identity */}
+                <div style={{
+                  padding: '20px 16px',
+                  background: stage.tierBg,
+                  borderRight: `1.5px solid ${stage.tierBorder}`,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  textAlign: 'center', gap: '6px',
+                }}>
+                  {stage.isCurrent && (
+                    <div style={{
+                      fontFamily: 'var(--font-body)', fontSize: '9px', fontWeight: 700,
+                      color: stage.tierColor, textTransform: 'uppercase', letterSpacing: '0.1em',
+                      background: `${stage.tierColor}20`, border: `1px solid ${stage.tierColor}40`,
+                      padding: '2px 6px', borderRadius: '3px', marginBottom: '2px',
+                    }}>
+                      You are here
+                    </div>
+                  )}
+                  <div style={{ color: stage.tierColor }}>
+                    {stage.icon}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 800, color: stage.tierColor, lineHeight: 1.1 }}>
+                    {stage.label}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.3 }}>
+                    {stage.sublabel}
+                  </div>
+                  <div style={{
+                    marginTop: '4px', padding: '3px 8px', borderRadius: '4px',
+                    background: `${stage.aprColor}18`, border: `1px solid ${stage.aprColor}30`,
+                  }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 800, color: stage.aprColor }}>
+                      {stage.apr}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: stage.aprColor, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {stage.aprLabel}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: content */}
+                <div style={{ padding: '16px 20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                    <div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: stage.tierColor, marginBottom: '2px' }}>
+                        {stage.tierName}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
+                        {stage.capitalRange}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--text-muted)' }}>FundScore</div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: stage.tierColor }}>
+                        {stage.score}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* What happens at this stage */}
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '10px' }}>
+                    {stage.whatHappens}
+                  </div>
+
+                  {/* Products that unlock */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px' }}>
+                    {stage.products.map(p => (
+                      <span key={p} style={{
+                        fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 500,
+                        color: stage.tierColor, background: `${stage.tierColor}12`,
+                        border: `1px solid ${stage.tierColor}25`,
+                        padding: '2px 7px', borderRadius: '4px',
+                      }}>
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Milestone */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '7px 10px', borderRadius: '6px',
+                    background: stage.isCurrent ? `${stage.tierColor}10` : 'var(--bg-surface-2)',
+                    border: `1px solid ${stage.isCurrent ? stage.tierColor + '30' : 'var(--border-subtle)'}`,
+                  }}>
+                    {stage.isCurrent
+                      ? <CheckCircle style={{ width: '12px', height: '12px', color: stage.tierColor, flexShrink: 0 }} />
+                      : <Lock style={{ width: '12px', height: '12px', color: 'var(--text-muted)', flexShrink: 0 }} />
+                    }
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: stage.isCurrent ? stage.tierColor : 'var(--text-muted)', fontWeight: 600 }}>
+                      {stage.milestone}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Connector arrow between stages */}
+              {idx < arr.length - 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0' }}>
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px',
+                    color: 'var(--text-muted)',
+                  }}>
+                    <div style={{ width: '1px', height: '8px', background: 'var(--border-subtle)' }} />
+                    <ArrowRight style={{ width: '14px', height: '14px', transform: 'rotate(90deg)' }} />
+                    <div style={{ width: '1px', height: '8px', background: 'var(--border-subtle)' }} />
+                  </div>
                 </div>
               )}
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: snap.isCurrent ? 'var(--primary)' : snap.color, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                {snap.label}
-              </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2, marginBottom: '4px' }}>
-                {snap.bizMin === 0 ? 'Not eligible' : fmtMoney(snap.bizMax)}
-              </div>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                {snap.bizMin === 0 ? 'Take action to unlock' : `Biz only: ${fmtRange(snap.bizMin, snap.bizMax)}`}
-              </div>
-              <div
-                style={{
-                  fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 600,
-                  color: snap.isCurrent ? 'var(--primary)' : snap.color,
-                  background: snap.isCurrent ? 'var(--primary-alpha)' : `${snap.border}20`,
-                  borderRadius: '4px', padding: '3px 6px', display: 'inline-block',
-                }}
-              >
-                Score: {snap.projectedScore}
-              </div>
             </div>
           ))}
         </div>
 
-        <div style={{ marginTop: '16px', padding: '12px', background: 'var(--bg-surface-2)', borderRadius: '6px' }}>
+        {/* Disclaimer */}
+        <div style={{ marginTop: '12px', padding: '12px 14px', background: 'var(--bg-surface-2)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.6 }}>
-            Projections reflect real credit file update cycles — bureaus report every 30–45 days, tradelines need 2+ cycles to register, and SBA underwriters require 3 months of bank statements. The 60/120/240-day milestones are calibrated to these actual timelines. Actual results depend on lender appetite, industry, and credit profile changes.
+            <strong style={{ color: 'var(--text-secondary)' }}>Timeline basis:</strong> Credit bureaus update on 30–45 day cycles. New tradelines need 2+ reporting cycles to register. SBA underwriters require 3 months of bank statements. The 60/120/240-day sequence is calibrated to these real-world cycles — not arbitrary intervals. Actual results depend on lender appetite, industry, and your specific credit profile.
           </p>
         </div>
       </div>
