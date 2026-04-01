@@ -7,9 +7,11 @@
 // ════════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router';
 import { X, Building2, User, DollarSign, CheckCircle, ChevronRight, ChevronLeft, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
+import { applyToProgram } from '../lib/funding-service';
 
 // ── Bolt API config ────────────────────────────────────────────────────────────
 const BOLT_BROKER_TOKEN =
@@ -135,6 +137,7 @@ export function FundingApplicationModal({
   isOpen, onClose, programName, programAmount, programType,
 }: FundingApplicationModalProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>('business');
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [preFillCount, setPreFillCount] = useState(0);
@@ -238,11 +241,13 @@ export function FundingApplicationModal({
       }
 
       setIsSuccess(true);
+      try { await applyToProgram(programType, programName, programAmount); } catch { /* non-fatal */ }
     } catch {
       // Network error — save to Supabase
       try {
         await saveFallback(payload);
         setIsSuccess(true);
+        try { await applyToProgram(programType, programName, programAmount); } catch { /* non-fatal */ }
       } catch {
         setError('Submission failed. Please try again or contact support.');
         setIsSubmitting(false);
@@ -251,7 +256,6 @@ export function FundingApplicationModal({
     }
 
     setIsSubmitting(false);
-    setTimeout(() => { setIsSuccess(false); onClose(); }, 4000);
   };
 
   const saveFallback = async (payload: Record<string, unknown>) => {
@@ -393,20 +397,65 @@ export function FundingApplicationModal({
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              style={{ textAlign: 'center', padding: '48px 24px' }}
+              style={{ padding: '40px 24px', textAlign: 'center' }}
             >
+              {/* Big green check */}
               <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                 <CheckCircle size={32} style={{ color: '#10b981' }} />
               </div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--foreground)', margin: '0 0 8px' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--foreground)', margin: '0 0 6px' }}>
                 Application Submitted!
               </h3>
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', maxWidth: '340px', margin: '0 auto 6px' }}>
-                Your {programName} application has been sent to our funding advisors.
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', margin: '0 0 28px', maxWidth: '340px', marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
+                Your {programName} application is in the lender queue. Here's what happens next:
               </p>
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)' }}>
-                Expect a response within 1–2 business days.
-              </p>
+
+              {/* Timeline */}
+              <div style={{ textAlign: 'left', maxWidth: '400px', margin: '0 auto 32px', display: 'flex', flexDirection: 'column', gap: '0' }}>
+                {[
+                  { day: 'Today', title: 'Application received', detail: 'Your profile is in the lender queue — soft pull only, no credit impact', color: '#10b981', done: true },
+                  { day: 'Day 1–2', title: 'Advisor reviews your file', detail: 'A dedicated funding advisor evaluates your profile against lender criteria', color: '#3b82f6', done: false },
+                  { day: 'Day 2–4', title: 'Soft pull & underwriting', detail: 'Lender runs a soft credit check and reviews your business financials', color: '#f59e0b', done: false },
+                  { day: 'Day 3–5', title: 'Real offer arrives', detail: 'You receive actual amount, rate, and term — no obligation to accept', color: '#6366f1', done: false },
+                ].map((step, i, arr) => (
+                  <div key={i} style={{ display: 'flex', gap: '14px', position: 'relative' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: step.done ? step.color : 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `2px solid ${step.done ? step.color : 'var(--border)'}` }}>
+                        {step.done
+                          ? <CheckCircle size={14} style={{ color: 'white' }} />
+                          : <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--muted-foreground)' }} />
+                        }
+                      </div>
+                      {i < arr.length - 1 && (
+                        <div style={{ width: '2px', flex: 1, background: 'var(--border)', margin: '4px 0', minHeight: '24px' }} />
+                      )}
+                    </div>
+                    <div style={{ paddingBottom: i < arr.length - 1 ? '16px' : '0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: step.color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{step.day}</span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)' }}>{step.title}</span>
+                      </div>
+                      <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: 0, lineHeight: 1.5 }}>{step.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTAs */}
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => { onClose(); navigate('/app/access-funding'); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '11px 22px', borderRadius: '9px', background: '#10b981', border: 'none', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}
+                >
+                  View My Pipeline <ChevronRight size={15} />
+                </button>
+                <button
+                  onClick={onClose}
+                  style={{ padding: '11px 18px', borderRadius: '9px', background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--muted-foreground)', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}
+                >
+                  Close
+                </button>
+              </div>
             </motion.div>
           )}
 
