@@ -550,6 +550,66 @@ export function getBand(score: number): {
   return { name: 'Critical', color: '#b04428', min: 0, max: 399 };
 }
 
+// T-12A: FICO SBSS Tier -- single source of truth
+// All consumers (Dashboard gauge, BusinessFICO, BankableStatus, FORGE responses)
+// must import from here. Never declare tier labels inline.
+// Tiers per FICO SBSS public documentation:
+//   Poor 1-159 | Fair 160-189 | Good 190-209 | Excellent 210-300
+
+export function getSBSSTier(score: number): {
+  label: 'Poor' | 'Fair' | 'Good' | 'Excellent';
+  color: string;
+  description: string;
+  isBankable: boolean;
+} {
+  if (score >= 210) return {
+    label: 'Excellent',
+    color: '#c8f040',
+    description: 'Top-tier SBSS -- qualifies for best bank rates and SBA programs',
+    isBankable: true,
+  };
+  if (score >= 190) return {
+    label: 'Good',
+    color: '#8ab820',
+    description: 'Good SBSS -- qualifies for most bank and SBA products',
+    isBankable: true,
+  };
+  if (score >= 160) return {
+    label: 'Fair',
+    color: '#38a880',
+    description: 'Fair SBSS -- above bankability threshold, limited to standard products',
+    isBankable: true,
+  };
+  return {
+    label: 'Poor',
+    color: '#b04428',
+    description: 'Below bankability threshold -- focus on compliance and credit building',
+    isBankable: false,
+  };
+}
+
+// T-12A: Web Presence Score -- single source of truth
+// 0-100 composite score from assessment data fields.
+// Mirrors the SBSS Business Profile (20%) web/NAP inputs.
+// Used by: computeWorkNeeded, BusinessFICO report, BankableStatus report.
+// Do not duplicate this logic inline elsewhere.
+
+export function computeWebPresenceScore(data: UnifiedAnswers): number {
+  let score = 0;
+  if (data.hasWebsite) score += 25;
+  if (
+    data.ownerEmail &&
+    !['gmail', 'yahoo', 'hotmail', 'outlook', 'aol'].some(d =>
+      data.ownerEmail.toLowerCase().includes(d)
+    )
+  ) score += 15;                          // Professional email
+  if (data.businessPhone) score += 15;   // 411 / phone listing
+  if (data.hasEIN) score += 15;          // EIN on file
+  if (data.businessAddress && data.businessCity) score += 15; // Verified address
+  if (data.businessName) score += 15;    // Business name present
+  return Math.min(100, score);
+}
+
 /**
  * Calculate partial score during assessment (for live updates)
  */
@@ -678,6 +738,40 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
   // Already computed with proper 35/30/20/15 weighting in calculateBankableScore
   const sbssScore = baseResult.bankableScore;
 
+  // T-12A: Personal Credit Summary
+  // Structured personal credit data for PersonalCreditReport.tsx (T-15).
+  // Scores are midpoint estimates from categorical selections -- not bureau pulls.
+  const utilizationPctMap: Record<string, number> = {
+    'under_10': 5, '10_30': 20, '30_50': 40, '50_75': 62, 'over_75': 80,
+  };
+  const utilizationPct = utilizationPctMap[data.utilization || ''] ?? 30;
+
+  const derogItems: string[] = [];
+  if (data.hasBankruptcy === 'recent') derogItems.push('Bankruptcy (recent -- within 2 years)');
+  else if (data.hasBankruptcy === 'aging') derogItems.push('Bankruptcy (aging -- 2-7 years)');
+  if (data.hasJudgments) derogItems.push('Judgments on record');
+  if (data.hasCollections === 'active') derogItems.push('Active collections');
+  else if (data.hasCollections === 'resolved') derogItems.push('Resolved collections (on record)');
+  if (data.hasChargeoffs) derogItems.push('Charge-offs');
+  if (data.hasLatePay) derogItems.push('Late payment history (30+ days)');
+  if (data.hasTaxLiens === 'federal') derogItems.push('Federal tax lien');
+  else if (data.hasTaxLiens === 'state') derogItems.push('State tax lien');
+  else if (data.hasTaxLiens === 'both') derogItems.push('Federal and state tax liens');
+
+  const personalCreditSummary = {
+    composite,
+    transunion: mapCreditScore(data.transunion || ''),
+    experian: mapCreditScore(data.experian || ''),
+    equifax: mapCreditScore(data.equifax || ''),
+    utilization: data.utilization || '',
+    utilizationPct,
+    derogItems,
+    hasAnyDerog: derogItems.length > 0,
+    inquiries30d: data.inquiries30d || '',
+    bankruptcyStatus: data.hasBankruptcy || 'no',
+    collectionsStatus: data.hasCollections || 'no',
+  };
+
   return {
     fundScore: baseResult.score,
     bankableScore: baseResult.bankableScore,
@@ -696,6 +790,7 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
     sbssBusinessStatus,
     sbssSections,
     workNeeded,
+    personalCreditSummary,
   };
 }
 
@@ -949,7 +1044,7 @@ function computeSBSSSections(data: UnifiedAnswers, composite: number, bankableSc
 function computeWorkNeeded(data: UnifiedAnswers, composite: number, bankableItems: ExtendedResultsOutput['bankableItems']): ExtendedResultsOutput['workNeeded'] {
   const passCount = bankableItems.filter(item => item.status === 'pass').length;
   const tradelineEstimate = data.bizCreditFile === 'paydex_80plus' ? 9 : 0;
-  const webScore = data.hasWebsite ? 30 : 0;
+  const webScore = computeWebPresenceScore(data); // T-12A: use canonical web presence scorer
 
   return [
     {

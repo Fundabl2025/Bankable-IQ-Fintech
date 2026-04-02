@@ -200,6 +200,23 @@ export interface ExtendedResultsOutput {
     goal: string;
     description: string;
   }>;
+
+  // Report 4 -- Personal Credit Summary (T-12A)
+  // Scores are midpoint estimates from categorical selections, not bureau pulls.
+  // Consumed by PersonalCreditReport.tsx (T-15).
+  personalCreditSummary: {
+    composite: number;           // median of 3 bureau estimates
+    transunion: number;          // mapped FICO 8 midpoint estimate
+    experian: number;            // mapped FICO 8 midpoint estimate
+    equifax: number;             // mapped FICO 8 midpoint estimate
+    utilization: string;         // raw enum: 'under_10' | '10_30' | '30_50' | '50_75' | 'over_75'
+    utilizationPct: number;      // numeric midpoint (e.g. 20 for '10_30')
+    derogItems: string[];        // human-readable list of active derogatory items
+    hasAnyDerog: boolean;        // quick flag for conditional UI rendering
+    inquiries30d: string;        // raw enum: '0' | '1_2' | '3_4' | '5plus' | 'unknown'
+    bankruptcyStatus: string;    // 'no' | 'recent' | 'aging' | 'old'
+    collectionsStatus: string;   // 'no' | 'active' | 'resolved'
+  };
 }
 
 // Aligned with Elon's Rule Logic Spec
