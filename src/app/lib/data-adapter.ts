@@ -62,7 +62,7 @@ export async function setDataItem(key: string, value: string): Promise<void> {
     if (key === 'unified_assessment') {
       const { fund_score, bankable_score } = parseScoresFromAssessment(value)
       const now = new Date().toISOString()
-      await supabase
+      const { error: upsertError } = await supabase
         .from('business_profiles')
         .upsert(
           {
@@ -76,6 +76,15 @@ export async function setDataItem(key: string, value: string): Promise<void> {
           },
           { onConflict: 'user_id' }
         )
+      // 42703 = undefined_column — scoring_version or score_generated_at missing from schema
+      // Run scripts/verify-supabase-schema.sql in Supabase SQL editor to add the columns
+      if (upsertError?.code === '42703') {
+        console.error(
+          '[FundReady] Schema migration required: a column written by data-adapter is missing from business_profiles. ' +
+          'Run scripts/verify-supabase-schema.sql in your Supabase SQL editor. ' +
+          `Postgres detail: ${upsertError.message}`
+        )
+      }
     } else if (key === 'fundready_badges') {
       await supabase
         .from('business_profiles')
@@ -158,7 +167,7 @@ export async function migrateLocalDataToSupabase(): Promise<void> {
       const { fund_score, bankable_score } = parseScoresFromAssessment(assessmentData)
       const now = new Date().toISOString()
 
-      await supabase
+      const { error: migrateError } = await supabase
         .from('business_profiles')
         .upsert(
           {
@@ -172,6 +181,13 @@ export async function migrateLocalDataToSupabase(): Promise<void> {
           },
           { onConflict: 'user_id' }
         )
+      if (migrateError?.code === '42703') {
+        console.error(
+          '[FundReady] Schema migration required: a column written during data migration is missing from business_profiles. ' +
+          'Run scripts/verify-supabase-schema.sql in your Supabase SQL editor. ' +
+          `Postgres detail: ${migrateError.message}`
+        )
+      }
       console.log('[FundReady] Migrated assessment data')
     }
 

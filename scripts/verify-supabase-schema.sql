@@ -40,6 +40,17 @@ ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 ALTER TABLE IF EXISTS business_profiles
 ADD COLUMN IF NOT EXISTS assessment_data JSONB;
 
+-- Add scoring_version column if it doesn't exist (added v1.1)
+-- Stores the SCORING_VERSION constant at time of score generation
+-- Allows pre/post-fix score cohorts to be queried separately
+ALTER TABLE IF EXISTS business_profiles
+ADD COLUMN IF NOT EXISTS scoring_version TEXT;
+
+-- Add score_generated_at column if it doesn't exist (added v1.1)
+-- Stores the ISO 8601 timestamp when the score was computed
+ALTER TABLE IF EXISTS business_profiles
+ADD COLUMN IF NOT EXISTS score_generated_at TIMESTAMP WITH TIME ZONE;
+
 -- Verify all columns are now present
 SELECT 
   column_name, 
