@@ -708,7 +708,7 @@ export function AICoach() {
   const completedStages = roadmap.filter(s => s.complete).length;
 
   return (
-    <div style={{ maxWidth: '860px', margin: '0 auto', padding: '24px 20px' }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 28px 48px' }}>
       <style>{`@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }`}</style>
 
       {/* Header */}

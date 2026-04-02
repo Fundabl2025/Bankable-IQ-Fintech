@@ -160,7 +160,7 @@ export function MyProgress() {
 
   return (
     <div className="flex-1 min-h-screen overflow-auto" style={{ backgroundColor: 'var(--background)' }}>
-      <div className="max-w-[1100px] mx-auto px-6 py-8 lg:px-8 lg:py-10">
+      <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '28px' }}>

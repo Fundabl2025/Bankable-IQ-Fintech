@@ -95,7 +95,7 @@ export function StatusReports() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--background)' }}>
-      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '32px 24px 60px' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 28px 48px' }}>
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '28px' }}>

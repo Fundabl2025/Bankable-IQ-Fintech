@@ -128,7 +128,7 @@ export function TemplatesAndResources() {
   };
 
   return (
-    <div className="flex-1 min-h-screen bg-slate-50">
+    <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
       {/* Hero Section */}
       <div 
         className="relative bg-gradient-to-r from-slate-800 via-slate-700 to-slate-900 text-white"

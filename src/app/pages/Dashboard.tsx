@@ -503,7 +503,7 @@ export function Dashboard() {
           <button onClick={() => navigate('/app/settings')} style={{ fontSize: '12px', fontWeight: 700, color: '#92400e', background: 'rgba(146,64,14,0.12)', border: '1px solid rgba(146,64,14,0.25)', borderRadius: '6px', padding: '5px 14px', cursor: 'pointer' }}>Verify Now →</button>
         </div>
       )}
-      <div style={{ padding: '28px 28px 40px', width: '100%', boxSizing: 'border-box' }}>
+      <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
         
         {/* ── HEADER ─────────────────────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>

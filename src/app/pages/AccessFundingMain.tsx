@@ -174,7 +174,7 @@ export function AccessFunding() {
         )}
       </AnimatePresence>
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
+      <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
 
         {/* ── HERO IDENTITY BANNER ─────────────────────────────────────────── */}
         <div style={{ marginBottom: '24px' }}>

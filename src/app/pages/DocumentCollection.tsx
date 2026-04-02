@@ -120,7 +120,7 @@ export function DocumentCollection() {
 
   return (
     <div className="flex-1 min-h-screen bg-slate-50 overflow-auto">
-      <div className="max-w-7xl mx-auto p-8">
+      <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

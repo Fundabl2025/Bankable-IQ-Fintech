@@ -169,7 +169,7 @@ export default function DenialDiagnosis() {
   const isBankable = sbssScore >= 160;
 
   return (
-    <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
       {/* Page Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

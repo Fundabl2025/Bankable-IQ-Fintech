@@ -247,7 +247,7 @@ export function EstimatedFunding({ data: propData }: EstimatedFundingProps) {
   const totalPotentialUplift = tierAt240.bizMax - actualMaxFunding;
 
   return (
-    <div style={{ background: 'var(--bg-base)', padding: '32px 24px', maxWidth: '820px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 28px 48px' }}>
 
       {/* ── PAGE HEADER ──────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>

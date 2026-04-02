@@ -64,7 +64,7 @@ export function Settings() {
       className="flex-1 min-h-screen overflow-auto"
       style={{ backgroundColor: 'var(--background)' }}
     >
-      <div className="max-w-5xl mx-auto px-6 py-8 lg:px-8 lg:py-10">
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 28px 48px' }}>
 
         {/* Page header */}
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
