@@ -46,10 +46,15 @@ export async function setDataItem(key: string, value: string): Promise<void> {
   window.dispatchEvent(new StorageEvent('storage', { key, newValue: value }))
 
   // Event: fundscore_generated — fires whenever assessment data is saved
+  // T-12B: Also append SBSS snapshot to history on every assessment save
   if (key === 'unified_assessment') {
-    const { fund_score } = parseScoresFromAssessment(value)
+    const { fund_score, bankable_score } = parseScoresFromAssessment(value)
     if (fund_score > 0) {
       logEvent({ event_name: 'fundscore_generated', payload: { fund_score, scoring_version: SCORING_VERSION } })
+    }
+    if (bankable_score > 0) {
+      // Fire-and-forget -- appendSBSSSnapshot never throws
+      appendSBSSSnapshot(bankable_score, SCORING_VERSION);
     }
   }
 
