@@ -1,22 +1,19 @@
 // ════════════════════════════════════════════════════════════════════════════════
 // FUNDREADY™ — Optimize Reporting
-// Covers: Business Credit Bureaus (D&B, Experian, Equifax, CreditSafe, FICO SBSS)
-//         Owner's Credit Profile (FICO impact, debt, inquiries, credit partners)
-// Dynamic: reads unified_assessment + compliance progress → real status + steps
-// Gate: virtual/live membership only
+// CLAUDE.md: Fogg (progress + single action) · Zhuo (what/why/next/get) ·
+//            Elon (status+gap+action, no prose walls) · Chase (fear-of-loss hook)
+// Design: matches Lender Compliance row pattern exactly — actor mode, not observer
 // ════════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router';
-import { motion } from 'motion/react';
+import { useNavigate } from 'react-router';
+import { motion, AnimatePresence } from 'motion/react';
 import {
-  TrendingUp, AlertCircle, CheckCircle, Lock, ChevronRight,
-  BarChart2, Shield, Zap, FileText, Users, Target, ExternalLink
+  BarChart3, ChevronDown, ChevronRight, CheckCircle2,
+  Lock, AlertTriangle, Target, Zap, Shield,
 } from 'lucide-react';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
 import { getMembershipTier, canAccessGoal2 } from '../lib/membership';
-import { getAllAuditItems, getCategoryProgress } from '../utils/businessData';
+import { getAllAuditItems } from '../utils/businessData';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -26,33 +23,28 @@ interface AssessmentData {
   experian?: string;
   transunion?: string;
   equifax?: string;
-  monthlyRevenue?: string;
+  personalCreditScore?: number;
+  monthlyRevenue?: string | number;
   startDate?: { year: number; month: number };
   hasBankruptcy?: string;
   hasEIN?: boolean;
 }
 
-interface BureauStatus {
-  label: string;
-  color: string;
-  score: string;
-  description: string;
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const CREDIT_MAP: Record<string, number> = {
-  exceptional: 810, very_good: 760, good: 700, fair: 650, poor: 560, unknown: 600,
+  exceptional: 810, very_good: 760, good: 700, fair: 650, poor: 560, unknown: 0,
 };
 
-const CREDIT_LABELS: Record<string, string> = {
-  exceptional: 'Exceptional (800+)',
-  very_good: 'Very Good (740–799)',
-  good: 'Good (670–739)',
-  fair: 'Fair (580–669)',
-  poor: 'Poor (Below 580)',
-  unknown: 'Not Provided',
-};
+function getCreditScore(data: AssessmentData): number {
+  if (data.personalCreditScore) return data.personalCreditScore;
+  const scores = [
+    CREDIT_MAP[data.experian ?? 'unknown'] ?? 0,
+    CREDIT_MAP[data.transunion ?? 'unknown'] ?? 0,
+    CREDIT_MAP[data.equifax ?? 'unknown'] ?? 0,
+  ].filter(s => s > 0);
+  return scores.length ? Math.min(...scores) : 0;
+}
 
 function getAgeMonths(data: AssessmentData): number {
   if (!data.startDate) return 0;
@@ -61,78 +53,462 @@ function getAgeMonths(data: AssessmentData): number {
   return (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
 }
 
-function getCreditScore(data: AssessmentData): number {
-  return Math.min(
-    CREDIT_MAP[data.experian ?? 'unknown'],
-    CREDIT_MAP[data.transunion ?? 'unknown'],
-    CREDIT_MAP[data.equifax ?? 'unknown'],
-  );
+function getFicoSBSS(fico: number, ageMonths: number, modulesCount: number): number {
+  if (fico === 0) return 0;
+  const base = Math.round((fico / 850) * 160 + Math.min(ageMonths / 60, 1) * 20 + modulesCount * 3);
+  return Math.min(base, 280);
 }
 
-function getBureauStatus(score: number, ageMonths: number, completedModules: string[]): BureauStatus {
-  const hasEntity = completedModules.includes('entity-filings');
-  const hasBanking = completedModules.includes('business-banking');
-  const hasBothFoundation = hasEntity && hasBanking;
-
-  if (!hasBothFoundation || ageMonths < 6) {
-    return { label: 'Not Established', color: 'from-slate-500 to-slate-600', score: '—', description: 'File not yet established with this bureau' };
-  }
-  if (score >= 720 && ageMonths >= 24) {
-    return { label: 'Strong', color: 'from-emerald-500 to-green-600', score: '75–80+', description: 'Profile is strong and growing' };
-  }
-  if (score >= 650 && ageMonths >= 12) {
-    return { label: 'Building', color: 'from-blue-500 to-cyan-600', score: '50–74', description: 'File established, actively improving' };
-  }
-  return { label: 'Early Stage', color: 'from-amber-500 to-orange-500', score: '20–49', description: 'Established but needs tradelines' };
-}
-
-function getFicoSBSSBand(personalFico: number, ageMonths: number, completedModules: number): string {
-  const base = Math.round((personalFico / 850) * 160 + (ageMonths / 60) * 20 + completedModules * 3);
-  return `~${Math.min(base, 280)} / 300`;
-}
-
-// ── Membership Gate ───────────────────────────────────────────────────────────
+// ── Upgrade Gate ──────────────────────────────────────────────────────────────
 
 function UpgradeGate() {
+  const navigate = useNavigate();
   return (
-    <div className="flex-1 min-h-screen bg-slate-50 flex items-center justify-center p-8">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-lg w-full bg-white rounded-3xl border-2 border-slate-200 shadow-xl p-10 text-center"
-      >
-        <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <Lock className="w-8 h-8 text-white" />
+    <div className="flex-1 min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
+      <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ marginBottom: '28px' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+            Goal #2 — Become Bankable
+          </p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(26px,3.5vw,36px)', color: 'var(--foreground)', lineHeight: 1.1, letterSpacing: '-0.02em', margin: 0 }}>
+            Optimize Reporting
+          </h1>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', marginTop: '6px' }}>
+            Bureau-by-bureau roadmap to build business credit and optimize your owner's FICO
+          </p>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-3">Optimize Reporting</h2>
-        <p className="text-gray-600 mb-2 font-semibold">Virtual or Live Membership Required</p>
-        <p className="text-sm text-gray-500 mb-8">
-          This section gives you a bureau-by-bureau roadmap to build, strengthen, and optimize both your business credit profile and owner's credit — so lenders see exactly what you need them to see.
-        </p>
-        <div className="space-y-3 mb-8 text-left">
-          {[
-            'D&B PAYDEX, Experian, Equifax, CreditSafe & FICO SBSS status',
-            'Personal FICO impact on every funding product',
-            'Debt ratio thresholds lenders actually use',
-            'Inquiry management + credit partner strategy',
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-3 text-sm text-gray-700">
-              <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-              {item}
-            </div>
-          ))}
-        </div>
-        <Link to="/pricing">
-          <Button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-            Upgrade to Unlock This Section
-          </Button>
-        </Link>
-      </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          style={{ background: 'linear-gradient(135deg,rgba(99,102,241,.08),rgba(139,92,246,.08))', border: '1px solid rgba(99,102,241,.3)', borderRadius: '18px', padding: '32px', maxWidth: '600px' }}
+        >
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(99,102,241,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+            <Lock size={22} style={{ color: '#6366f1' }} />
+          </div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--foreground)', marginBottom: '8px' }}>
+            Virtual or Live Membership Required
+          </h2>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', lineHeight: 1.6, marginBottom: '20px' }}>
+            Most business owners have no idea what's in their credit file — or what lenders actually see when they pull it. This section gives you the roadmap and the single next action to fix every gap.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+            {[
+              'D&B PAYDEX, Experian, Equifax, CreditSafe & FICO SBSS — real status, real steps',
+              'Personal FICO vs. every funding program — see your gap at a glance',
+              'Debt utilization rules lenders actually use (45% hard wall / 19% optimal)',
+              'Inquiry management — max 4 in 6 months, no shot-gunning, third-party freeze',
+              'Credit partner strategy — authorized users, co-signers, secured cards',
+            ].map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <CheckCircle2 size={15} style={{ color: '#10b981', flexShrink: 0, marginTop: '1px' }} />
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--foreground)', lineHeight: 1.5 }}>{item}</span>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => navigate('/app/lender-compliance')}
+            style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', padding: '12px 24px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', boxShadow: '0 4px 14px rgba(99,102,241,.3)' }}
+          >
+            Upgrade to Unlock →
+          </button>
+        </motion.div>
+      </div>
     </div>
   );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
+// ── Bureau Data ───────────────────────────────────────────────────────────────
+
+interface BureauStep {
+  label: string;
+  description: string;
+  path: string;
+  pathLabel: string;
+  moduleId?: string;
+}
+
+interface Bureau {
+  id: string;
+  icon: string;
+  name: string;
+  scoreLabel: string;
+  bankableTarget: string;
+  purpose: string;
+  requiredModules: string[];
+  steps: BureauStep[];
+}
+
+const BUREAUS: Bureau[] = [
+  {
+    id: 'dun-bradstreet', icon: '📊', name: 'Dun & Bradstreet', scoreLabel: 'PAYDEX Score',
+    bankableTarget: '70+ (vendor credit) · 80+ (full strength)',
+    purpose: 'B2B vendors for net terms, landlords for leases, government contracting',
+    requiredModules: ['entity-filings', 'agencies-naics', 'business-banking'],
+    steps: [
+      { label: 'Register legal business entity', description: 'State filing required to open your D&B file', path: '/app/lender-compliance/entity-filings', pathLabel: 'Entity & Filings', moduleId: 'entity-filings' },
+      { label: 'Get your D-U-N-S Number', description: 'Free at dnb.com — required to activate your PAYDEX file', path: '/app/lender-compliance/agencies-naics', pathLabel: 'Agencies & NAICS', moduleId: 'agencies-naics' },
+      { label: 'Open dedicated business bank account', description: 'Establishes your business identity with financial institutions', path: '/app/lender-compliance/business-banking', pathLabel: 'Business Banking', moduleId: 'business-banking' },
+      { label: 'Build 7–10 vendor tradelines (net-30)', description: 'Vendors reporting to D&B: Uline, Quill, Grainger, Crown Office Supplies', path: '/app/lender-compliance/comparable-credit', pathLabel: 'Comparable Credit', moduleId: 'comparable-credit' },
+      { label: 'Pay all invoices 10 days early', description: 'D&B PAYDEX scores payment timing — early = highest possible score', path: '/app/building-credit', pathLabel: 'Building Credit guide' },
+    ],
+  },
+  {
+    id: 'experian-business', icon: '📈', name: 'Experian Business', scoreLabel: 'Intelliscore Plus',
+    bankableTarget: '76+ (low risk) · 80+ (bankable)',
+    purpose: 'Most business lenders and credit card issuers pull Experian first',
+    requiredModules: ['entity-filings', 'agencies-naics'],
+    steps: [
+      { label: 'Register legal entity with state', description: 'Required for Experian to create a business file', path: '/app/lender-compliance/entity-filings', pathLabel: 'Entity & Filings', moduleId: 'entity-filings' },
+      { label: 'Register with credit reporting agencies', description: 'Experian Business requires active registration to track your file', path: '/app/lender-compliance/agencies-naics', pathLabel: 'Agencies & NAICS', moduleId: 'agencies-naics' },
+      { label: 'Build 7–10 reporting tradelines', description: 'Business cards and vendor accounts that report to Experian', path: '/app/lender-compliance/comparable-credit', pathLabel: 'Comparable Credit', moduleId: 'comparable-credit' },
+      { label: 'Pay 5–10 days early, use accounts monthly', description: 'Inactive accounts lose reporting weight — use them or lose them', path: '/app/building-credit', pathLabel: 'Building Credit guide' },
+      { label: 'Keep revolving utilization under 30%', description: 'Experian scores per-card and aggregate utilization separately', path: '/app/finances', pathLabel: 'Finances' },
+    ],
+  },
+  {
+    id: 'equifax-business', icon: '🏦', name: 'Equifax Business', scoreLabel: 'Business Credit Risk Score',
+    bankableTarget: '500+ (acceptable) · 700+ (preferred)',
+    purpose: 'Bank lenders and commercial real estate',
+    requiredModules: ['entity-filings', 'business-banking'],
+    steps: [
+      { label: 'Register legal business entity', description: 'Entity establishment is the foundation of your Equifax file', path: '/app/lender-compliance/entity-filings', pathLabel: 'Entity & Filings', moduleId: 'entity-filings' },
+      { label: 'Open business bank account', description: 'Equifax Business links your financial identity to your entity', path: '/app/lender-compliance/business-banking', pathLabel: 'Business Banking', moduleId: 'business-banking' },
+      { label: 'Build business credit tradelines', description: 'Consistent payment history across multiple reporting accounts', path: '/app/lender-compliance/comparable-credit', pathLabel: 'Comparable Credit', moduleId: 'comparable-credit' },
+      { label: 'Maintain consistent payment history 6+ months', description: 'Equifax weights time in business and payment consistency heavily', path: '/app/building-credit', pathLabel: 'Building Credit guide' },
+    ],
+  },
+  {
+    id: 'creditsafe', icon: '🛡️', name: 'CreditSafe', scoreLabel: 'CreditSafe Score',
+    bankableTarget: '70+ (acceptable) · 85+ (preferred)',
+    purpose: 'International lenders, B2B vendors, and some US commercial lenders',
+    requiredModules: ['business-banking', 'ein-licenses'],
+    steps: [
+      { label: 'Open dedicated business bank account', description: 'CreditSafe uses banking data as a primary scoring signal', path: '/app/lender-compliance/business-banking', pathLabel: 'Business Banking', moduleId: 'business-banking' },
+      { label: 'Get EIN registered', description: 'EIN is required for CreditSafe to create and verify your file', path: '/app/lender-compliance/ein-licenses', pathLabel: 'EIN & Licenses', moduleId: 'ein-licenses' },
+      { label: 'Establish business tradelines', description: 'Vendor and credit accounts that report to CreditSafe', path: '/app/lender-compliance/comparable-credit', pathLabel: 'Comparable Credit', moduleId: 'comparable-credit' },
+    ],
+  },
+  {
+    id: 'fico-sbss', icon: '⚡', name: 'FICO SBSS', scoreLabel: 'Small Business Scoring Service',
+    bankableTarget: '160+ = bankable threshold (SBA minimum)',
+    purpose: 'SBA lenders and bank commercial loan departments — the final gatekeeper',
+    requiredModules: ['entity-filings', 'business-banking', 'ein-licenses'],
+    steps: [
+      { label: 'Improve personal FICO to 720+', description: 'Personal FICO is the single largest input into SBSS — fix this first', path: '/app/optimize-reporting', pathLabel: "Owner's Credit tab" },
+      { label: 'Complete all 13 compliance modules', description: 'Business compliance data feeds directly into the SBSS calculation', path: '/app/lender-compliance', pathLabel: 'Lender Compliance' },
+      { label: 'Build business credit tradelines (6+ months)', description: 'SBSS weights business credit history and depth of file', path: '/app/lender-compliance/comparable-credit', pathLabel: 'Comparable Credit', moduleId: 'comparable-credit' },
+      { label: 'Maintain business bank account 6+ months', description: 'Banking history is a key input — age of account matters', path: '/app/lender-compliance/business-banking', pathLabel: 'Business Banking', moduleId: 'business-banking' },
+      { label: 'Keep business 2+ years with clean history', description: 'Time in business is a hard-weighted factor in SBSS', path: '/business-assessment', pathLabel: 'Update Assessment' },
+    ],
+  },
+];
+
+// ── Funding Program FICO Requirements ─────────────────────────────────────────
+
+const PROGRAM_FICO = [
+  { name: 'Merchant Cash Advance',    required: 500, path: '/app/access-funding/merchant-advance',          icon: '💵' },
+  { name: 'Truck & Utility Vehicles', required: 550, path: '/app/access-funding/truck-utility-vehicles',    icon: '🚛' },
+  { name: 'Startup Equipment',        required: 580, path: '/app/access-funding/startup-equipment',         icon: '🚀' },
+  { name: 'Business Credit Line',     required: 600, path: '/app/access-funding/business-credit-line',      icon: '💳' },
+  { name: 'Working Capital',          required: 600, path: '/app/access-funding/working-capital-loans',     icon: '⚡' },
+  { name: 'Revenue-Based Loan',       required: 600, path: '/app/access-funding/revenue-based-loan',        icon: '📊' },
+  { name: 'Equipment Financing',      required: 600, path: '/app/access-funding/equipment-financing',       icon: '🔧' },
+  { name: 'Inventory Line of Credit', required: 600, path: '/app/access-funding/inventory-line-of-credit',  icon: '📦' },
+  { name: 'Business Term Loan',       required: 640, path: '/app/access-funding/business-term-loan',        icon: '🏛️' },
+  { name: 'Bridge Loans',             required: 640, path: '/app/access-funding/bridge-loans',              icon: '🌉' },
+  { name: 'Credit Union Loans',       required: 650, path: '/app/access-funding/credit-union-loans',        icon: '🤝' },
+  { name: 'DSCR Loans',               required: 660, path: '/app/access-funding/dscr-loans',                icon: '🏠' },
+  { name: 'Construction Loans',       required: 660, path: '/app/access-funding/construction-loans',        icon: '🏗️' },
+  { name: 'Personal Credit Cards',    required: 670, path: '/app/access-funding/personal-credit-cards',     icon: '🪪' },
+  { name: 'Business Credit Cards',    required: 680, path: '/app/access-funding/business-credit-cards',     icon: '💼' },
+  { name: 'SBA Business Loan',        required: 680, path: '/app/access-funding/sba-business-loan',         icon: '🏦' },
+];
+
+// ── Debt Strategies ───────────────────────────────────────────────────────────
+
+const DEBT_STRATEGIES = [
+  {
+    label: 'Per-card utilization ≤ 45%',
+    target: '≤ 45% on every individual card',
+    optimal: '≤ 19% for max approvals',
+    description: 'Lenders check each card separately — one card over 45% triggers a risk flag even if your total aggregate is fine. Pay down the highest-utilization card first.',
+    actionPath: '/app/finances',
+    action: 'View Finances',
+  },
+  {
+    label: 'Aggregate utilization ≤ 45%',
+    target: '≤ 45% across all revolving accounts',
+    optimal: '≤ 19% for maximum FICO lift',
+    description: 'Total balance across all cards divided by total credit limit. Both per-card and aggregate are scored — you need both below 45%.',
+    actionPath: '/app/finances',
+    action: 'View Finances',
+  },
+  {
+    label: 'Pay highest utilization first, not highest balance',
+    target: 'Highest % utilization account first',
+    optimal: 'Never sort by dollar amount — sort by utilization %',
+    description: 'The FICO model responds to utilization percentages, not payoff dollar amounts. A $500 balance on a $600 card hurts more than a $5,000 balance on a $20,000 card.',
+    actionPath: '/app/finances',
+    action: 'View Finances',
+  },
+  {
+    label: 'Add installment credit to shift your mix',
+    target: 'Mix of revolving + installment',
+    optimal: 'Installment loan reduces revolving utilization ratio',
+    description: 'If revolving utilization is high, adding a business installment loan can shift your credit mix and lower your effective revolving ratio — even without paying down balances.',
+    actionPath: '/app/access-funding/business-term-loan',
+    action: 'View Term Loans',
+  },
+];
+
+// ── Inquiry Rules ─────────────────────────────────────────────────────────────
+
+const INQUIRY_RULES = [
+  { label: 'Max 4 total hard inquiries in 6 months', description: 'Most lender risk models auto-flag files with 4+ inquiries. The window is 6 months rolling — not per year.', risk: 'high' },
+  { label: 'Max 2 revolving inquiries in 6 months', description: 'Revolving applications (cards, lines of credit) are weighted heavier than installment. Lenders track these separately in their risk models.', risk: 'high' },
+  { label: 'No shot-gunning — one lender at a time', description: 'Applying to multiple lenders the same day creates a burst of inquiries. It signals desperation. Wait 30–60 days between applications for the same product.', risk: 'medium' },
+  { label: '5 in 24 rule (Chase and some banks)', description: 'Opening 5+ new accounts in 24 months triggers automatic decline at several major lenders — even if your score is strong. Applies to personal cards.', risk: 'medium' },
+  { label: 'Freeze third-party data brokers', description: 'LexisNexis, SageStream, Innovis, and TeleTrack all sell data to lenders. Freezing them prevents silent pulls you never authorized. Request freezes at each provider separately.', risk: 'low' },
+];
+
+// ── Quick Wins ────────────────────────────────────────────────────────────────
+
+const QUICK_WINS = [
+  { label: 'Pull your free credit report',                    time: '5 min',  impact: '+0 pts — but you need to know what lenders see',  path: 'https://annualcreditreport.com', external: true },
+  { label: 'Dispute any errors on your report',              time: '15 min', impact: '+15–40 pts if errors are found and corrected',      path: 'https://annualcreditreport.com', external: true },
+  { label: 'Become authorized user on an aged account',      time: '10 min', impact: '+10–30 pts — inherits the account\'s full history', path: '/app/lender-compliance/comparable-credit', external: false },
+  { label: 'Request credit limit increase on existing cards', time: '5 min',  impact: 'Drops utilization % without paying a dollar',       path: 'https://annualcreditreport.com', external: true },
+  { label: 'Open a secured business credit card',            time: '10 min', impact: 'Builds business credit with zero personal risk',     path: '/app/lender-compliance/cd-business-loan', external: false },
+  { label: 'Freeze LexisNexis, SageStream, Innovis, TeleTrack', time: '20 min', impact: 'Stops silent third-party data pulls',           path: 'https://optout.lexisnexis.com', external: true },
+];
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function SectionHook({ text }: { text: string }) {
+  return (
+    <div style={{ background: 'rgba(239,68,68,.04)', border: '1px solid rgba(239,68,68,.15)', borderLeft: '3px solid #ef4444', borderRadius: '0 8px 8px 0', padding: '10px 14px', marginBottom: '16px' }}>
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--foreground)', lineHeight: 1.5, margin: 0, fontWeight: 500 }}>{text}</p>
+    </div>
+  );
+}
+
+function SectionHead({ icon, title, badge, color = '#10b981' }: { icon: React.ReactNode; title: string; badge: string; color?: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+      {icon}
+      <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '17px', color: 'var(--foreground)', margin: 0 }}>{title}</h2>
+      <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color, background: `${color}14`, border: `1px solid ${color}35`, borderRadius: '5px', padding: '2px 8px' }}>{badge}</span>
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: 'established' | 'building' | 'not-started' }) {
+  const c = status === 'established'
+    ? { label: 'Established', bg: 'rgba(16,185,129,.08)', border: 'rgba(16,185,129,.25)', color: '#10b981' }
+    : status === 'building'
+    ? { label: 'Building',     bg: 'rgba(245,158,11,.08)', border: 'rgba(245,158,11,.25)', color: '#f59e0b' }
+    : { label: 'Not Started',  bg: 'rgba(239,68,68,.08)',  border: 'rgba(239,68,68,.25)',  color: '#ef4444' };
+  return (
+    <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '5px', background: c.bg, border: `1px solid ${c.border}`, color: c.color, whiteSpace: 'nowrap' }}>
+      {c.label}
+    </span>
+  );
+}
+
+function BureauRow({ bureau, completedModules, expandedId, onToggle, navigate }: {
+  bureau: Bureau; completedModules: string[]; expandedId: string | null;
+  onToggle: (id: string) => void; navigate: (p: string) => void;
+}) {
+  const isExpanded = expandedId === bureau.id;
+  const stepsCompleted = bureau.steps.filter(s => s.moduleId && completedModules.includes(s.moduleId)).length;
+  const status: 'established' | 'building' | 'not-started' =
+    bureau.requiredModules.every(m => completedModules.includes(m)) ? 'established' :
+    bureau.requiredModules.some(m => completedModules.includes(m)) ? 'building' : 'not-started';
+  const isComplete = status === 'established';
+
+  return (
+    <div style={{ border: `1px solid ${isComplete ? 'rgba(16,185,129,.25)' : 'var(--border)'}`, borderRadius: '14px', overflow: 'hidden', background: isComplete ? 'rgba(16,185,129,.03)' : 'var(--card)' }}>
+      <div onClick={() => onToggle(bureau.id)} style={{ padding: '16px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px' }}
+        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,.02)'}
+        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+      >
+        <div style={{ width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0, background: isComplete ? 'rgba(16,185,129,.1)' : 'var(--background)', border: `1px solid ${isComplete ? 'rgba(16,185,129,.2)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+          {bureau.icon}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--foreground)' }}>{bureau.name}</span>
+            {isComplete && <CheckCircle2 size={14} style={{ color: '#10b981', flexShrink: 0 }} />}
+          </div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: 0 }}>
+            {bureau.scoreLabel} · Target: {bureau.bankableTarget}
+          </p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
+          <StatusBadge status={status} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>{stepsCompleted}/{bureau.steps.length} steps</span>
+            <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.18 }}>
+              <ChevronDown size={14} style={{ color: 'var(--muted-foreground)' }} />
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} style={{ overflow: 'hidden', borderTop: '1px solid var(--border)' }}>
+            <div style={{ padding: '10px 18px', background: 'rgba(0,0,0,.02)', borderBottom: '1px solid var(--border)' }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: 0 }}>
+                <strong style={{ color: 'var(--foreground)' }}>Who pulls this:</strong> {bureau.purpose}
+              </p>
+            </div>
+            {bureau.steps.map((step, i) => {
+              const done = step.moduleId ? completedModules.includes(step.moduleId) : false;
+              return (
+                <div key={i}
+                  onClick={() => step.path.startsWith('http') ? window.open(step.path, '_blank') : navigate(step.path)}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px 18px', borderBottom: i < bureau.steps.length - 1 ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,.02)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                >
+                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0, background: done ? '#10b981' : 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1px' }}>
+                    {done
+                      ? <CheckCircle2 size={12} style={{ color: 'white' }} />
+                      : <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', fontWeight: 700, color: 'var(--muted-foreground)' }}>{i + 1}</span>
+                    }
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: done ? '#10b981' : 'var(--foreground)', marginBottom: '2px' }}>{step.label}{done ? ' ✓' : ''}</div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', lineHeight: 1.4 }}>{step.description}</div>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 600, color: '#10b981', background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '5px', padding: '2px 8px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    {step.pathLabel} →
+                  </span>
+                </div>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ProgramRow({ name, icon, required, userFico, path, navigate }: {
+  name: string; icon: string; required: number; userFico: number; path: string; navigate: (p: string) => void;
+}) {
+  const met = userFico > 0 && userFico >= required;
+  const gap = required - userFico;
+  return (
+    <motion.div onClick={() => navigate(path)}
+      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', border: `1px solid ${met ? 'rgba(16,185,129,.2)' : 'var(--border)'}`, background: met ? 'rgba(16,185,129,.03)' : 'var(--card)', cursor: 'pointer' }}
+      whileHover={{ boxShadow: '0 2px 12px rgba(0,0,0,.06)' }}
+    >
+      <span style={{ fontSize: '18px', flexShrink: 0 }}>{icon}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--foreground)' }}>{name}</div>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>Requires {required}+ FICO</div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        {userFico === 0 ? (
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>Complete scan</span>
+        ) : met ? (
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '5px', padding: '2px 8px' }}>✓ Qualified</span>
+        ) : (
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,.06)', border: '1px solid rgba(239,68,68,.2)', borderRadius: '5px', padding: '2px 8px' }}>+{gap} pts needed</span>
+        )}
+        <ChevronRight size={14} style={{ color: 'var(--muted-foreground)' }} />
+      </div>
+    </motion.div>
+  );
+}
+
+function StrategyRow({ label, target, optimal, description, action, actionPath, navigate }: {
+  label: string; target: string; optimal: string; description: string; action: string; actionPath: string; navigate: (p: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden', background: 'var(--card)' }}>
+      <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', cursor: 'pointer' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--foreground)', marginBottom: '2px' }}>{label}</div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>Target: {target}</div>
+        </div>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 600, color: '#10b981', background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', borderRadius: '5px', padding: '2px 8px', whiteSpace: 'nowrap', flexShrink: 0 }}>{optimal}</span>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.15 }} style={{ flexShrink: 0 }}>
+          <ChevronDown size={14} style={{ color: 'var(--muted-foreground)' }} />
+        </motion.div>
+      </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden', borderTop: '1px solid var(--border)' }}>
+            <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', lineHeight: 1.5, margin: 0 }}>{description}</p>
+              <button onClick={e => { e.stopPropagation(); navigate(actionPath); }}
+                style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '11px', padding: '6px 12px', background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.25)', borderRadius: '8px', color: '#10b981', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {action} →
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function InquiryRow({ label, description, risk }: { label: string; description: string; risk: string }) {
+  const [open, setOpen] = useState(false);
+  const color = risk === 'high' ? '#ef4444' : risk === 'medium' ? '#f59e0b' : '#10b981';
+  const riskBg = risk === 'high' ? 'rgba(239,68,68,.06)' : risk === 'medium' ? 'rgba(245,158,11,.06)' : 'rgba(16,185,129,.06)';
+  const riskBorder = risk === 'high' ? 'rgba(239,68,68,.2)' : risk === 'medium' ? 'rgba(245,158,11,.2)' : 'rgba(16,185,129,.2)';
+  return (
+    <div style={{ border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden', background: 'var(--card)' }}>
+      <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', cursor: 'pointer' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--foreground)' }}>{label}</div>
+        </div>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '5px', background: riskBg, border: `1px solid ${riskBorder}`, color, flexShrink: 0 }}>
+          {risk === 'high' ? 'High Risk' : risk === 'medium' ? 'Med Risk' : 'Low Risk'}
+        </span>
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.15 }} style={{ flexShrink: 0 }}>
+          <ChevronDown size={14} style={{ color: 'var(--muted-foreground)' }} />
+        </motion.div>
+      </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden', borderTop: '1px solid var(--border)' }}>
+            <div style={{ padding: '12px 16px' }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', lineHeight: 1.5, margin: 0 }}>{description}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function QuickWinRow({ label, time, impact, path, external, navigate }: {
+  label: string; time: string; impact: string; path: string; external: boolean; navigate: (p: string) => void;
+}) {
+  return (
+    <motion.div
+      onClick={() => external ? window.open(path, '_blank') : navigate(path)}
+      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--card)', cursor: 'pointer' }}
+      whileHover={{ boxShadow: '0 2px 10px rgba(0,0,0,.06)' }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--foreground)', marginBottom: '2px' }}>{label}</div>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#10b981', fontWeight: 500 }}>{impact}</div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>{time}</span>
+        <ChevronRight size={14} style={{ color: 'var(--muted-foreground)' }} />
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Main Export ───────────────────────────────────────────────────────────────
 
 export function OptimizeReporting() {
   const navigate = useNavigate();
@@ -141,7 +517,7 @@ export function OptimizeReporting() {
   const [completedModules, setCompletedModules] = useState<string[]>([]);
   const [creditScore, setCreditScore] = useState(0);
   const [ageMonths, setAgeMonths] = useState(0);
-
+  const [expandedBureau, setExpandedBureau] = useState<string | null>(null);
   const [tier, setTier] = useState(() => getMembershipTier());
   const hasAccess = canAccessGoal2(tier);
 
@@ -165,737 +541,205 @@ export function OptimizeReporting() {
       setAssessment(data);
       setCreditScore(getCreditScore(data));
       setAgeMonths(getAgeMonths(data));
-    } catch { /* no data yet */ }
-
+    } catch { /* no data */ }
     try {
       const items = getAllAuditItems();
-      const done = items.filter(i => i.status === 'complete').map(i => i.id);
+      const done = items.filter((i: any) => i.status === 'complete').map((i: any) => i.id);
       setCompletedModules(done);
     } catch { /* no compliance data */ }
   }
 
   if (!hasAccess) return <UpgradeGate />;
 
-  const bureauStatus = getBureauStatus(creditScore, ageMonths, completedModules);
-  const hasEntityFilings = completedModules.includes('entity-filings');
-  const hasBusinessBanking = completedModules.includes('business-banking');
-  const hasAgenciesNAICS = completedModules.includes('agencies-naics');
-  const hasAssetsUCC = completedModules.includes('assets-ucc');
-  const hasEINLicenses = completedModules.includes('ein-licenses');
-  const creditLabel = CREDIT_LABELS[assessment.experian ?? 'unknown'];
-  const hasBankruptcy = assessment.hasBankruptcy === 'recent' || assessment.hasBankruptcy === 'aging';
-  const ficoSBSS = getFicoSBSSBand(creditScore, ageMonths, completedModules.length);
-  const creditBand = creditScore >= 720 ? 'strong' : creditScore >= 650 ? 'good' : creditScore >= 580 ? 'fair' : 'low';
-
-  // ── Bureau card definitions ────────────────────────────────────────────────
-
-  const bureaus = [
-    {
-      id: 'dun-bradstreet',
-      name: 'Dun & Bradstreet',
-      score: 'PAYDEX Score',
-      range: '0–100 (70 = vendor credit / 80 = full strength)',
-      threshold: '70+ for net-term vendors, 80+ for optimal',
-      purpose: 'Used by B2B vendors for net terms, landlords for leases, and government contracting — not typically pulled by cash lenders',
-      status: bureauStatus,
-      established: hasAgenciesNAICS,
-      steps: [
-        {
-          done: hasAgenciesNAICS,
-          action: 'Get your DUNS Number via Agencies & NAICS module',
-          impact: 'Required to establish your D&B file',
-          fix: '/app/lender-compliance/agencies-naics',
-          fixLabel: 'Complete Agencies & NAICS',
-        },
-        {
-          done: hasBusinessBanking,
-          action: 'Open a dedicated business checking account',
-          impact: 'Banking history feeds D&B file establishment',
-          fix: '/app/lender-compliance/business-banking',
-          fixLabel: 'Complete Business Banking',
-        },
-        {
-          done: completedModules.includes('building-credit-vendors') || ageMonths >= 6,
-          action: 'Add 7–10 NET-30 vendor accounts that report to D&B',
-          impact: 'Need at least 7 reporting tradelines for a strong PAYDEX score',
-          fix: '/app/building-credit',
-          fixLabel: 'Go to Building Credit',
-        },
-        {
-          done: ageMonths >= 12,
-          action: 'Pay all vendor invoices 10 days EARLY — not just on time',
-          impact: 'PAYDEX rewards early payment: on-time = 80, 10 days early = 90+',
-          fix: null,
-          fixLabel: null,
-        },
-      ],
-    },
-    {
-      id: 'experian-business',
-      name: 'Experian Business',
-      score: 'Intelliscore Plus',
-      range: '1–100 (80+ = strong / goal)',
-      threshold: '80+ Intelliscore Plus',
-      purpose: 'Used by credit card issuers, equipment lenders, banks, and vendors — most revolving business credit checks Experian first',
-      status: bureauStatus,
-      established: hasEntityFilings && hasBusinessBanking,
-      steps: [
-        {
-          done: hasEntityFilings,
-          action: 'Complete Entity & Filings — Experian tracks state registration',
-          impact: 'Establishes your business identity in Experian\'s database',
-          fix: '/app/lender-compliance/entity-filings',
-          fixLabel: 'Complete Entity & Filings',
-        },
-        {
-          done: hasEINLicenses,
-          action: 'Ensure EIN is active and matches business name exactly',
-          impact: 'EIN mismatch causes file fragmentation',
-          fix: '/app/lender-compliance/ein-licenses',
-          fixLabel: 'Complete EIN & Licenses',
-        },
-        {
-          done: hasBusinessBanking,
-          action: 'Establish business banking with consistent deposits',
-          impact: 'Banking activity signals operational health to Experian',
-          fix: '/app/lender-compliance/business-banking',
-          fixLabel: 'Complete Business Banking',
-        },
-        {
-          done: creditScore >= 700,
-          action: 'Maintain personal FICO above 700',
-          impact: 'Experian blends personal and business signals early on',
-          fix: null,
-          fixLabel: null,
-        },
-        {
-          done: ageMonths >= 6,
-          action: 'Build 7–10 tradelines and pay each 5–10 days EARLY every month',
-          impact: 'Experian only reports active accounts — gaps in usage create gaps in your score',
-          fix: '/app/building-credit',
-          fixLabel: 'Go to Building Credit',
-        },
-      ],
-    },
-    {
-      id: 'equifax-business',
-      name: 'Equifax Business',
-      score: 'Business Credit Risk Score',
-      range: '101–992 (556+ = low risk)',
-      threshold: '556+',
-      purpose: 'Used by banks and credit card issuers to assess default risk',
-      status: bureauStatus,
-      established: hasEntityFilings && hasBusinessBanking,
-      steps: [
-        {
-          done: hasEntityFilings,
-          action: 'Register business entity and keep it in good standing',
-          impact: 'Equifax sources from state filings — accuracy is critical',
-          fix: '/app/lender-compliance/entity-filings',
-          fixLabel: 'Complete Entity & Filings',
-        },
-        {
-          done: hasBusinessBanking,
-          action: 'Maintain active business bank account with 3+ months of history',
-          impact: 'Equifax uses banking history as a strong signal',
-          fix: '/app/lender-compliance/business-banking',
-          fixLabel: 'Complete Business Banking',
-        },
-        {
-          done: hasAssetsUCC,
-          action: 'Review Assets & UCC — clear any liens from your Equifax profile',
-          impact: 'UCC filings showing up incorrectly depress your score',
-          fix: '/app/lender-compliance/assets-ucc',
-          fixLabel: 'Complete Assets & UCC',
-        },
-        {
-          done: ageMonths >= 18,
-          action: 'Build 18+ months of positive payment history',
-          impact: 'Equifax weights payment history heavily — time builds score',
-          fix: null,
-          fixLabel: null,
-        },
-      ],
-    },
-    {
-      id: 'creditsafe',
-      name: 'CreditSafe',
-      score: 'CreditSafe Score',
-      range: '1–100 (51+ = low risk)',
-      threshold: '51+',
-      purpose: 'Used by international vendors, B2B suppliers, and alternative lenders',
-      status: bureauStatus,
-      established: hasEntityFilings,
-      steps: [
-        {
-          done: hasEntityFilings,
-          action: 'Ensure business name, address, and EIN are consistent everywhere',
-          impact: 'CreditSafe aggregates from public data — consistency is key',
-          fix: '/app/lender-compliance/entity-filings',
-          fixLabel: 'Complete Entity & Filings',
-        },
-        {
-          done: hasBusinessBanking,
-          action: 'Build banking history — CreditSafe uses third-party financial data',
-          impact: 'Banking activity improves CreditSafe profile',
-          fix: '/app/lender-compliance/business-banking',
-          fixLabel: 'Complete Business Banking',
-        },
-        {
-          done: ageMonths >= 12,
-          action: 'Allow time for reporting tradelines to accumulate',
-          impact: 'CreditSafe scores improve as payment history grows',
-          fix: null,
-          fixLabel: null,
-        },
-        {
-          done: !hasBankruptcy,
-          action: 'Keep record clean of judgments, liens, and bankruptcies',
-          impact: 'Public records are the fastest way to damage your CreditSafe score',
-          fix: null,
-          fixLabel: null,
-        },
-      ],
-    },
-    {
-      id: 'fico-sbss',
-      name: 'FICO SBSS',
-      score: 'Small Business Scoring Service',
-      range: '0–300 (160+ = bankable / goal)',
-      threshold: '160 minimum (SBA & most cash lenders)',
-      purpose: 'Used by banks, credit unions, SBA, and large fintech lenders — standard for business cash lending; each lender designs their own weighting',
-      status: {
-        label: creditBand === 'strong' && ageMonths >= 24 && completedModules.length >= 5 ? 'Likely 160+ (SBA Ready)' : creditBand === 'strong' ? 'Building Toward 160' : 'Below 160 — Needs Work',
-        color: creditBand === 'strong' && ageMonths >= 24 && completedModules.length >= 5 ? 'from-emerald-500 to-green-600' : creditBand === 'strong' ? 'from-blue-500 to-cyan-600' : 'from-amber-500 to-orange-500',
-        score: ficoSBSS,
-        description: 'Estimated — lenders each design their own FICO SBSS weighting',
-      },
-      established: creditScore >= 640,
-      steps: [
-        {
-          done: creditScore >= 720,
-          action: 'Bring personal FICO to 720+ — it drives 35% of your FICO SBSS',
-          impact: 'Personal credit of all owners with 20%+ stake is factored in; 720+ = low risk, 760+ = very low risk',
-          fix: null,
-          fixLabel: null,
-        },
-        {
-          done: ageMonths >= 24,
-          action: 'Reach 2+ years in business',
-          impact: 'Time in business is one of three main SBSS inputs',
-          fix: null,
-          fixLabel: null,
-        },
-        {
-          done: completedModules.length >= 5,
-          action: 'Build business credit across D&B, Experian, and Equifax',
-          impact: 'Business credit history is the third main SBSS input',
-          fix: null,
-          fixLabel: null,
-        },
-        {
-          done: !hasBankruptcy,
-          action: 'No bankruptcies on personal or business reports',
-          impact: 'Bankruptcy can drop SBSS below SBA threshold immediately',
-          fix: null,
-          fixLabel: null,
-        },
-      ],
-    },
-  ];
-
-  // ── Owner credit sections ──────────────────────────────────────────────────
-
-  const lenderThresholds = [
-    { product: 'Merchant Advance', minFico: 550, color: 'bg-green-400' },
-    { product: 'Truck & Vehicle Financing', minFico: 550, color: 'bg-green-400' },
-    { product: 'Revenue-Based Loan', minFico: 550, color: 'bg-green-400' },
-    { product: 'Equipment Financing', minFico: 580, color: 'bg-blue-400' },
-    { product: 'Startup Equipment', minFico: 580, color: 'bg-blue-400' },
-    { product: 'Personal Credit Cards', minFico: 650, color: 'bg-blue-500' },
-    { product: 'Business Credit Cards (SLOC)', minFico: 680, color: 'bg-indigo-500' },
-    { product: 'SBA Business Loan', minFico: 680, color: 'bg-indigo-500' },
-    { product: 'Business Credit Line', minFico: 700, color: 'bg-purple-500' },
-    { product: 'Business Term Loan', minFico: 700, color: 'bg-purple-500' },
-    { product: 'Credit Union Loans', minFico: 700, color: 'bg-purple-600' },
-  ];
-
-  const qualifiedCount = lenderThresholds.filter(t => creditScore >= t.minFico).length;
-
-  const debtStrategies = [
-    {
-      title: 'Revolving Debt-to-Limit: 45% Maximum / 19% Optimal',
-      detail: 'Business lenders require total revolving debt-to-limit ratio under 45% — AND each individual account under 45%. To maximize approval amounts, get each card individually to 19% or below. This is calculated per card, not just in aggregate.',
-      status: 'action',
-      icon: '💳',
-    },
-    {
-      title: 'Debt-to-Income (DTI) Must Stay Under 40%',
-      detail: 'Business lenders check DTI for all owners with 15%+ stake. Total monthly debt payments ÷ gross monthly income must stay under 40%. Over-leveraged owners = higher-risk loan, regardless of business performance.',
-      status: 'action',
-      icon: '📊',
-    },
-    {
-      title: 'Avoid Debt Acceleration Before Applying',
-      detail: 'Did you recently go from $5K to $50K in revolving debt? Lenders flag rapid balance increases (called "debt acceleration") as a major red flag. Avoid running up credit cards in the 60–180 days before seeking business financing.',
-      status: 'action',
-      icon: '⚠️',
-    },
-    {
-      title: 'Revolving Debt is Weighted Most Heavily',
-      detail: 'Business lenders focus primarily on revolving debt (credit cards, HELOCs) — it mirrors how you\'ll manage business loans. Installment debt (car loans, furniture) and mortgage carry far less weight in the approval decision.',
-      status: 'info',
-      icon: '⚖️',
-    },
-    {
-      title: 'Use a Term Loan to Pay Down High Utilization',
-      detail: 'If multiple cards are over 45% utilization, taking out an installment loan to pay them down converts revolving debt (high-risk in lender eyes) to installment debt (lower-risk) — improving your profile before your business loan application.',
-      status: 'action',
-      icon: '🎯',
-    },
-  ];
-
-  const inquiryStrategies = [
-    {
-      title: 'Max 4 Total Inquiries in Prior 6 Months',
-      detail: 'Business lenders want no more than 4 personal credit inquiries of any kind within the 6 months before your loan application. Ideally, zero inquiries in the 90 days immediately before applying.',
-      critical: true,
-    },
-    {
-      title: 'Max 2 Revolving Inquiries in Prior 6 Months',
-      detail: 'Even within the 4-inquiry limit, no more than 2 should be from revolving credit sources (credit cards, lines of credit). Revolving inquiries signal the most risk to business lenders.',
-      critical: true,
-    },
-    {
-      title: 'Never "Shot Gun" Loan Applications',
-      detail: 'Submitting to many lenders simultaneously creates multiple inquiries. Business loans don\'t show balances on credit reports immediately — so lenders assume ALL prior inquiries may have been approved, stacking invisible debt against you. They\'ll wait 6+ months to verify.',
-      critical: true,
-    },
-    {
-      title: '"5 in 24" Rule — Watch New Account Openings',
-      detail: 'Many business lenders enforce a "5 in 24" rule: no more than 5 new credit accounts opened in the last 24 months. Opening accounts rapidly signals instability.',
-      critical: false,
-    },
-    {
-      title: 'Freeze Third-Party Data Providers',
-      detail: 'Before applying for business funding, place a security freeze on LexisNexis, SageStream, Innovis, and TeleTrack. These providers may supply inaccurate background data that can trigger a decline without you knowing why.',
-      critical: false,
-    },
-    {
-      title: 'Check Your Own Credit (Soft Pull Only)',
-      detail: 'Checking your own credit via annualcreditreport.com is a soft pull — zero FICO impact. Do this and review all 3 reports for identity accuracy (name, address, employment) before any lender application.',
-      critical: false,
-    },
-  ];
-
-  const creditPartnerStrategies = [
-    {
-      title: 'Authorized User Strategy',
-      detail: 'Ask a family member or trusted contact with excellent credit (750+) to add you as an authorized user on their oldest, lowest-utilization card. That card\'s history immediately shows on your report.',
-      impact: '+20–40 FICO points possible',
-      timeframe: '30–60 days',
-    },
-    {
-      title: 'Co-Signer on Business Term Loan',
-      detail: 'A co-signer with strong credit (700+) can help you qualify for programs your personal credit currently blocks. The co-signer is equally liable — only use with someone who fully understands the commitment.',
-      impact: 'Unlocks higher-tier programs',
-      timeframe: 'Immediate for qualification',
-    },
-    {
-      title: 'Business Partner Credit Leverage',
-      detail: 'If a business partner has stronger credit, having them serve as the guarantor (provided they hold 20%+ ownership) can improve your program eligibility across the board.',
-      impact: 'Unlocks programs requiring 700+ FICO',
-      timeframe: 'Immediate',
-    },
-    {
-      title: 'Secured Credit Card for Thin File',
-      detail: 'If your credit file is thin (under 3 accounts), open one secured credit card and use it for small recurring expenses. Pay in full monthly. After 6 months, your file thickens significantly.',
-      impact: '+15–30 FICO points',
-      timeframe: '6–12 months',
-    },
-  ];
-
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // Derived state
+  const bureausEstablished = BUREAUS.filter(b => b.requiredModules.every(m => completedModules.includes(m))).length;
+  const totalBureauSteps = BUREAUS.reduce((s, b) => s + b.steps.length, 0);
+  const doneBureauSteps = BUREAUS.reduce((s, b) => s + b.steps.filter(st => st.moduleId && completedModules.includes(st.moduleId)).length, 0);
+  const qualifiedPrograms = PROGRAM_FICO.filter(p => creditScore > 0 && creditScore >= p.required).length;
+  const ficoSBSS = getFicoSBSS(creditScore, ageMonths, completedModules.length);
+  const gaugeColor = creditScore >= 720 ? '#10b981' : creditScore >= 650 ? '#f59e0b' : '#ef4444';
+  const sbssColor = ficoSBSS >= 160 ? '#10b981' : ficoSBSS >= 120 ? '#f59e0b' : '#ef4444';
+  const ficoLabel = creditScore >= 750 ? 'Excellent' : creditScore >= 700 ? 'Good' : creditScore >= 650 ? 'Fair' : creditScore >= 580 ? 'Below Average' : creditScore > 0 ? 'Poor' : '';
 
   return (
-    <div className="flex-1 min-h-screen bg-slate-50 overflow-auto">
-      <div className="max-w-5xl mx-auto p-6 md:p-8">
+    <div className="flex-1 min-h-screen overflow-auto" style={{ backgroundColor: 'var(--background)' }}>
+      <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
 
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-            <h1 className="text-3xl font-bold text-gray-900">Optimize Reporting</h1>
-            <Badge variant="info" className="text-sm px-3 py-1">
-              {tier === 'live' ? '🏆 Live Coached' : '✅ Virtual Coached'}
-            </Badge>
-          </div>
-          <p className="text-gray-600">
-            Your complete roadmap to building lender-visible business credit and optimizing your personal credit profile.
+        {/* HEADER */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '28px' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+            Goal #2 — Become Bankable
+          </p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(26px,3.5vw,36px)', color: 'var(--foreground)', lineHeight: 1.1, letterSpacing: '-0.02em', margin: 0 }}>
+            Optimize Reporting
+          </h1>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', marginTop: '6px' }}>
+            Bureau-by-bureau roadmap to build business credit and optimize your owner's FICO — so lenders see exactly what you need them to see
           </p>
         </motion.div>
 
-        {/* Summary bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+        {/* PROGRESS HERO */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
+          style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '18px', padding: '24px 28px', marginBottom: '28px' }}
         >
-          <div className="bg-white rounded-2xl border border-slate-200 shadow p-4">
-            <p className="text-xs text-gray-500 mb-1">Owner's FICO Range</p>
-            <p className="text-lg font-bold text-gray-900">{creditLabel}</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-200 shadow p-4">
-            <p className="text-xs text-gray-500 mb-1">Programs Unlocked</p>
-            <p className="text-lg font-bold text-emerald-600">{qualifiedCount} / {lenderThresholds.length}</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-200 shadow p-4">
-            <p className="text-xs text-gray-500 mb-1">Business Bureaus</p>
-            <p className="text-lg font-bold text-gray-900">{bureauStatus.label}</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-200 shadow p-4">
-            <p className="text-xs text-gray-500 mb-1">FICO SBSS Est.</p>
-            <p className="text-lg font-bold text-indigo-600">{ficoSBSS}</p>
-          </div>
-        </motion.div>
-
-        {/* Integrate Reports CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-          className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-5 mb-8 flex flex-wrap items-center justify-between gap-4"
-        >
-          <div>
-            <p className="text-white font-bold text-lg mb-1">Pull Your Actual Bureau Reports</p>
-            <p className="text-indigo-100 text-sm">Connect your credit reports to get real scores — not estimates.</p>
-          </div>
-          <Link to="/app/integrate-reports">
-            <Button className="bg-white text-indigo-700 font-semibold hover:bg-indigo-50 whitespace-nowrap">
-              Integrate Reports <ExternalLink className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
-        </motion.div>
-
-        {/* Tab Switcher */}
-        <div className="flex gap-2 mb-8 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm w-fit">
-          <button
-            onClick={() => setActiveTab('business')}
-            className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              activeTab === 'business'
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <BarChart2 className="w-4 h-4 inline mr-2" />
-            Business Credit Bureaus
-          </button>
-          <button
-            onClick={() => setActiveTab('owner')}
-            className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              activeTab === 'owner'
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Shield className="w-4 h-4 inline mr-2" />
-            Owner's Credit Profile
-          </button>
-        </div>
-
-        {/* ── BUSINESS CREDIT BUREAUS TAB ─────────────────────────────────── */}
-        {activeTab === 'business' && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-amber-900 mb-1">Business Credit ≠ Personal Credit</p>
-                  <p className="text-sm text-amber-800">
-                    Five separate agencies track your business. Each uses different scoring models and different data sources.
-                    Unlike personal credit, <strong>anyone</strong> can pull your business credit report — lenders, vendors, partners.
-                    Build all five files proactively.
-                  </p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ position: 'relative', width: '56px', height: '56px' }}>
+                <svg width="56" height="56" viewBox="0 0 56 56">
+                  <circle cx="28" cy="28" r="22" fill="none" stroke="var(--border)" strokeWidth="5" />
+                  <circle cx="28" cy="28" r="22" fill="none" stroke="#10b981" strokeWidth="5"
+                    strokeDasharray={`${2 * Math.PI * 22}`}
+                    strokeDashoffset={`${2 * Math.PI * 22 * (1 - bureausEstablished / 5)}`}
+                    strokeLinecap="round" transform="rotate(-90 28 28)"
+                    style={{ transition: 'stroke-dashoffset 1s ease' }}
+                  />
+                </svg>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '12px', color: '#10b981' }}>
+                  {bureausEstablished}/5
+                </div>
+              </div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '24px', color: 'var(--foreground)', lineHeight: 1 }}>
+                  {doneBureauSteps} <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--muted-foreground)' }}>/ {totalBureauSteps} bureau steps complete</span>
+                </div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '4px' }}>
+                  {bureausEstablished} of 5 bureaus established · {qualifiedPrograms} of {PROGRAM_FICO.length} programs FICO-qualified
                 </div>
               </div>
             </div>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ padding: '8px 14px', borderRadius: '10px', background: `${gaugeColor}0a`, border: `1px solid ${gaugeColor}30`, textAlign: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px', color: gaugeColor }}>{creditScore > 0 ? creditScore : '—'}</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Personal FICO</div>
+              </div>
+              <div style={{ padding: '8px 14px', borderRadius: '10px', background: `${sbssColor}0a`, border: `1px solid ${sbssColor}30`, textAlign: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px', color: sbssColor }}>{ficoSBSS > 0 ? `~${ficoSBSS}` : '—'}</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>FICO SBSS /300</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ height: '6px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
+            <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min((bureausEstablished / 5) * 100, 100)}%` }}
+              transition={{ duration: 1.2, ease: 'easeOut' }}
+              style={{ height: '100%', background: 'linear-gradient(90deg,#10b98199,#10b981)', borderRadius: '99px' }}
+            />
+          </div>
+        </motion.div>
 
-            {bureaus.map((bureau, idx) => {
-              const doneCount = bureau.steps.filter(s => s.done).length;
-              const totalSteps = bureau.steps.length;
-              const pct = Math.round((doneCount / totalSteps) * 100);
+        {/* TAB BAR */}
+        <div style={{ display: 'flex', gap: '4px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '4px', marginBottom: '28px', width: 'fit-content' }}>
+          {([['business', '🏢  Business Credit'], ['owner', '👤  Owner\'s Credit']] as const).map(([tab, label]) => (
+            <button key={tab} onClick={() => setActiveTab(tab)}
+              style={{ fontFamily: 'var(--font-body)', fontWeight: activeTab === tab ? 700 : 500, fontSize: '13px', padding: '8px 18px', borderRadius: '9px', border: 'none', cursor: 'pointer', background: activeTab === tab ? 'var(--background)' : 'transparent', color: activeTab === tab ? 'var(--foreground)' : 'var(--muted-foreground)', boxShadow: activeTab === tab ? '0 1px 4px rgba(0,0,0,.1)' : 'none', transition: 'all 0.15s' }}>
+              {label}
+            </button>
+          ))}
+        </div>
 
-              return (
-                <motion.div
-                  key={bureau.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.08 }}
-                  className="bg-white rounded-2xl border-2 border-slate-200 shadow-lg overflow-hidden"
-                >
-                  {/* Bureau header */}
-                  <div className={`bg-gradient-to-r ${bureau.status.color} text-white p-5`}>
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-xl font-bold">{bureau.name}</h3>
-                        <p className="text-sm opacity-90">{bureau.score} · {bureau.range}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold">{bureau.status.score}</p>
-                        <p className="text-xs opacity-80">Estimated</p>
-                      </div>
-                    </div>
-                    {/* Progress bar */}
-                    <div className="mt-4">
-                      <div className="flex justify-between text-xs mb-1 opacity-90">
-                        <span>{doneCount} of {totalSteps} steps complete</span>
-                        <span>{pct}%</span>
-                      </div>
-                      <div className="w-full bg-white/20 rounded-full h-2">
-                        <div
-                          className="bg-white rounded-full h-2 transition-all duration-700"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Purpose */}
-                  <div className="px-5 pt-4 pb-2">
-                    <p className="text-xs text-gray-500 italic">{bureau.purpose}</p>
-                  </div>
-
-                  {/* Action steps */}
-                  <div className="p-5 space-y-3">
-                    {bureau.steps.map((step, si) => (
-                      <div
-                        key={si}
-                        className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-all ${
-                          step.done
-                            ? 'bg-emerald-50 border-emerald-200'
-                            : 'bg-slate-50 border-slate-200'
-                        }`}
-                      >
-                        <div className="mt-0.5 flex-shrink-0">
-                          {step.done
-                            ? <CheckCircle className="w-5 h-5 text-emerald-600" />
-                            : <div className="w-5 h-5 rounded-full border-2 border-slate-300 bg-white" />
-                          }
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-semibold text-sm ${step.done ? 'text-emerald-900' : 'text-gray-900'}`}>
-                            {step.action}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-0.5">{step.impact}</p>
-                        </div>
-                        {!step.done && step.fix && (
-                          <Link to={step.fix} className="flex-shrink-0">
-                            <Button size="sm" variant="outline" className="text-xs whitespace-nowrap">
-                              {step.fixLabel} <ChevronRight className="w-3 h-3 ml-1" />
-                            </Button>
-                          </Link>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+        {/* ── BUSINESS CREDIT TAB ──────────────────────────────────────────── */}
+        {activeTab === 'business' && (
+          <motion.div key="business" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <SectionHead icon={<BarChart3 size={18} style={{ color: '#10b981' }} />} title="Business Credit Bureaus" badge={`${bureausEstablished} of 5 established`} />
+            <SectionHook text="Lenders, vendors, and landlords each pull different bureaus. A bureau file that doesn't exist is the same as a credit score of zero — your application is invisible before it's ever read." />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {BUREAUS.map((bureau, i) => (
+                <motion.div key={bureau.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                  <BureauRow bureau={bureau} completedModules={completedModules} expandedId={expandedBureau}
+                    onToggle={id => setExpandedBureau(expandedBureau === id ? null : id)} navigate={navigate} />
                 </motion.div>
-              );
-            })}
+              ))}
+            </div>
           </motion.div>
         )}
 
-        {/* ── OWNER'S CREDIT PROFILE TAB ──────────────────────────────────── */}
+        {/* ── OWNER'S CREDIT TAB ───────────────────────────────────────────── */}
         {activeTab === 'owner' && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+          <motion.div key="owner" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
 
-            {/* FICO & Funding Products section */}
-            <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-slate-700 to-slate-900 text-white p-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5" />
+            {/* FICO Summary Card */}
+            <motion.div style={{ background: 'var(--card)', border: `1px solid ${gaugeColor}30`, borderRadius: '14px', padding: '20px 24px', marginBottom: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Your Personal FICO</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '36px', color: gaugeColor, lineHeight: 1 }}>
+                    {creditScore > 0 ? creditScore : '—'}
+                    <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--muted-foreground)', marginLeft: '8px' }}>
+                      {ficoLabel || 'Complete scan to see your score'}
+                    </span>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold">Personal FICO & Funding Access</h3>
-                    <p className="text-sm opacity-80">Your score: {creditLabel}</p>
+                  <div style={{ marginTop: '10px', height: '6px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min((creditScore / 850) * 100, 100)}%` }} transition={{ duration: 1.2, ease: 'easeOut' }}
+                      style={{ height: '100%', background: `linear-gradient(90deg,${gaugeColor}99,${gaugeColor})`, borderRadius: '99px' }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>300 · Poor</span>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: '#10b981', fontWeight: 600 }}>720 = ideal · 850 · Max</span>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center', padding: '12px 20px', borderRadius: '12px', background: `${sbssColor}0a`, border: `1px solid ${sbssColor}30` }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '28px', color: sbssColor }}>{ficoSBSS > 0 ? `~${ficoSBSS}` : '—'}</div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', fontWeight: 600, textTransform: 'uppercase' }}>FICO SBSS / 300</div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 600, marginTop: '4px', color: ficoSBSS >= 160 ? '#10b981' : '#ef4444' }}>
+                    {ficoSBSS >= 160 ? '✓ Above bankable threshold' : ficoSBSS > 0 ? `${160 - ficoSBSS} pts to bankable (160)` : 'Complete scan'}
                   </div>
                 </div>
               </div>
-              <div className="p-5">
-                <p className="text-sm text-gray-600 mb-5">
-                  Business lenders use FICO 8 scores for 90% of approvals. They review all owners with 15%+ stake. Target: <strong>720+ = low risk</strong>, <strong>760+ = very low risk</strong>. Here's what your current score unlocks:
-                </p>
-                <div className="space-y-2">
-                  {lenderThresholds.map((t, i) => {
-                    const unlocked = creditScore >= t.minFico;
-                    return (
-                      <div key={i} className={`flex items-center gap-3 p-3 rounded-xl ${unlocked ? 'bg-emerald-50' : 'bg-slate-50'}`}>
-                        <div className={`w-2 h-8 rounded-full flex-shrink-0 ${unlocked ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                        <div className="flex-1">
-                          <p className={`text-sm font-semibold ${unlocked ? 'text-emerald-900' : 'text-gray-600'}`}>
-                            {t.product}
-                          </p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-xs text-gray-500">Min: {t.minFico}</p>
-                          {unlocked
-                            ? <p className="text-xs font-bold text-emerald-600">✓ Eligible</p>
-                            : <p className="text-xs font-bold text-slate-400">Need +{t.minFico - creditScore} pts</p>
-                          }
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-5 p-4 bg-indigo-50 rounded-xl border border-indigo-200">
-                  <p className="text-sm font-semibold text-indigo-900 mb-1">
-                    You currently qualify for {qualifiedCount} of {lenderThresholds.length} programs on FICO alone.
-                  </p>
-                  <p className="text-xs text-indigo-700">
-                    Moving from {creditLabel} to the next tier unlocks {lenderThresholds.filter(t => t.minFico > creditScore && t.minFico <= creditScore + 30).length} additional programs within 30 points.
-                  </p>
-                </div>
+            </motion.div>
+
+            {/* FICO vs Programs */}
+            <div style={{ marginBottom: '32px' }}>
+              <SectionHead icon={<Target size={18} style={{ color: '#3b82f6' }} />} title="FICO vs. Funding Programs" badge={`${qualifiedPrograms} of ${PROGRAM_FICO.length} qualified`} color="#3b82f6" />
+              <SectionHook text="Every 10 points below 720 costs roughly 0.5% APR. On a $500K loan that's $2,500 per year in extra interest — compounding every year you carry the balance." />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {PROGRAM_FICO.map((p, i) => (
+                  <motion.div key={p.name} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                    <ProgramRow {...p} userFico={creditScore} navigate={navigate} />
+                  </motion.div>
+                ))}
               </div>
             </div>
 
-            {/* Personal Debt Management */}
-            <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold">Debt Management Strategy</h3>
-                    <p className="text-sm opacity-80">Ratios, limits, and paydown sequencing</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-5 space-y-3">
-                {debtStrategies.map((s, i) => (
-                  <div key={i} className={`flex items-start gap-4 p-4 rounded-xl border-2 ${s.status === 'action' ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-200'}`}>
-                    <div className="text-2xl flex-shrink-0">{s.icon}</div>
-                    <div>
-                      <p className="font-semibold text-gray-900 text-sm mb-1">{s.title}</p>
-                      <p className="text-xs text-gray-600">{s.detail}</p>
-                    </div>
-                  </div>
+            {/* Debt Strategy */}
+            <div style={{ marginBottom: '32px' }}>
+              <SectionHead icon={<BarChart3 size={18} style={{ color: '#f59e0b' }} />} title="Debt & Utilization Strategy" badge="4 rules" color="#f59e0b" />
+              <SectionHook text="Lenders see your card-by-card utilization before your application reaches a human. One card over 45% triggers a risk flag — even if your aggregate looks fine." />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {DEBT_STRATEGIES.map((s, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                    <StrategyRow {...s} navigate={navigate} />
+                  </motion.div>
                 ))}
               </div>
             </div>
 
             {/* Inquiry Management */}
-            <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <Target className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold">Inquiry & Identity Management</h3>
-                    <p className="text-sm opacity-80">Hard pulls kill funding — here's how to manage them</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-5 space-y-3">
-                {inquiryStrategies.map((s, i) => (
-                  <div key={i} className={`flex items-start gap-4 p-4 rounded-xl border-2 ${s.critical ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-white border-2 border-current">
-                      <AlertCircle className={`w-4 h-4 ${s.critical ? 'text-red-500' : 'text-slate-400'}`} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <p className="font-semibold text-gray-900 text-sm">{s.title}</p>
-                        {s.critical && <Badge variant="error" className="text-xs flex-shrink-0">Critical</Badge>}
-                      </div>
-                      <p className="text-xs text-gray-600">{s.detail}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Credit Partners */}
-            <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold">Using Credit Partners</h3>
-                    <p className="text-sm opacity-80">Leverage stronger credit profiles to unlock more capital</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-5 space-y-4">
-                <p className="text-sm text-gray-600">
-                  If your personal credit is preventing access to higher-tier programs, these strategies let you use someone else's credit strength — legally and strategically.
-                </p>
-                {creditPartnerStrategies.map((s, i) => (
-                  <div key={i} className="p-4 bg-purple-50 rounded-xl border-2 border-purple-200">
-                    <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-                      <p className="font-semibold text-purple-900 text-sm">{s.title}</p>
-                      <div className="flex gap-2">
-                        <Badge variant="success" className="text-xs">{s.impact}</Badge>
-                        <Badge variant="info" className="text-xs">{s.timeframe}</Badge>
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-700">{s.detail}</p>
-                  </div>
+            <div style={{ marginBottom: '32px' }}>
+              <SectionHead icon={<AlertTriangle size={18} style={{ color: '#ef4444' }} />} title="Inquiry Management" badge={`${INQUIRY_RULES.length} rules`} color="#ef4444" />
+              <SectionHook text="4 or more hard inquiries in 6 months flags you as 'credit hungry' in most lender risk systems. They see this before reading anything else in your file." />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {INQUIRY_RULES.map((r, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                    <InquiryRow {...r} />
+                  </motion.div>
                 ))}
               </div>
             </div>
 
             {/* Quick Wins */}
-            <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <Zap className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold">Quick Wins — Do These First</h3>
-                    <p className="text-sm opacity-80">Highest impact actions for your current profile</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-5 space-y-3">
-                {[
-                  { action: 'Review all 3 personal credit reports for errors', why: 'Errors appear on 1 in 3 reports — disputes can gain 20–50 points in 30 days', time: '1–2 weeks', url: 'https://www.annualcreditreport.com', external: true },
-                  { action: 'Pay down any cards above 30% utilization', why: 'Utilization is 30% of your FICO — fastest score lever available', time: 'Immediate', url: null, external: false },
-                  { action: 'Set up autopay on all accounts', why: 'Payment history is 35% of FICO — one missed payment can drop 50–100 points', time: '1 day', url: null, external: false },
-                  { action: 'Complete Entity & Filings module', why: 'Foundation for all 5 business credit bureau files', time: '1–2 hours', url: '/app/lender-compliance/entity-filings', external: false },
-                  { action: 'Complete Agencies & NAICS to get DUNS number', why: 'Required to establish D&B file — needed for SBA and corporate vendor credit', time: '1–2 hours', url: '/app/lender-compliance/agencies-naics', external: false },
-                  { action: 'Add 7–10 NET-30 vendor accounts — pay 10 days EARLY', why: 'Need 7+ tradelines to get a strong PAYDEX; early payment scores higher than on-time', time: '1 day to apply', url: '/app/building-credit', external: false },
-                ].map((w, i) => (
-                  <div key={i} className="flex items-start gap-4 p-4 bg-emerald-50 rounded-xl border-2 border-emerald-200">
-                    <div className="w-7 h-7 bg-emerald-600 text-white text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      {i + 1}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-emerald-900 text-sm mb-0.5">{w.action}</p>
-                      <p className="text-xs text-gray-600 mb-2">{w.why}</p>
-                      <p className="text-xs text-gray-400">⏱ {w.time}</p>
-                    </div>
-                    {w.url && (
-                      w.external
-                        ? <a href={w.url} target="_blank" rel="noopener noreferrer">
-                            <Button size="sm" variant="outline" className="text-xs whitespace-nowrap flex-shrink-0">
-                              Open <ExternalLink className="w-3 h-3 ml-1" />
-                            </Button>
-                          </a>
-                        : <Link to={w.url}>
-                            <Button size="sm" variant="outline" className="text-xs whitespace-nowrap flex-shrink-0">
-                              Go <ChevronRight className="w-3 h-3 ml-1" />
-                            </Button>
-                          </Link>
-                    )}
-                  </div>
+            <div>
+              <SectionHead icon={<Zap size={18} style={{ color: '#8b5cf6' }} />} title="Quick Wins" badge={`${QUICK_WINS.length} actions`} color="#8b5cf6" />
+              <SectionHook text="These six actions take under 30 minutes each and can add 15–40 points to your FICO. Most people skip them because nobody told them they existed." />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {QUICK_WINS.map((w, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                    <QuickWinRow {...w} navigate={navigate} />
+                  </motion.div>
                 ))}
               </div>
             </div>
 
           </motion.div>
         )}
-
       </div>
     </div>
   );

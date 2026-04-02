@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, CheckCircle2, ChevronRight, ArrowRight, Lock, X, Star, Zap } from 'lucide-react';
+import { Shield, CheckCircle2, ChevronRight, ArrowRight, Lock, X, Star, Zap, Clock } from 'lucide-react';
 import {
   complianceModules,
   getComplianceProgress,
@@ -11,6 +11,24 @@ import {
 } from '../utils/lenderComplianceModules';
 import { getMembershipTier, canAccessGoal2, type MembershipTier, TIER_FEATURES } from '../lib/membership';
 import { getMembershipPricing, getMembershipPricingSync } from '../lib/platform-config';
+import { getLoansUnlockedByModule } from '../utils/loanRequirementsMap';
+
+// ── Module metadata ───────────────────────────────────────────────────────────
+const MODULE_TIME: Record<string, string> = {
+  'entity-filings':    '~2 hrs',
+  'business-location': '~30 min',
+  'phones-411':        '~45 min',
+  'website-email':     '~1 hr',
+  'ein-licenses':      '~1 hr',
+  'business-banking':  '~1 hr',
+  'agencies-naics':    '~30 min',
+  'business-plan':     '~3 hrs',
+  'assets-ucc':        '~45 min',
+  'corp-only-facts':   '~30 min',
+  'bank-rating':       '60+ days',
+  'comparable-credit': '90+ days',
+  'cd-business-loan':  '~1 hr',
+};
 
 // ── Upgrade Modal ─────────────────────────────────────────────────────────────
 function UpgradeModal({ onClose }: { onClose: () => void }) {
@@ -160,6 +178,8 @@ function ModuleCard({ module, isComplete, index, locked, onLockedClick }: {
   const navigate = useNavigate();
   const icon = MODULE_ICONS[module.id] || '📌';
   const impact = MODULE_IMPACT[module.id] || 10;
+  const timeEst = MODULE_TIME[module.id] || '~30 min';
+  const unlocksCount = getLoansUnlockedByModule(module.id).length;
 
   const handleClick = () => {
     if (locked) { onLockedClick?.(); return; }
@@ -211,9 +231,19 @@ function ModuleCard({ module, isComplete, index, locked, onLockedClick }: {
           </span>
           {isComplete && <CheckCircle2 size={14} style={{ color: '#10b981', flexShrink: 0 }} />}
         </div>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', lineHeight: 1.5, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', lineHeight: 1.5, margin: '0 0 4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {module.description}
         </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '3px' }}>
+            <Clock size={10} /> {timeEst}
+          </span>
+          {unlocksCount > 0 && (
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: '#3b82f6', fontWeight: 600 }}>
+              Unlocks {unlocksCount} program{unlocksCount !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Right side: impact badge + arrow / lock */}
@@ -292,7 +322,7 @@ export function LenderCompliance() {
                 Goal #2 — Become Bankable — requires Full Access
               </div>
               <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
-                Less than 1% of businesses are bankable. These 13 steps — with a coach on every one — are how you join that 1%. Upgrade to access all modules and 90+ coaching videos.
+                The average declined application is missing 4 of these 13 items. The average approved SBA loan is $650,000 at 10.5% APR. The difference is what's on this page. Upgrade to see exactly which items you're missing and fix them with a coach on every step.
               </div>
             </div>
             <button
@@ -406,7 +436,7 @@ export function LenderCompliance() {
             </span>
           </div>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', marginBottom: '16px', lineHeight: 1.6 }}>
-            The structural foundation every lender checks before reviewing your application. These items are required — not optional.
+            Lenders run this checklist automatically before a human reads your file. Any item missing moves your application to the decline pile — instantly, silently, before you ever receive a call.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {completeModules.map((m, i) => (
@@ -427,7 +457,7 @@ export function LenderCompliance() {
             </span>
           </div>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', marginBottom: '16px', lineHeight: 1.6 }}>
-            Advanced modules that move you from qualified to funded — increase approval odds and lower the rate lenders offer you.
+            Most applicants stop at compliance and never complete these. Finishing this section puts you in the top 3% of applications any lender sees — and directly determines the rate they offer you.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {approvedModules.map((m, i) => (
