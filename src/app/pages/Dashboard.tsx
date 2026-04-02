@@ -1006,3 +1006,536 @@ export function Dashboard() {
                       </motion.div>
                     );
                   })}
+                </div>
+              );
+            })()}
+
+            {/* ── LENDER COMPLIANCE — single unified bankability card ── */}
+            {(() => {
+              const complianceProgress = getComplianceProgress();
+              const totalModules = complianceModules.length;
+              const completedModules = complianceModules.filter(m => complianceProgress[m.id]?.completed).length;
+              const compPct = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
+              const nextModule = complianceModules.find(m => !complianceProgress[m.id]?.completed);
+              const compColor = compPct === 100 ? '#10b981' : compPct >= 60 ? '#f59e0b' : '#3b82f6';
+              const napUrgent = napScore < 80;
+              const napColor = napScore >= 80 ? '#10b981' : napScore >= 60 ? '#f59e0b' : '#ef4444';
+
+              // Segment label — Chase identity framing
+              const statusLabel = compPct === 100 ? 'Lender-Ready' : compPct >= 60 ? 'In Progress' : 'Needs Action';
+
+              return (
+                <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', marginBottom: '20px' }}>
+
+                  {/* Header: identity framing — "You are X% bankable" */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px', gap: '12px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '4px' }}>
+                        Lender Compliance
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--foreground)', lineHeight: 1.15 }}>
+                        You are{' '}
+                        <span style={{ color: compColor }}>{compPct}% bankable</span>
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '3px' }}>
+                        {completedModules} of {totalModules} compliance modules complete
+                      </div>
+                    </div>
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', flexShrink: 0,
+                      padding: '4px 10px', borderRadius: '99px',
+                      background: `${compColor}15`, border: `1px solid ${compColor}35`,
+                    }}>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: compColor }}>
+                        {statusLabel}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Dominant progress bar */}
+                  <div style={{ marginBottom: '14px' }}>
+                    <div style={{ height: '8px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%', width: `${compPct}%`,
+                        background: `linear-gradient(90deg, ${compColor}, ${compColor}cc)`,
+                        borderRadius: '99px', transition: 'width 0.8s ease',
+                      }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>
+                        {completedModules} complete
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>
+                        {totalModules - completedModules} remaining
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Business Visibility row — compact always, urgent styling when <80 */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '8px 12px', borderRadius: '8px', marginBottom: '14px',
+                    background: napUrgent ? 'rgba(239,68,68,0.06)' : 'rgba(16,185,129,0.05)',
+                    border: `1px solid ${napUrgent ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.15)'}`,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '13px' }}>{napUrgent ? '⚠️' : '✓'}</span>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: napColor }}>
+                        Business Visibility
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
+                        {napScore}/100 · NAP consistency
+                      </span>
+                    </div>
+                    {napUrgent ? (
+                      <button
+                        onClick={() => navigate('/app/lender-compliance')}
+                        style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}
+                      >
+                        Fix now →
+                      </button>
+                    ) : (
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
+                        Verified ✓
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Hero CTA — one action, one benefit statement */}
+                  {nextModule ? (
+                    <button
+                      onClick={() => navigate(`/app${nextModule.route}`)}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '14px 16px', borderRadius: '12px', cursor: 'pointer', textAlign: 'left',
+                        background: 'linear-gradient(135deg, rgba(59,130,246,0.07), rgba(16,185,129,0.07))',
+                        border: '1px solid rgba(59,130,246,0.22)', marginBottom: '10px',
+                        transition: 'opacity 0.15s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                    >
+                      <div>
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#3b82f6', marginBottom: '3px' }}>
+                          Continue
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--foreground)' }}>
+                          {nextModule.title}
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '2px' }}>
+                          Est. 5 min · unlocks more funding programs
+                        </div>
+                      </div>
+                      <ArrowRight size={18} style={{ color: '#3b82f6', flexShrink: 0 }} />
+                    </button>
+                  ) : (
+                    <div style={{
+                      padding: '14px 16px', borderRadius: '12px', marginBottom: '10px', textAlign: 'center',
+                      background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)',
+                    }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: '#10b981' }}>
+                        ✓ All compliance modules complete
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '3px' }}>
+                        You're lender-ready — access funding now
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Subtle escape hatch */}
+                  <button
+                    onClick={() => navigate('/app/lender-compliance')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
+                  >
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
+                      View all {totalModules} modules
+                    </span>
+                    <ChevronRight size={11} color="var(--muted-foreground)" />
+                  </button>
+                </div>
+              );
+            })()}
+
+            {/* ROW 2: CAPITAL ACCESS */}
+            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px' }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+                {/* Header row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: pipelineCounts.total > 0 ? '14px' : '0' }}>
+                  <div>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--foreground)', margin: 0 }}>
+                      {preQualPrograms.length > 0 ? '💰 Funding Pipeline' : '🔑 Capital Products'}
+                    </h3>
+                    <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: '3px 0 0' }}>
+                      {preQualPrograms.length > 0
+                        ? `${preQualPrograms.length} pre-qualified · up to ${formatMoney(scoreToAmount(fundScore))} accessible today`
+                        : 'Improve your score to unlock funding products'}
+                    </p>
+                  </div>
+                  <button onClick={() => navigate('/app/access-funding')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: 'var(--primary)', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '7px 14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    {pipelineCounts.total > 0 ? 'View Pipeline →' : `View All ${preQualPrograms.length > 0 ? preQualPrograms.length : ''} →`}
+                  </button>
+                </div>
+
+                {/* Live pipeline strip — only shows once user has applied to something */}
+                {pipelineCounts.total > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                    {[
+                      { label: 'Applied', count: pipelineCounts.applied, color: '#3b82f6' },
+                      { label: 'Reviewing', count: pipelineCounts.under_review, color: '#f59e0b' },
+                      { label: 'Offers', count: pipelineCounts.offer_received, color: '#10b981', highlight: pipelineCounts.offer_received > 0 },
+                      { label: 'Accepted', count: pipelineCounts.accepted, color: '#10b981' },
+                      { label: 'Funded', count: pipelineCounts.funded, color: '#10b981' },
+                    ].map((stage, i) => (
+                      <div
+                        key={stage.label}
+                        onClick={() => navigate('/app/access-funding')}
+                        style={{
+                          padding: '8px 10px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer',
+                          background: stage.highlight ? `${stage.color}15` : 'var(--background)',
+                          border: `1px solid ${stage.count > 0 ? stage.color + '30' : 'var(--border)'}`,
+                          position: 'relative',
+                        }}
+                      >
+                        {stage.highlight && stage.count > 0 && (
+                          <div style={{ position: 'absolute', top: '-4px', right: '-4px', width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', border: '2px solid var(--card)' }} />
+                        )}
+                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '18px', color: stage.count > 0 ? stage.color : 'var(--muted-foreground)' }}>
+                          {stage.count}
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', fontWeight: 600 }}>
+                          {stage.label}
+                        </div>
+                        {i < 4 && (
+                          <div style={{ position: 'absolute', right: '-5px', top: '50%', transform: 'translateY(-50%)', fontSize: '8px', color: 'var(--muted-foreground)', zIndex: 1 }}>▶</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Offer alert */}
+                {pipelineCounts.offer_received > 0 && (
+                  <div onClick={() => navigate('/app/access-funding')} style={{ marginTop: '10px', padding: '10px 14px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '14px' }}>💰</span>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: '#10b981' }}>
+                      {pipelineCounts.offer_received} funding offer{pipelineCounts.offer_received !== 1 ? 's' : ''} waiting — tap to review
+                    </span>
+                    <ArrowRight size={13} style={{ color: '#10b981', marginLeft: 'auto' }} />
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                {FEATURED_PROGRAMS.map((prog, i) => {
+                  const isPreQual = preQualPrograms.some((p: { path: string }) => p.path === prog.path);
+                  return (
+                    <div key={prog.path} onClick={() => navigate(prog.path)} style={{ padding: '16px 20px', borderRight: i < 2 ? '1px solid var(--border)' : 'none', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--background)')} onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                        <span style={{ fontSize: '20px', flexShrink: 0 }}>{prog.icon}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)' }}>{prog.label}</span>
+                            {isPreQual && <CheckCircle2 size={13} style={{ color: '#10b981', flexShrink: 0 }} />}
+                          </div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>{prog.range}</div>
+                          {(() => {
+                            // Score threshold per product type
+                            const thresholds: Record<string, number> = {
+                              '/app/access-funding/business-credit-line': 450,
+                              '/app/access-funding/revenue-based-loan': 400,
+                              '/app/access-funding/sba-business-loan': 750,
+                              '/app/access-funding/equipment-financing': 500,
+                              '/app/access-funding/merchant-advance': 350,
+                              '/app/access-funding/working-capital-loans': 450,
+                            };
+                            const threshold = thresholds[prog.path] || 500;
+                            const ptsNeeded = Math.max(0, threshold - fundScore);
+                            return (
+                              <div style={{ marginTop: '6px', display: 'inline-block', padding: '2px 8px', borderRadius: '4px', background: isPreQual ? 'rgba(16,185,129,0.1)' : 'rgba(100,116,139,0.1)', border: '1px solid ' + (isPreQual ? 'rgba(16,185,129,0.25)' : 'var(--border)') }}>
+                                <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: isPreQual ? '#10b981' : 'var(--muted-foreground)' }}>
+                                  {isPreQual ? 'Pre-Qualified ✓' : ptsNeeded === 0 ? 'Almost there' : `+${ptsNeeded} pts needed`}
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ROW 3: READINESS + TOOLS */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--foreground)', margin: 0 }}>Readiness Breakdown</h3>
+                  <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>Full detail →</button>
+                </div>
+                <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {DIM_ORDER.map((key, idx) => {
+                    const val = (dimAvg as Record<string, number>)[key] ?? 0;
+                    const st = getDimStatus(val);
+                    const dim = DIM_CONFIG.find(d => d.key === key);
+                    const Icon = dim ? dim.Icon : Zap;
+                    return (
+                      <div key={key}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <Icon size={13} style={{ color: st.color, flexShrink: 0 }} />
+                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--foreground)', flex: 1 }}>{DIM_LABELS[key]}</span>
+                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: st.color }}>{st.label}</span>
+                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', minWidth: '32px', textAlign: 'right' }}>{Math.round(val * 100)}%</span>
+                        </div>
+                        <div style={{ height: '5px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
+                          <motion.div initial={{ width: 0 }} animate={{ width: (val * 100) + '%' }} transition={{ duration: 0.8, ease: 'easeOut', delay: idx * 0.08 }} style={{ height: '100%', background: st.color, borderRadius: '99px' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Quick actions — continue momentum, not redundant nav */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>Quick Actions</p>
+                {[
+                  { label: '📊 View Capital Intelligence', desc: 'FundScore · SBSS · Funding range', path: '/app/status-reports', color: '#3b82f6' },
+                  { label: '🛡️ Continue Compliance', desc: 'Work through your lender checklist', path: '/app/lender-compliance', color: '#10b981' },
+                  { label: '💰 Access Funding', desc: `${preQualPrograms.length > 0 ? preQualPrograms.length + ' products pre-qualified' : 'See products you qualify for'}`, path: '/app/access-funding', color: '#f59e0b' },
+                ].map(item => (
+                  <div
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'border-color 0.15s' }}
+                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.borderColor = item.color + '50')}
+                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.borderColor = 'var(--border)')}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)' }}>{item.label}</div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '2px' }}>{item.desc}</div>
+                    </div>
+                    <ArrowRight size={14} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ROW 4: ACHIEVEMENTS STRIP — compact, actionable, links to full page */}
+            <BadgeStrip newBadgeIds={newBadgeIds} onViewAll={() => navigate('/app/my-progress')} />
+
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// WELCOME MODAL — FORGE™ 3-Step Onboarding
+// Step 1: Goal selection (identity anchor)
+// Step 2: 3 quick profile questions (credit · age · revenue)
+// Step 3: Estimated starting position + single CTA
+// ════════════════════════════════════════════════════════════════════════════════
+
+function estimateStartingTier(creditRange: string, bizAge: string, revenue: string) {
+  let pts = 0;
+  if (creditRange === '740+') pts += 3; else if (creditRange === '670–739') pts += 2; else if (creditRange === '580–669') pts += 1;
+  if (bizAge === '2+ years') pts += 3; else if (bizAge === '1–2 years') pts += 2; else pts += 1;
+  if (revenue === '$40K+/mo') pts += 3; else if (revenue === '$10K–$40K/mo') pts += 2; else pts += 1;
+  if (pts >= 7) return { tier: 'Bankable', range: '$250K – $1.5M+', color: '#10b981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.25)', note: 'You may already qualify for SBA and bank products — take the full scan to confirm.', cta: '/business-assessment' };
+  if (pts >= 5) return { tier: 'Approaching', range: '$50K – $500K', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)', note: 'Alternative capital is likely available now. The scan will pinpoint your #1 blocker.', cta: '/business-assessment' };
+  return { tier: 'Building', range: '$0 – $100K', color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)', note: 'Foundation work needed first. The scan builds your exact 90-day roadmap.', cta: '/business-assessment' };
+}
+
+function WelcomeModal({ name, onDismiss, onNavigate }: { name: string; onDismiss: () => void; onNavigate: (path: string) => void }) {
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [goal, setGoal] = useState('');
+  const [creditRange, setCreditRange] = useState('');
+  const [bizAge, setBizAge] = useState('');
+  const [revenue, setRevenue] = useState('');
+
+  const goals = [
+    { id: 'fast', label: 'Get funded fast', sub: 'I need capital in the next 30–90 days', icon: '🚀', color: '#10b981' },
+    { id: 'credit', label: 'Build credit & qualify for more', sub: 'I want better rates and bigger amounts', icon: '📈', color: '#3b82f6' },
+    { id: 'sba', label: 'Qualify for SBA / bank loans', sub: 'I want traditional capital at bank rates', icon: '🏛️', color: '#8b5cf6' },
+    { id: 'understand', label: 'Understand exactly where I stand', sub: 'Show me the full picture first', icon: '🎯', color: '#f59e0b' },
+  ];
+
+  const creditOptions = ['Under 580', '580–669', '670–739', '740+'];
+  const ageOptions = ['Under 1 year', '1–2 years', '2+ years'];
+  const revenueOptions = ['Under $10K/mo', '$10K–$40K/mo', '$40K+/mo'];
+
+  const canAdvance2 = creditRange && bizAge && revenue;
+  const tier = (step === 3 && canAdvance2) ? estimateStartingTier(creditRange, bizAge, revenue) : null;
+
+  const TOTAL_STEPS = 3;
+  const progressPct = ((step - 1) / TOTAL_STEPS) * 100;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+      onClick={onDismiss}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.93, y: 28 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+        onClick={e => e.stopPropagation()}
+        style={{ background: 'var(--background)', borderRadius: '22px', overflow: 'hidden', width: '100%', maxWidth: '500px', boxShadow: '0 40px 100px rgba(0,0,0,0.3)' }}
+      >
+        {/* Progress bar */}
+        <div style={{ height: '3px', background: 'var(--border)' }}>
+          <motion.div animate={{ width: `${progressPct}%` }} transition={{ duration: 0.4 }} style={{ height: '100%', background: 'linear-gradient(90deg, #10b981, #3b82f6)', borderRadius: '99px' }} />
+        </div>
+
+        {/* ── STEP 1: Goal selection ───────────────────────────────────────── */}
+        {step === 1 && (
+          <>
+            <div style={{ background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)', padding: '28px 28px 24px' }}>
+              <div style={{ fontSize: '24px', marginBottom: '10px' }}>👋</div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'white', lineHeight: 1.2, marginBottom: '6px' }}>
+                Welcome{name ? `, ${name}` : ' to FundReady™'}!
+              </h2>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.5, margin: 0 }}>
+                What's your #1 goal right now?
+              </p>
+            </div>
+            <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {goals.map(g => (
+                <div
+                  key={g.id}
+                  onClick={() => { setGoal(g.id); setStep(2); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px',
+                    borderRadius: '12px', cursor: 'pointer',
+                    background: goal === g.id ? `${g.color}10` : 'var(--card)',
+                    border: `1px solid ${goal === g.id ? g.color + '40' : 'var(--border)'}`,
+                    transition: 'all 0.12s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = g.color + '60'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = goal === g.id ? g.color + '40' : 'var(--border)'}
+                >
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: g.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
+                    {g.icon}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--foreground)' }}>{g.label}</div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '2px' }}>{g.sub}</div>
+                  </div>
+                  <ChevronRight size={14} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                </div>
+              ))}
+              <button onClick={onDismiss} style={{ marginTop: '4px', fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '6px' }}>
+                Skip for now →
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── STEP 2: 3 quick profile questions ──────────────────────────── */}
+        {step === 2 && (
+          <>
+            <div style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', padding: '24px 28px 20px' }}>
+              <button onClick={() => setStep(1)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '6px', color: 'white', fontSize: '11px', fontWeight: 600, padding: '4px 10px', cursor: 'pointer', marginBottom: '12px' }}>← Back</button>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'white', lineHeight: 1.2, marginBottom: '6px' }}>Quick profile — 3 questions</h2>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,0.85)', margin: 0 }}>Takes 30 seconds · Gets you a real starting estimate</p>
+            </div>
+            <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Q1: Credit range */}
+              <div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)', marginBottom: '8px' }}>1. Your personal credit score range?</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  {creditOptions.map(opt => (
+                    <button key={opt} onClick={() => setCreditRange(opt)} style={{ padding: '9px 12px', borderRadius: '9px', fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: creditRange === opt ? 'rgba(59,130,246,0.12)' : 'var(--card)', border: `1px solid ${creditRange === opt ? '#3b82f6' : 'var(--border)'}`, color: creditRange === opt ? '#3b82f6' : 'var(--foreground)', transition: 'all 0.12s' }}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Q2: Business age */}
+              <div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)', marginBottom: '8px' }}>2. How long has your business been operating?</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                  {ageOptions.map(opt => (
+                    <button key={opt} onClick={() => setBizAge(opt)} style={{ padding: '9px 8px', borderRadius: '9px', fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: bizAge === opt ? 'rgba(139,92,246,0.12)' : 'var(--card)', border: `1px solid ${bizAge === opt ? '#8b5cf6' : 'var(--border)'}`, color: bizAge === opt ? '#8b5cf6' : 'var(--foreground)', transition: 'all 0.12s', lineHeight: 1.3 }}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Q3: Monthly revenue */}
+              <div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)', marginBottom: '8px' }}>3. Average monthly revenue?</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                  {revenueOptions.map(opt => (
+                    <button key={opt} onClick={() => setRevenue(opt)} style={{ padding: '9px 8px', borderRadius: '9px', fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: revenue === opt ? 'rgba(16,185,129,0.12)' : 'var(--card)', border: `1px solid ${revenue === opt ? '#10b981' : 'var(--border)'}`, color: revenue === opt ? '#10b981' : 'var(--foreground)', transition: 'all 0.12s', lineHeight: 1.3 }}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => canAdvance2 && setStep(3)}
+                disabled={!canAdvance2}
+                style={{ padding: '13px', background: canAdvance2 ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : 'var(--border)', border: 'none', borderRadius: '12px', color: canAdvance2 ? 'white' : 'var(--muted-foreground)', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', cursor: canAdvance2 ? 'pointer' : 'not-allowed', transition: 'all 0.15s' }}
+              >
+                See My Starting Position →
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── STEP 3: Position reveal + CTA ────────────────────────────────── */}
+        {step === 3 && tier && (
+          <>
+            <div style={{ background: `linear-gradient(135deg, ${tier.color}cc 0%, ${tier.color}88 100%)`, padding: '24px 28px 20px' }}>
+              <button onClick={() => setStep(2)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '6px', color: 'white', fontSize: '11px', fontWeight: 600, padding: '4px 10px', cursor: 'pointer', marginBottom: '12px' }}>← Back</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>YOUR STARTING POSITION</span>
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '32px', color: 'white', lineHeight: 1, letterSpacing: '-0.02em' }}>{tier.tier}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '20px', color: 'rgba(255,255,255,0.9)', marginTop: '4px' }}>{tier.range}</div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '8px', lineHeight: 1.5 }}>estimated capital range based on your profile</div>
+            </div>
+            <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* What this means */}
+              <div style={{ background: tier.bg, border: `1px solid ${tier.border}`, borderRadius: '12px', padding: '14px 16px' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: tier.color, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Your Next Move</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--foreground)', lineHeight: 1.5 }}>{tier.note}</div>
+              </div>
+
+              {/* What the full scan adds */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {[
+                  'Your exact FundScore across 6 capital dimensions',
+                  'Which products you qualify for right now',
+                  'Your 3 highest-impact blockers to fix first',
+                  'A 90-day roadmap to your target capital stage',
+                ].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+                      <span style={{ fontSize: '9px', color: '#10b981', fontWeight: 800 }}>✓</span>
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', lineHeight: 1.4 }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => { onDismiss(); onNavigate(tier.cta); }}
+                style={{ padding: '14px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '12px', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', cursor: 'pointer', boxShadow: '0 6px 20px rgba(16,185,129,0.35)' }}
+              >
+                Start Business Success Scan (8 min) →
+              </button>
+              <button onClick={onDismiss} style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+                Explore platform first
+              </button>
+            </div>
+          </>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+export default Dashboard;
