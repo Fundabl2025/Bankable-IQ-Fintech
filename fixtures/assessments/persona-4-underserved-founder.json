@@ -49,5 +49,19 @@
   "businessState": "GA",
   "businessZip": "30301",
   "businessPhone": "555-400-3002",
-  "readinessAnswers": [2, 2, 2, 2, 1, 2, 2, 1, 2, 2, 1, 1, 2]
+  "readinessAnswers": [
+    2, 2, 2, 2,
+    1, 2, 2,
+    1,
+    2,
+    2, 1, 2, 2,
+    4,
+    1,
+    0, 1, 0,
+    3,
+    0,
+    1,
+    1,
+    1
+  ]
 }

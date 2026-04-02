@@ -49,5 +49,19 @@
   "businessState": "CO",
   "businessZip": "80202",
   "businessPhone": "555-200-1002",
-  "readinessAnswers": [1, 0, 1, 0, 0, 1, 2, 0, 0, 1, 0, 0, 1]
+  "readinessAnswers": [
+    1, 0, 1, 0,
+    0, 1, 2,
+    0,
+    0,
+    1, 0, 2, 1,
+    2,
+    0,
+    0, 0, 0,
+    2,
+    0,
+    2,
+    0,
+    2
+  ]
 }

@@ -584,7 +584,7 @@ export function calculatePartialScore(partialData: Partial<UnifiedAnswers>): num
     noDerogItems: true,
     bizCreditFile: '',
     inquiries30d: '',
-    readinessAnswers: new Array(14).fill(undefined),
+    readinessAnswers: new Array(23).fill(undefined),
     ...partialData,
   };
 

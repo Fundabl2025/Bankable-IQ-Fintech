@@ -1,12 +1,12 @@
 // ════════════════════════════════════════════════════════════════════════════════
 // FUNDREADY™ — Unified Assessment Questions
-// 10 Foundation + 13 Readiness = 23 Total, ZERO Redundancy
+// 10 Foundation + 23 Readiness = 33 Total, ZERO Redundancy
 // ════════════════════════════════════════════════════════════════════════════════
 
 import { Question } from './types';
 
 // ════════════════════════════════════════════════════════════════════════════════
-// PART 2: READINESS QUESTIONS (13 questions)
+// PART 2: READINESS QUESTIONS (23 questions)
 // These are ONLY the questions that foundation data cannot answer
 // ════════════════════════════════════════════════════════════════════════════════
 

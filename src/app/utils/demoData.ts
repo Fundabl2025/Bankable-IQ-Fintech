@@ -77,21 +77,46 @@ export const DEMO_ASSESSMENT_DATA: UnifiedAnswers = {
   businessZip: '78701',
   businessPhone: '555-987-6543',
 
-  // Readiness answers (13 questions, indices 0-12)
+  // Readiness answers (23 questions, indices 0-22)
   readinessAnswers: [
-    1, // Q_R1: Some docs ready
-    0, // Q_R2: Have P&L
-    1, // Q_R3: Filed taxes somewhat recently
-    0, // Q_R4: Bank statements available
-    1, // Q_R5: Clear purpose
-    0, // Q_R6: Good timing
-    2, // Q_R7: Some history with lenders
-    0, // Q_R8: Ready to respond quickly
-    0, // Q_R9: Filings current
-    1, // Q_R10: Narrative somewhat polished
-    0, // Q_R11: Will consider guidance
-    0, // Q_R12: Full commitment
-    1, // Q_R13: Some flexibility on terms
+    // Section D — Documentation (Q_R1–Q_R4)
+    2, // Q_R1: 2 years of filed tax returns (meets SBA requirement)
+    0, // Q_R2: P&L professionally prepared (CPA)
+    3, // Q_R3: 12+ months of bank statements available
+    0, // Q_R4: Revenue figures align within 10%
+    // Section E — Cash Flow Behavior (Q_R5–Q_R7)
+    1, // Q_R5: Revenue growing but inconsistently
+    1, // Q_R6: Profitable most months, occasional break-even
+    1, // Q_R7: Can absorb new payment but it would be tight (DSCR 1.10–1.25)
+    // Section F — Banking Trajectory (Q_R8)
+    0, // Q_R8: Average daily balance consistently growing
+    // Section G — Legal Standing (Q_R9)
+    0, // Q_R9: All state filings current
+    // Section H — Narrative Strength (Q_R10–Q_R13)
+    1, // Q_R10: Capital use mostly articulated, general idea
+    1, // Q_R11: Repayment generally from ongoing business revenue
+    2, // Q_R12: First business loan (no prior repayment history)
+    1, // Q_R13: 5–10 years of relevant industry experience
+    // Section H — Personal Credit Utilization (Q_R14)
+    2, // Q_R14: 30–50% utilization (matches utilization: '30_50')
+    // Section I — Clean Credit Report (Q_R15)
+    0, // Q_R15: No negative items on personal credit (noDerogItems: 'true')
+    // Section J — Bankruptcy History (Q_R16 - conditional)
+    0, // Q_R16: No bankruptcy
+    // Section K — Collections / Chargeoffs (Q_R17 - conditional)
+    0, // Q_R17: No collections or charge-offs
+    // Section L — Tax Liens (Q_R18 - conditional)
+    0, // Q_R18: No tax liens
+    // Section M — Business Credit Profile (Q_R19)
+    2, // Q_R19: Just starting to build business credit (bizCreditFile: 'below_80')
+    // Section N — New Credit Inquiries (Q_R20)
+    1, // Q_R20: 1–2 inquiries (matches inquiries30d: '1_2')
+    // Section O — Average Daily Balance (Q_R21 - conditional)
+    3, // Q_R21: $10,000–$25,000 average daily balance (matches avgDailyBalance: '10k_25k')
+    // Section P — NSF / Overdraft Events (Q_R22 - conditional)
+    0, // Q_R22: Never NSF (matches nsfCount: '0')
+    // Section Q — Monthly Revenue (Q_R23)
+    3, // Q_R23: $40,000–$100,000 monthly revenue (matches monthlyRevenue: '40k_100k')
   ],
 };
 

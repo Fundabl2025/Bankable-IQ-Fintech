@@ -49,5 +49,19 @@
   "businessState": "CA",
   "businessZip": "94105",
   "businessPhone": "555-500-4002",
-  "readinessAnswers": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  "readinessAnswers": [
+    0, 0, 0, 0,
+    0, 0, 0,
+    0,
+    0,
+    0, 0, 0, 0,
+    0,
+    0,
+    0, 0, 0,
+    0,
+    0,
+    4,
+    0,
+    4
+  ]
 }
