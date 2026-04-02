@@ -53,8 +53,9 @@ export const TIER_FEATURES = {
     'Everything in Free',
     '13 Lender Compliance modules',
     '90+ virtual coaching videos',
-    'Step-by-step bankability guide',
     'FORGE™ AI Coach full access',
+    'Step-by-step bankability guide',
+    'Goal #2 & Goal #3 tracking',
   ],
   live: [
     'Everything in Virtual',
@@ -62,5 +63,6 @@ export const TIER_FEATURES = {
     'Live professional coach (12 months)',
     'Business directory listings',
     'Priority application support',
+    'Direct lender introductions',
   ],
 };
