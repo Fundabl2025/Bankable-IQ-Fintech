@@ -19,6 +19,9 @@ const config: ProductPageConfig = {
     { label: 'Credit Score', value: '600+ FICO' },
     { label: 'Annual Revenue', value: '$500K annual or $40K/month deposits' },
     { label: 'Banking', value: 'Business bank account required' },
+    { label: 'Bankruptcy', value: 'None on any credit report' },
+    { label: 'Judgments / Liens', value: 'No open judgments, liens, or collections on any credit report' },
+    { label: 'Personal Income', value: '$75,000+/year (owner)' },
   ],
   benefits: [
     'Cash flow-based approvals — revenue matters more than credit score',

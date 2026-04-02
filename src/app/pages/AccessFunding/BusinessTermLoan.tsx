@@ -19,6 +19,10 @@ const config: ProductPageConfig = {
     { label: 'Credit Score', value: '600+ FICO' },
     { label: 'Annual Revenue', value: '$500K annual or $40K/month deposits' },
     { label: 'Banking', value: 'Business bank account required' },
+    { label: 'Guarantor', value: 'All owners with 20%+ ownership must sign' },
+    { label: 'Bankruptcy', value: 'None on any credit report' },
+    { label: 'Judgments / Liens', value: 'No judgments, liens, or charge-offs on any credit report' },
+    { label: 'Personal Income', value: '$75,000+/year (owner)' },
   ],
   benefits: [
     'No prepayment penalty — pay off early and save on interest',

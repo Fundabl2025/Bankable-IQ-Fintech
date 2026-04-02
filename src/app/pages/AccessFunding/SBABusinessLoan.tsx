@@ -22,6 +22,9 @@ const config: ProductPageConfig = {
     { label: 'Documentation', value: 'Full docs: tax returns, bank statements, entity docs, financials' },
     { label: 'Personal Guarantee', value: 'Required' },
     { label: 'Collateral', value: 'Required for 504; may be required for 7(a)' },
+    { label: 'Industry Restriction', value: 'Real Estate-related businesses generally not eligible' },
+    { label: 'Bankruptcy', value: 'None on any personal credit report' },
+    { label: 'Judgments / Liens', value: 'No judgments, liens, or charge-offs on personal credit reports' },
   ],
   benefits: [
     'Lowest rates in the capital stack — Prime + 1–2.75% vs. 10–30%+ for alternatives',

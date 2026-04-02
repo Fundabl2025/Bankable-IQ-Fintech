@@ -21,6 +21,8 @@ const config: ProductPageConfig = {
     { label: 'Derogatory Items', value: 'None on credit report' },
     { label: 'Inquiries', value: 'No more than 4 in last 24 months' },
     { label: 'New Accounts', value: 'None in last 6 months' },
+    { label: 'Personal Income', value: '$75,000+/year required' },
+    { label: 'Ownership', value: 'Guarantor must hold 20%+ ownership' },
   ],
   benefits: [
     '0% interest for 18–24 months — zero cost of capital during promo window',

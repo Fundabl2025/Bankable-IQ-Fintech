@@ -21,6 +21,9 @@ const config: ProductPageConfig = {
     { label: 'Utilization', value: 'Preferably under 25%' },
     { label: 'Time in Business', value: 'None required' },
     { label: 'Revenue', value: 'None required' },
+    { label: 'Bankruptcy', value: 'None on any credit report' },
+    { label: 'Judgments / Liens', value: 'No judgments, liens, or charge-offs on any credit report' },
+    { label: 'Personal Income', value: '$75,000+/year (owner)' },
   ],
   benefits: [
     '0% interest for 12–24 months — deploy capital cost-free during promo period',

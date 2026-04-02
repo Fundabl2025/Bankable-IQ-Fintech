@@ -21,6 +21,7 @@ const config: ProductPageConfig = {
     { label: 'Time in Business', value: '6+ months (some 3+ months)' },
     { label: 'Banking', value: 'Active U.S. business bank account' },
     { label: 'Bankruptcies', value: 'No open bankruptcies' },
+    { label: 'Excluded Industries', value: 'Real Estate, Insurance, and Financial Services not eligible' },
   ],
   benefits: [
     'No credit score required — approval based on cash flow only',

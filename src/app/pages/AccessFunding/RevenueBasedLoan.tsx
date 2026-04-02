@@ -21,6 +21,7 @@ const config: ProductPageConfig = {
     { label: 'Monthly Revenue', value: '$10,000–$25,000 minimum' },
     { label: 'Gross Margins', value: '50%+ preferred' },
     { label: 'Data Access', value: 'Bank account, QuickBooks, or Stripe linking required' },
+    { label: 'Excluded Industries', value: 'Real Estate, Insurance, and Financial Services not eligible' },
   ],
   benefits: [
     'Payments scale with revenue — you pay less during slower months automatically',

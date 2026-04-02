@@ -22,6 +22,9 @@ const config: ProductPageConfig = {
     { label: 'Monthly Revenue', value: '$25,000+' },
     { label: 'Documentation', value: 'Equipment invoice required; bank statements + tax returns for higher tiers' },
     { label: 'Banking', value: 'Business bank account required' },
+    { label: 'Bankruptcy', value: 'None on any credit report' },
+    { label: 'Judgments / Liens', value: 'No open judgments, liens, or charge-offs' },
+    { label: 'Personal Income', value: '$75,000+/year (owner)' },
   ],
   benefits: [
     'Asset-backed structure expands access — lower credit thresholds than unsecured products',
