@@ -191,9 +191,9 @@ export function OptimizeReporting() {
       id: 'dun-bradstreet',
       name: 'Dun & Bradstreet',
       score: 'PAYDEX Score',
-      range: '0–100 (80 = ideal)',
-      threshold: '80 PAYDEX',
-      purpose: 'Used by banks, corporate vendors, and SBA lenders to assess payment behavior',
+      range: '0–100 (70 = vendor credit / 80 = full strength)',
+      threshold: '70+ for net-term vendors, 80+ for optimal',
+      purpose: 'Used by B2B vendors for net terms, landlords for leases, and government contracting — not typically pulled by cash lenders',
       status: bureauStatus,
       established: hasAgenciesNAICS,
       steps: [
@@ -213,15 +213,15 @@ export function OptimizeReporting() {
         },
         {
           done: completedModules.includes('building-credit-vendors') || ageMonths >= 6,
-          action: 'Add NET-30 vendor accounts that report to D&B',
-          impact: '+10–20 PAYDEX points per on-time tradeline',
+          action: 'Add 7–10 NET-30 vendor accounts that report to D&B',
+          impact: 'Need at least 7 reporting tradelines for a strong PAYDEX score',
           fix: '/app/building-credit',
           fixLabel: 'Go to Building Credit',
         },
         {
           done: ageMonths >= 12,
-          action: 'Pay all vendor invoices on or before the due date',
-          impact: 'Each on-time payment moves PAYDEX toward 80',
+          action: 'Pay all vendor invoices 10 days EARLY — not just on time',
+          impact: 'PAYDEX rewards early payment: on-time = 80, 10 days early = 90+',
           fix: null,
           fixLabel: null,
         },
@@ -231,9 +231,9 @@ export function OptimizeReporting() {
       id: 'experian-business',
       name: 'Experian Business',
       score: 'Intelliscore Plus',
-      range: '1–100 (76+ = low risk)',
-      threshold: '76+',
-      purpose: 'Used by lenders to assess business payment risk and creditworthiness',
+      range: '1–100 (80+ = strong / goal)',
+      threshold: '80+ Intelliscore Plus',
+      purpose: 'Used by credit card issuers, equipment lenders, banks, and vendors — most revolving business credit checks Experian first',
       status: bureauStatus,
       established: hasEntityFilings && hasBusinessBanking,
       steps: [
@@ -264,6 +264,13 @@ export function OptimizeReporting() {
           impact: 'Experian blends personal and business signals early on',
           fix: null,
           fixLabel: null,
+        },
+        {
+          done: ageMonths >= 6,
+          action: 'Build 7–10 tradelines and pay each 5–10 days EARLY every month',
+          impact: 'Experian only reports active accounts — gaps in usage create gaps in your score',
+          fix: '/app/building-credit',
+          fixLabel: 'Go to Building Credit',
         },
       ],
     },
@@ -351,21 +358,21 @@ export function OptimizeReporting() {
       id: 'fico-sbss',
       name: 'FICO SBSS',
       score: 'Small Business Scoring Service',
-      range: '0–300 (140+ for SBA)',
-      threshold: '140 minimum (SBA loans)',
-      purpose: 'Required by SBA — blends personal FICO, business credit, and time in business',
+      range: '0–300 (160+ = bankable / goal)',
+      threshold: '160 minimum (SBA & most cash lenders)',
+      purpose: 'Used by banks, credit unions, SBA, and large fintech lenders — standard for business cash lending; each lender designs their own weighting',
       status: {
-        label: creditBand === 'strong' && ageMonths >= 24 ? 'SBA Ready' : creditBand === 'strong' ? 'Building' : 'Needs Work',
-        color: creditBand === 'strong' && ageMonths >= 24 ? 'from-emerald-500 to-green-600' : creditBand === 'strong' ? 'from-blue-500 to-cyan-600' : 'from-amber-500 to-orange-500',
+        label: creditBand === 'strong' && ageMonths >= 24 && completedModules.length >= 5 ? 'Likely 160+ (SBA Ready)' : creditBand === 'strong' ? 'Building Toward 160' : 'Below 160 — Needs Work',
+        color: creditBand === 'strong' && ageMonths >= 24 && completedModules.length >= 5 ? 'from-emerald-500 to-green-600' : creditBand === 'strong' ? 'from-blue-500 to-cyan-600' : 'from-amber-500 to-orange-500',
         score: ficoSBSS,
-        description: 'Estimated based on your reported credit profile',
+        description: 'Estimated — lenders each design their own FICO SBSS weighting',
       },
       established: creditScore >= 640,
       steps: [
         {
-          done: creditScore >= 680,
-          action: 'Bring personal FICO to 680+ — it drives ~50% of your FICO SBSS',
-          impact: 'Every 20 FICO points = ~10 SBSS points',
+          done: creditScore >= 720,
+          action: 'Bring personal FICO to 720+ — it drives 35% of your FICO SBSS',
+          impact: 'Personal credit of all owners with 20%+ stake is factored in; 720+ = low risk, 760+ = very low risk',
           fix: null,
           fixLabel: null,
         },
@@ -414,26 +421,32 @@ export function OptimizeReporting() {
 
   const debtStrategies = [
     {
-      title: 'Revolving Utilization Target',
-      detail: 'Keep all credit card balances below 30% of the limit. Under 10% is ideal for maximum FICO impact.',
+      title: 'Revolving Debt-to-Limit: 45% Maximum / 19% Optimal',
+      detail: 'Business lenders require total revolving debt-to-limit ratio under 45% — AND each individual account under 45%. To maximize approval amounts, get each card individually to 19% or below. This is calculated per card, not just in aggregate.',
       status: 'action',
       icon: '💳',
     },
     {
-      title: 'Debt-to-Income Ratio (DTI)',
-      detail: 'Most lenders require DTI below 43%. Calculate yours: total monthly debt payments ÷ gross monthly income.',
+      title: 'Debt-to-Income (DTI) Must Stay Under 40%',
+      detail: 'Business lenders check DTI for all owners with 15%+ stake. Total monthly debt payments ÷ gross monthly income must stay under 40%. Over-leveraged owners = higher-risk loan, regardless of business performance.',
       status: 'action',
       icon: '📊',
     },
     {
-      title: 'Installment vs. Revolving Mix',
-      detail: 'Having both revolving (credit cards) and installment (loans, auto) accounts improves your credit mix score.',
+      title: 'Avoid Debt Acceleration Before Applying',
+      detail: 'Did you recently go from $5K to $50K in revolving debt? Lenders flag rapid balance increases (called "debt acceleration") as a major red flag. Avoid running up credit cards in the 60–180 days before seeking business financing.',
+      status: 'action',
+      icon: '⚠️',
+    },
+    {
+      title: 'Revolving Debt is Weighted Most Heavily',
+      detail: 'Business lenders focus primarily on revolving debt (credit cards, HELOCs) — it mirrors how you\'ll manage business loans. Installment debt (car loans, furniture) and mortgage carry far less weight in the approval decision.',
       status: 'info',
       icon: '⚖️',
     },
     {
-      title: 'Pay Above the Minimum',
-      detail: 'Minimum payments on revolving accounts keep utilization high. Pay off balances when possible.',
+      title: 'Use a Term Loan to Pay Down High Utilization',
+      detail: 'If multiple cards are over 45% utilization, taking out an installment loan to pay them down converts revolving debt (high-risk in lender eyes) to installment debt (lower-risk) — improving your profile before your business loan application.',
       status: 'action',
       icon: '🎯',
     },
@@ -441,23 +454,33 @@ export function OptimizeReporting() {
 
   const inquiryStrategies = [
     {
-      title: 'Limit Hard Inquiries to Under 4 (30 days)',
-      detail: 'Most business credit programs require fewer than 4 hard inquiries in the last 30 days. Each hard pull stays on your report for 2 years.',
+      title: 'Max 4 Total Inquiries in Prior 6 Months',
+      detail: 'Business lenders want no more than 4 personal credit inquiries of any kind within the 6 months before your loan application. Ideally, zero inquiries in the 90 days immediately before applying.',
       critical: true,
     },
     {
-      title: 'Rate Shopping Window',
-      detail: 'Multiple mortgage or auto loan inquiries within 14–45 days count as ONE inquiry under FICO\'s rate shopping rules. Use this window strategically.',
+      title: 'Max 2 Revolving Inquiries in Prior 6 Months',
+      detail: 'Even within the 4-inquiry limit, no more than 2 should be from revolving credit sources (credit cards, lines of credit). Revolving inquiries signal the most risk to business lenders.',
+      critical: true,
+    },
+    {
+      title: 'Never "Shot Gun" Loan Applications',
+      detail: 'Submitting to many lenders simultaneously creates multiple inquiries. Business loans don\'t show balances on credit reports immediately — so lenders assume ALL prior inquiries may have been approved, stacking invisible debt against you. They\'ll wait 6+ months to verify.',
+      critical: true,
+    },
+    {
+      title: '"5 in 24" Rule — Watch New Account Openings',
+      detail: 'Many business lenders enforce a "5 in 24" rule: no more than 5 new credit accounts opened in the last 24 months. Opening accounts rapidly signals instability.',
       critical: false,
     },
     {
-      title: 'No New Personal Accounts (6 months)',
-      detail: 'Opening new personal accounts lowers average account age and adds inquiries. Pause new applications while pursuing business funding.',
-      critical: true,
+      title: 'Freeze Third-Party Data Providers',
+      detail: 'Before applying for business funding, place a security freeze on LexisNexis, SageStream, Innovis, and TeleTrack. These providers may supply inaccurate background data that can trigger a decline without you knowing why.',
+      critical: false,
     },
     {
       title: 'Check Your Own Credit (Soft Pull Only)',
-      detail: 'Checking your own credit via annualcreditreport.com is a soft pull — zero impact. Do this before any lender application.',
+      detail: 'Checking your own credit via annualcreditreport.com is a soft pull — zero FICO impact. Do this and review all 3 reports for identity accuracy (name, address, employment) before any lender application.',
       critical: false,
     },
   ];
@@ -694,7 +717,7 @@ export function OptimizeReporting() {
               </div>
               <div className="p-5">
                 <p className="text-sm text-gray-600 mb-5">
-                  Your personal FICO is the single most impactful variable in business funding. Every program below has a minimum threshold — here's where you stand today:
+                  Business lenders use FICO 8 scores for 90% of approvals. They review all owners with 15%+ stake. Target: <strong>720+ = low risk</strong>, <strong>760+ = very low risk</strong>. Here's what your current score unlocks:
                 </p>
                 <div className="space-y-2">
                   {lenderThresholds.map((t, i) => {
@@ -838,7 +861,7 @@ export function OptimizeReporting() {
                   { action: 'Set up autopay on all accounts', why: 'Payment history is 35% of FICO — one missed payment can drop 50–100 points', time: '1 day', url: null, external: false },
                   { action: 'Complete Entity & Filings module', why: 'Foundation for all 5 business credit bureau files', time: '1–2 hours', url: '/app/lender-compliance/entity-filings', external: false },
                   { action: 'Complete Agencies & NAICS to get DUNS number', why: 'Required to establish D&B file — needed for SBA and corporate vendor credit', time: '1–2 hours', url: '/app/lender-compliance/agencies-naics', external: false },
-                  { action: 'Add 2–3 NET-30 vendor accounts', why: 'Fastest way to build PAYDEX to 80 — 90 days of on-time payments', time: '1 day to apply', url: '/app/building-credit', external: false },
+                  { action: 'Add 7–10 NET-30 vendor accounts — pay 10 days EARLY', why: 'Need 7+ tradelines to get a strong PAYDEX; early payment scores higher than on-time', time: '1 day to apply', url: '/app/building-credit', external: false },
                 ].map((w, i) => (
                   <div key={i} className="flex items-start gap-4 p-4 bg-emerald-50 rounded-xl border-2 border-emerald-200">
                     <div className="w-7 h-7 bg-emerald-600 text-white text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
