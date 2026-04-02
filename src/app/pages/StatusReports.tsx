@@ -6,6 +6,7 @@ import { useNavigate, Link } from 'react-router';
 import { motion } from 'motion/react';
 import { ArrowLeft, CheckCircle2, XCircle, ChevronRight, TrendingUp, Target, DollarSign } from 'lucide-react';
 import { computeScore, computeExtendedResults } from './business-assessment/engine';
+import { DIM_LABELS } from './business-assessment/types';
 import type { ScoreResult, ExtendedResultsOutput } from './business-assessment/types';
 
 function fmt(n: number) {
@@ -30,14 +31,7 @@ function getSbssBand(sbss: number): { label: string; color: string } {
   return { label: 'Building', color: '#ef4444' };
 }
 
-const DIM_LABELS: Record<string, string> = {
-  P: 'Personal Credit',
-  B: 'Business Profile',
-  F: 'Financials',
-  C: 'Compliance',
-  S: 'Stability',
-  N: 'File Strength',
-};
+// DIM_LABELS imported from business-assessment/types — derived from DIMENSION_INFO
 
 export function StatusReports() {
   const navigate = useNavigate();

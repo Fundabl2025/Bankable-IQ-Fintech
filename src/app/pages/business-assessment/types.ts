@@ -212,6 +212,13 @@ export const DIMENSION_INFO = {
   N: { name: 'File Strength', color: '#b04428', weight: 0.10 },
 } as const;
 
+// ── DIM_LABELS — derived from DIMENSION_INFO, single source of truth ──────────
+// Consumers import this. Do not redeclare locally in any component or module.
+// To change a label, update DIMENSION_INFO.name above — this updates everywhere.
+export const DIM_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(DIMENSION_INFO).map(([key, info]) => [key, info.name])
+);
+
 export const SECTION_NAMES = [
   'Identity',
   'Operations',

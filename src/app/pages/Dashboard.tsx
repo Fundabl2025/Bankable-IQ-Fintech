@@ -32,6 +32,7 @@ import {
 import { computeScore, getBand, computeExtendedResults } from './business-assessment/engine';
 import { getDataItem } from '../lib/data-adapter';
 import { useAuth } from '../contexts/AuthContext';
+import { DIM_LABELS } from './business-assessment/types';
 import type { UnifiedAnswers } from './business-assessment/types';
 import { BadgeStrip, BadgeToastContainer } from '../components/BadgeGrid';
 import { checkAndAwardBadges, syncBadgesFromCloud, recordInitialScore, getInitialScore } from '../lib/badges';
@@ -515,7 +516,7 @@ export function Dashboard() {
   const hour = new Date().getHours();
   const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
   const DIM_ORDER = ['P', 'B', 'F', 'C', 'S', 'N'];
-  const DIM_LABELS: Record<string, string> = { P: 'Personal Credit', B: 'Business Profile', F: 'Financial Health', C: 'Compliance', S: 'Stability', N: 'Documentation' };
+  // DIM_LABELS imported from business-assessment/types — derived from DIMENSION_INFO
   const preQualPrograms = getPreQualifiedPrograms();
   // Real capital potential from actual qualifying products — replaces static scoreToAmount lookup
   const realCapital = computeRealCapital(storedAssessment, fundScore);

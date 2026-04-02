@@ -2,6 +2,8 @@
 // One function per intent. Each is called from getForgeResponse() in AICoach.tsx.
 // Extracted verbatim — no logic changes, just isolated + versioned.
 
+import { DIM_LABELS } from '../../pages/business-assessment/types';
+
 export const PROMPT_KEY = 'forge-chat-responses';
 export const PROMPT_VERSION = 'v1.0';
 // Forbidden claims are enforced at runtime by guardrails.ts via GLOBAL_FORBIDDEN_CLAIMS
@@ -14,11 +16,6 @@ export function fmt(n: number): string {
   if (n >= 1_000) return `$${Math.round(n / 1_000)}K`;
   return `$${n}`;
 }
-
-const DIM_LABELS: Record<string, string> = {
-  P: 'Personal Credit', B: 'Business Profile', F: 'Financials',
-  C: 'Compliance', S: 'Stability', N: 'File Strength',
-};
 
 // ── Intent: next step ─────────────────────────────────────────────────────────
 

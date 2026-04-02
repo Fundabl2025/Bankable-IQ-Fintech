@@ -17,6 +17,7 @@ import {
   MessageSquare, RotateCcw, Sparkles,
 } from 'lucide-react';
 import { computeScore } from './business-assessment/engine';
+import { DIM_LABELS } from './business-assessment/types';
 import { evaluateProducts } from './business-assessment/productEligibility';
 import { getAllAuditItems } from '../utils/businessData';
 import { complianceModules, getComplianceProgress } from '../utils/lenderComplianceModules';
@@ -90,13 +91,6 @@ interface RoadmapStage {
   timeframe: string;
   complete: boolean;
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const DIM_LABELS: Record<string, string> = {
-  P: 'Personal Credit', B: 'Business Profile', F: 'Financials',
-  C: 'Compliance', S: 'Stability', N: 'File Strength',
-};
 
 // ─── Context Builder ──────────────────────────────────────────────────────────
 
