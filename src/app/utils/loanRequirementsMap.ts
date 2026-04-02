@@ -322,6 +322,25 @@ export const LOAN_REQUIREMENTS: Record<string, LoanRequirement[]> = {
     complianceReq('assets-ucc', 'recommended'),
     complianceReq('agencies-naics', 'recommended'),
   ],
+
+  'startup-equipment': [
+    creditReq(580),
+    revenueReq(10000),
+    complianceReq('entity-filings', 'required'),
+    complianceReq('business-banking', 'required'),
+    complianceReq('ein-licenses', 'recommended'),
+    complianceReq('assets-ucc', 'recommended'),
+  ],
+
+  'truck-utility-vehicles': [
+    creditReq(550),
+    revenueReq(3000),
+    timeReq(6),
+    complianceReq('entity-filings', 'required'),
+    complianceReq('business-banking', 'required'),
+    complianceReq('ein-licenses', 'recommended'),
+    complianceReq('assets-ucc', 'recommended'),
+  ],
 };
 
 // ── Core eligibility engine ───────────────────────────────────────────────────

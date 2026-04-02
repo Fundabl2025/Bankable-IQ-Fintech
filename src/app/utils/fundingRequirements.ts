@@ -248,6 +248,33 @@ export const fundingPrograms: FundingRequirements[] = [
     requiresBusinessBankAccount: true,
     requiresEIN: true,
   },
+
+  // 18. Startup Equipment Financing
+  {
+    programId: 'startup-equipment',
+    programName: 'Startup Equipment Financing',
+    path: '/access-funding/startup-equipment',
+    minCreditScore: 580,
+    minMonthlyRevenue: 10000,
+    minTimeInBusinessMonths: 0, // 0–24 months — startup eligible
+    requiresEquipmentInvoice: true,
+    requiresBusinessBankAccount: true,
+    noOpenBankruptcies: true,
+    tier: 'startup',
+  },
+
+  // 19. Truck & Utility Vehicle Financing
+  {
+    programId: 'truck-utility-vehicles',
+    programName: 'Truck & Utility Vehicle Financing',
+    path: '/access-funding/truck-utility-vehicles',
+    minCreditScore: 550,
+    minMonthlyRevenue: 3000,
+    minTimeInBusinessMonths: 6,
+    requiresEquipmentInvoice: true, // vehicle invoice counts as equipment invoice
+    requiresBusinessBankAccount: true,
+    noOpenBankruptcies: true,
+  },
 ];
 
 // Helper function to parse revenue strings like "$25,000" or "$25k" to numbers

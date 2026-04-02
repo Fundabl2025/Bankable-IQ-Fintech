@@ -258,6 +258,30 @@ export function CapitalAccessMap() {
         status: 'unlocked',
         scoreGap: 0,
         complianceGaps: []
+      },
+      {
+        id: 'startup-equipment',
+        name: 'Startup Equipment Financing',
+        amountRange: '$10K - $150K',
+        minScore: 450,
+        requiredCompliance: ['business-entity', 'business-bank-account', 'ein-number'],
+        rate: '9-25%',
+        speed: '5-10 days',
+        status: 'unlocked',
+        scoreGap: 0,
+        complianceGaps: []
+      },
+      {
+        id: 'truck-utility-vehicles',
+        name: 'Truck & Utility Vehicle Financing',
+        amountRange: '$15K - $500K',
+        minScore: 480,
+        requiredCompliance: ['business-entity', 'business-bank-account', 'ein-number'],
+        rate: '6-22%',
+        speed: '3-7 days',
+        status: 'unlocked',
+        scoreGap: 0,
+        complianceGaps: []
       }
     ];
 

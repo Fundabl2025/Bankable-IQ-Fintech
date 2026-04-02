@@ -36,6 +36,8 @@ const InventoryLineOfCredit = lazy(() => import('./pages/AccessFunding/Inventory
 const BridgeLoans = lazy(() => import('./pages/AccessFunding/BridgeLoans').then(m => ({ default: m.BridgeLoans })));
 const DSCRLoans = lazy(() => import('./pages/AccessFunding/DSCRLoans').then(m => ({ default: m.DSCRLoans })));
 const ConstructionLoans = lazy(() => import('./pages/AccessFunding/ConstructionLoans').then(m => ({ default: m.ConstructionLoans })));
+const StartupEquipment = lazy(() => import('./pages/AccessFunding/StartupEquipment').then(m => ({ default: m.StartupEquipment })));
+const TruckUtilityVehicles = lazy(() => import('./pages/AccessFunding/TruckUtilityVehicles').then(m => ({ default: m.TruckUtilityVehicles })));
 const DocumentCollection = lazy(() => import('./pages/DocumentCollection').then(m => ({ default: m.DocumentCollection })));
 const LenderCompliance = lazy(() => import('./pages/LenderCompliance').then(m => ({ default: m.LenderCompliance })));
 const BuildingCredit = lazy(() => import('./pages/BuildingCredit').then(m => ({ default: m.BuildingCredit })));
@@ -169,8 +171,8 @@ export const router = createBrowserRouter([
           { path: 'working-capital-loans', element: <LazyComponent Component={WorkingCapitalLoans} /> },
           { path: 'sba-business-loan', element: <LazyComponent Component={SBABusinessLoan} /> },
           { path: 'accounts-receivable-finance', element: <LazyComponent Component={AccountsReceivableFinance} /> },
-          { path: 'startup-equipment', element: <Navigate to="/access-funding/accounts-receivable-finance" replace /> },
-          { path: 'truck-utility-vehicles', element: <Navigate to="/access-funding/purchase-order-finance" replace /> },
+          { path: 'startup-equipment', element: <LazyComponent Component={StartupEquipment} /> },
+          { path: 'truck-utility-vehicles', element: <LazyComponent Component={TruckUtilityVehicles} /> },
           { path: 'purchase-order-finance', element: <LazyComponent Component={PurchaseOrderFinance} /> },
           { path: 'inventory-line-of-credit', element: <LazyComponent Component={InventoryLineOfCredit} /> },
           { path: 'bridge-loans', element: <LazyComponent Component={BridgeLoans} /> },

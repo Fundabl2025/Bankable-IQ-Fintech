@@ -21,6 +21,8 @@ export const programRoutes: { [key: string]: string } = {
   'bridge-loans': '/access-funding/bridge-loans',
   'dscr-loans': '/access-funding/dscr-loans',
   'construction-loans': '/access-funding/construction-loans',
+  'startup-equipment': '/access-funding/startup-equipment',
+  'truck-utility-vehicles': '/access-funding/truck-utility-vehicles',
 };
 
 // Store pre-qualified programs in localStorage
@@ -61,6 +63,8 @@ function deriveFromUnifiedAssessment(): string[] {
     if (ageMonths >= 6 && monthlyRev >= 10000 && credit >= 550) qualified.push('business-term-loan');
     if (ageMonths >= 6 && monthlyRev >= 5000 && credit >= 580) qualified.push('business-credit-line');
     if (credit >= 580 && monthlyRev >= 5000 && hasEIN) qualified.push('equipment-financing');
+    if (credit >= 580 && monthlyRev >= 10000) qualified.push('startup-equipment');
+    if (credit >= 550 && monthlyRev >= 3000 && ageMonths >= 6) qualified.push('truck-utility-vehicles');
     if (credit >= 680 && hasEIN) qualified.push('business-credit-cards');
     if (credit >= 640) qualified.push('personal-credit-cards');
     if (monthlyRev >= 15000 && data.arBalance && data.arBalance !== 'none') qualified.push('receivable-factoring');
@@ -146,6 +150,8 @@ const PROGRAM_PURPOSE_FIT: Record<string, string[]> = {
   'business-credit-cards':        ['working_capital', 'equipment', 'expansion'],
   'personal-credit-cards':        ['working_capital', 'equipment'],
   'equipment-financing':          ['equipment'],
+  'startup-equipment':            ['equipment'],
+  'truck-utility-vehicles':       ['equipment', 'expansion'],
   'construction-loans':           ['real_estate', 'expansion'],
   'dscr-loans':                   ['real_estate'],
   'bridge-loans':                 ['real_estate', 'acquisition'],
@@ -167,6 +173,8 @@ const PROGRAM_MAX_AMOUNT: Record<string, number> = {
   'business-credit-cards': 100000,
   'personal-credit-cards': 50000,
   'equipment-financing': 5000000,
+  'startup-equipment': 150000,
+  'truck-utility-vehicles': 500000,
   'construction-loans': 10000000,
   'dscr-loans': 10000000,
   'bridge-loans': 10000000,
