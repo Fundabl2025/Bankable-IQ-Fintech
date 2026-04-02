@@ -1,5 +1,26 @@
 # CLAUDE.md — FundReady AI Operating Manual
 # Read this before every task. This is the standing brief for every session.
+# Also read: PRODUCT.md (product intelligence) and COPY.md (messaging standards)
+
+---
+
+## PRODUCT IDENTITY
+**FundReady / FORGE**
+
+FundReady is a capital-readiness intelligence platform — not a loan broker, lead gen funnel, or education portal.
+FORGE is the AI engine: readiness analyst, funding-path strategist, lender-signal interpreter, progress coach.
+
+**Core promise:** Help businesses see how lenders see them, fix what matters most, and unlock better capital outcomes.
+**North star:** We build fintech software that makes the right financial action feel clear, safe, and worth taking.
+
+**Primary personas (in order):**
+1. First-Time Strategic Applicant — never applied, wants to do it right the first time
+2. Denied but Viable Owner — rejected before, needs diagnosis + recovery path
+3. Growth-Oriented Operator — ready for better capital, needs the progression path
+4. Underserved Founder — needs trust, literacy, and structure
+5. Advisor / Channel Partner — needs a repeatable system for clients
+
+**Market thesis:** The market is not "business loans." It is the gap between businesses that need capital and businesses that are actually lender-ready. FundReady closes that gap at scale.
 
 ---
 
