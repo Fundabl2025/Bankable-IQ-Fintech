@@ -324,138 +324,206 @@ export function BadgeGrid({ newBadgeIds = [] }: BadgeGridProps) {
   );
 }
 
-// ─── BadgeStrip — compact dashboard widget ───────────────────────────────────
-// Shows: earned count + last 3 earned + next 2 to unlock + "View all" link
-// Replaces the full grid on dashboard — saves ~600px of vertical scroll
+// ─── BadgeStrip — Dashboard achievement widget ────────────────────────────────
+// Elon: every achievement is tied to a real action. "Locked" shows exactly
+//       what to do and links directly to the place that earns it.
+// Chase: identity framing ("You're 71% of the way"), completion pull
+//        (specific next badges with clear requirements), earned badges
+//        anchored to real dates — momentum is visible.
 
 export function BadgeStrip({ newBadgeIds = [], onViewAll }: { newBadgeIds?: string[]; onViewAll?: () => void }) {
   const navigate = useNavigate();
   const earnedList = getEarnedBadges();
   const earnedMap = new Map(earnedList.map(e => [e.id, e.earnedAt]));
   const earnedCount = BADGES.filter(b => earnedMap.has(b.id)).length;
+  const pct = Math.round((earnedCount / BADGES.length) * 100);
 
-  // Last 4 earned (most recent first)
+  // Last 3 earned (most recent first)
   const recentEarned = [...earnedList]
     .sort((a, b) => new Date(b.earnedAt).getTime() - new Date(a.earnedAt).getTime())
-    .slice(0, 4)
-    .map(e => BADGES.find(b => b.id === e.id))
-    .filter(Boolean) as typeof BADGES;
+    .slice(0, 3)
+    .map(e => ({ badge: BADGES.find(b => b.id === e.id)!, earnedAt: e.earnedAt }))
+    .filter(e => e.badge);
 
-  // Next 2 to unlock (locked badges that appear closest in the list order)
-  const nextToEarn = BADGES.filter(b => !earnedMap.has(b.id)).slice(0, 2);
+  // Next 3 to unlock — first locked badges in definition order
+  const nextToEarn = BADGES.filter(b => !earnedMap.has(b.id)).slice(0, 3);
+
+  const identityLabel = pct >= 90 ? 'Elite achiever — nearly complete'
+    : pct >= 70 ? `${pct}% of the way to FundReady Master`
+    : pct >= 40 ? `${pct}% complete — momentum building`
+    : `${earnedCount} earned — your journey is underway`;
 
   return (
-    <div style={{
-      background: 'var(--card)', border: '1px solid var(--border)',
-      borderRadius: '16px', overflow: 'hidden',
-    }}>
-      {/* Header row */}
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
+
+      {/* ── Header: identity + progress ── */}
       <div style={{
         padding: '16px 20px', borderBottom: '1px solid var(--border)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--foreground)' }}>
-              Achievements
-            </span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginLeft: '8px' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--foreground)', marginBottom: '2px' }}>
+            Achievements
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 500, color: 'var(--muted-foreground)', marginLeft: '8px' }}>
               {earnedCount}/{BADGES.length} earned
             </span>
           </div>
-          {/* Progress pip */}
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
+            {identityLabel}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '60px', height: '4px', borderRadius: '99px', background: 'var(--border)', overflow: 'hidden' }}>
+            <div style={{ width: '80px', height: '5px', borderRadius: '99px', background: 'var(--border)', overflow: 'hidden' }}>
               <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${(earnedCount / BADGES.length) * 100}%` }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
+                initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                transition={{ duration: 0.9, ease: 'easeOut' }}
                 style={{ height: '100%', borderRadius: '99px', background: 'linear-gradient(90deg, #10b981, #3b82f6)' }}
               />
             </div>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '11px', color: 'var(--muted-foreground)' }}>
-              {Math.round((earnedCount / BADGES.length) * 100)}%
-            </span>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: 'var(--foreground)' }}>{pct}%</span>
           </div>
+          <button
+            onClick={() => { if (onViewAll) { onViewAll(); } else { navigate('/app/my-progress'); } }}
+            style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}
+          >
+            View all →
+          </button>
         </div>
-        <button
-          onClick={() => { if (onViewAll) { onViewAll(); } else { navigate('/app/my-progress'); } }}
-          style={{
-            fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600,
-            color: '#3b82f6', background: 'none', border: 'none',
-            cursor: 'pointer', padding: 0, whiteSpace: 'nowrap',
-          }}
-        >
-          View all →
-        </button>
       </div>
 
-      <div style={{ padding: '16px 20px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-        {/* Recent earned */}
-        {recentEarned.length > 0 && (
-          <div style={{ flex: 1, minWidth: '160px' }}>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
-              Recently Earned
-            </p>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {recentEarned.map(badge => (
-                <motion.div
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr', gap: 0 }}>
+
+        {/* ── Left: Recently Earned ── */}
+        <div style={{ padding: '16px 20px' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>
+            Recently Earned
+          </p>
+          {recentEarned.length === 0 ? (
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+              Complete your Business Success Scan to earn your first badge.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {recentEarned.map(({ badge, earnedAt }) => {
+                const dateLabel = new Date(earnedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                return (
+                  <motion.div
+                    key={badge.id}
+                    initial={newBadgeIds.includes(badge.id) ? { scale: 0.85, opacity: 0 } : false}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', stiffness: 360, damping: 22 }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '12px',
+                      padding: '10px 12px', borderRadius: '10px',
+                      background: `${badge.color}07`,
+                      border: `1px solid ${badge.color}20`,
+                      position: 'relative',
+                    }}
+                  >
+                    {newBadgeIds.includes(badge.id) && (
+                      <motion.div
+                        initial={{ opacity: 0.8, scale: 1 }} animate={{ opacity: 0, scale: 1.4 }}
+                        transition={{ duration: 0.7 }}
+                        style={{ position: 'absolute', inset: 0, borderRadius: '10px', border: `2px solid ${badge.color}`, pointerEvents: 'none' }}
+                      />
+                    )}
+                    <div style={{
+                      width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
+                      background: badge.gradient,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '18px', boxShadow: `0 3px 10px ${badge.color}30`,
+                    }}>
+                      {badge.icon}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)', marginBottom: '1px' }}>
+                        {badge.name}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: badge.color, fontWeight: 600, marginBottom: '2px' }}>
+                        {badge.description}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>
+                        Earned {dateLabel}
+                      </div>
+                    </div>
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: badge.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ fontSize: '8px', color: 'white', fontWeight: 700 }}>✓</span>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Divider ── */}
+        <div style={{ background: 'var(--border)' }} />
+
+        {/* ── Right: Next to Unlock ── */}
+        <div style={{ padding: '16px 20px' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>
+            Unlock Next
+          </p>
+          {nextToEarn.length === 0 ? (
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: '#10b981', fontWeight: 600 }}>
+              🏆 All achievements unlocked — Elite status achieved.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {nextToEarn.map((badge, i) => (
+                <div
                   key={badge.id}
-                  initial={newBadgeIds.includes(badge.id) ? { scale: 0.5 } : false}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                  title={`${badge.name} — ${badge.description}`}
                   style={{
-                    width: '44px', height: '44px', borderRadius: '12px',
-                    background: badge.gradient,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '20px',
-                    boxShadow: `0 2px 10px ${badge.color}25`,
-                    border: newBadgeIds.includes(badge.id) ? `2px solid ${badge.color}` : 'none',
-                    cursor: 'default',
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '10px 12px', borderRadius: '10px',
+                    background: 'var(--background)',
+                    border: '1px solid var(--border)',
+                    opacity: i === 0 ? 1 : 0.75,
                   }}
                 >
-                  {badge.icon}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Divider */}
-        {nextToEarn.length > 0 && recentEarned.length > 0 && (
-          <div style={{ width: '1px', background: 'var(--border)', flexShrink: 0, alignSelf: 'stretch' }} />
-        )}
-
-        {/* Next to unlock */}
-        {nextToEarn.length > 0 && (
-          <div style={{ flex: 1, minWidth: '160px' }}>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
-              Next to Unlock
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {nextToEarn.map(badge => (
-                <div key={badge.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{
-                    width: '36px', height: '36px', borderRadius: '10px',
-                    background: 'var(--border)', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontSize: '17px', filter: 'grayscale(1)', flexShrink: 0,
+                    width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
+                    background: 'var(--border)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '18px', filter: 'grayscale(1)',
                   }}>
                     {badge.icon}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)', marginBottom: '1px' }}>
                       {badge.name}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', lineHeight: 1.4, marginBottom: i === 0 ? '6px' : 0 }}>
                       {badge.hint}
                     </div>
+                    {i === 0 && (
+                      <button
+                        onClick={() => navigate(badge.actionPath)}
+                        style={{
+                          fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700,
+                          color: 'white', background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+                          border: 'none', borderRadius: '6px', padding: '4px 10px',
+                          cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        }}
+                      >
+                        {badge.actionLabel} →
+                      </button>
+                    )}
+                  </div>
+                  <div style={{
+                    width: '16px', height: '16px', borderRadius: '50%',
+                    border: '1.5px solid var(--border)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <span style={{ fontSize: '8px', color: 'var(--muted-foreground)' }}>🔒</span>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
       </div>
     </div>
   );

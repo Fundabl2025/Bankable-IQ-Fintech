@@ -21,6 +21,10 @@ export interface Badge {
   isEarned: (ctx: BadgeContext) => boolean;
   /** Human-readable hint shown when locked */
   hint: string;
+  /** Where to navigate to earn this badge */
+  actionPath: string;
+  /** Short action label for the CTA button */
+  actionLabel: string;
 }
 
 export interface BadgeContext {
@@ -50,13 +54,15 @@ export const BADGES: Badge[] = [
   {
     id: 'first_step',
     name: 'First Step',
-    description: 'Completed your FundReady assessment',
+    description: 'Completed your Business Success Scan',
     icon: '🚀',
     gradient: 'linear-gradient(135deg, #10b981, #059669)',
     color: '#10b981',
     category: 'assessment',
     isEarned: (ctx) => ctx.hasAssessment,
-    hint: 'Complete the business assessment to earn this',
+    hint: 'Complete the 33-question Business Success Scan',
+    actionPath: '/business-assessment',
+    actionLabel: 'Start Scan',
   },
   {
     id: 'report_reviewed',
@@ -67,7 +73,9 @@ export const BADGES: Badge[] = [
     color: '#3b82f6',
     category: 'assessment',
     isEarned: (ctx) => ctx.resultsViewed === true,
-    hint: 'Complete the assessment and open your full results report',
+    hint: 'Complete the scan then open your full results report',
+    actionPath: '/business-assessment/results',
+    actionLabel: 'View Report',
   },
 
   // ── Credit milestones ────────────────────────────────────────────────────────
@@ -80,7 +88,9 @@ export const BADGES: Badge[] = [
     color: '#8b5cf6',
     category: 'credit',
     isEarned: (ctx) => (ctx.dimAvg?.P ?? 0) >= 0.65,
-    hint: 'Reach a Strong personal credit score (680+)',
+    hint: 'Reach 680+ personal credit score with no major derogatories',
+    actionPath: '/app/status-reports',
+    actionLabel: 'View Credit',
   },
   {
     id: 'strong_credit',
@@ -91,7 +101,9 @@ export const BADGES: Badge[] = [
     color: '#22c55e',
     category: 'credit',
     isEarned: (ctx) => (ctx.dimAvg?.P ?? 0) >= 0.80,
-    hint: 'Build your personal credit profile to 740+ with no major derogatories',
+    hint: 'Build personal credit to 740+ with clean payment history',
+    actionPath: '/app/status-reports',
+    actionLabel: 'View Credit',
   },
 
   // ── Financial health milestones ──────────────────────────────────────────────
@@ -104,7 +116,9 @@ export const BADGES: Badge[] = [
     color: '#f59e0b',
     category: 'financial',
     isEarned: (ctx) => (ctx.dimAvg?.F ?? 0) >= 0.75,
-    hint: 'Demonstrate consistent revenue and clean banking history',
+    hint: 'Show consistent revenue + maintain $10K+ avg daily bank balance',
+    actionPath: '/app/finances',
+    actionLabel: 'View Finances',
   },
   {
     id: 'two_year_track',
@@ -115,7 +129,9 @@ export const BADGES: Badge[] = [
     color: '#06b6d4',
     category: 'financial',
     isEarned: (ctx) => (ctx.dimAvg?.S ?? 0) >= 0.75,
-    hint: 'Show 2+ years in business with stable operations',
+    hint: 'Reach 2+ years in business — update your scan when you hit this milestone',
+    actionPath: '/business-assessment',
+    actionLabel: 'Update Scan',
   },
 
   // ── Compliance action milestones ─────────────────────────────────────────────
@@ -128,29 +144,35 @@ export const BADGES: Badge[] = [
     color: '#10b981',
     category: 'compliance',
     isEarned: (ctx) => ctx.completedModuleCount >= 1,
-    hint: 'Complete any one of the 13 lender compliance modules',
+    hint: 'Complete any 1 of the 13 lender compliance modules',
+    actionPath: '/app/lender-compliance',
+    actionLabel: 'Start Module',
   },
   {
     id: 'compliance_pro',
     name: 'Compliance Pro',
-    description: 'Completed 7 or more lender compliance modules',
+    description: 'Completed 7+ lender compliance modules',
     icon: '🛡️',
     gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
     color: '#3b82f6',
     category: 'compliance',
     isEarned: (ctx) => ctx.completedModuleCount >= 7,
     hint: 'Complete 7 of the 13 lender compliance modules',
+    actionPath: '/app/lender-compliance',
+    actionLabel: 'Continue Modules',
   },
   {
     id: 'compliance_complete',
     name: 'Compliance Complete',
-    description: 'Completed all 13 lender compliance modules — fully bankable',
+    description: 'Completed all 13 compliance modules — fully lender-ready',
     icon: '🏅',
     gradient: 'linear-gradient(135deg, #f59e0b, #10b981)',
     color: '#f59e0b',
     category: 'compliance',
     isEarned: (ctx) => ctx.completedModuleCount >= 13,
-    hint: 'Complete all 13 lender compliance modules',
+    hint: 'Complete all 13 lender compliance modules — the full verification stack',
+    actionPath: '/app/lender-compliance',
+    actionLabel: 'Finish Modules',
   },
   {
     id: 'file_ready',
@@ -161,7 +183,9 @@ export const BADGES: Badge[] = [
     color: '#8b5cf6',
     category: 'compliance',
     isEarned: (ctx) => (ctx.dimAvg?.N ?? 0) >= 0.75,
-    hint: 'Complete your financial documentation package',
+    hint: 'Complete your document collection and financial file package',
+    actionPath: '/app/document-collection',
+    actionLabel: 'Document Portal',
   },
 
   // ── Action milestones — funding pipeline ─────────────────────────────────────
@@ -174,7 +198,9 @@ export const BADGES: Badge[] = [
     color: '#6366f1',
     category: 'action',
     isEarned: (ctx) => ctx.totalApplications >= 1,
-    hint: 'Submit your first application through the funding pipeline',
+    hint: 'Apply for any pre-qualified funding product',
+    actionPath: '/app/access-funding',
+    actionLabel: 'Apply Now',
   },
   {
     id: 'funded',
@@ -185,21 +211,25 @@ export const BADGES: Badge[] = [
     color: '#f59e0b',
     category: 'action',
     isEarned: (ctx) => ctx.fundedCount >= 1,
-    hint: 'Get a funding offer accepted and funded through the pipeline',
+    hint: 'Get a pre-qualified application accepted and funded',
+    actionPath: '/app/access-funding',
+    actionLabel: 'Access Funding',
   },
 
   // ── Score milestones ─────────────────────────────────────────────────────────
   {
     id: 'score_climber',
     name: 'Score Climber',
-    description: 'Improved your FundScore by 100+ points since first assessment',
+    description: 'Improved FundScore by 100+ points from your starting baseline',
     icon: '📊',
     gradient: 'linear-gradient(135deg, #10b981, #06b6d4)',
     color: '#10b981',
     category: 'score',
     isEarned: (ctx) =>
       ctx.initialScore !== undefined && ctx.score - ctx.initialScore >= 100,
-    hint: 'Improve your FundScore by 100+ points from your starting baseline',
+    hint: 'Improve your FundScore by 100+ points — fix blockers and complete compliance',
+    actionPath: '/app/denial-diagnosis',
+    actionLabel: 'Fix Blockers',
   },
   {
     id: 'capital_ready',
@@ -210,7 +240,9 @@ export const BADGES: Badge[] = [
     color: '#10b981',
     category: 'score',
     isEarned: (ctx) => ctx.score >= 700,
-    hint: 'Reach a FundScore of 700 or higher',
+    hint: 'Reach FundScore 700 — complete compliance modules to push your score',
+    actionPath: '/app/lender-compliance',
+    actionLabel: 'Boost Score',
   },
   {
     id: 'bankable',
@@ -221,7 +253,9 @@ export const BADGES: Badge[] = [
     color: '#f59e0b',
     category: 'score',
     isEarned: (ctx) => ctx.score >= 800,
-    hint: 'Reach a FundScore of 800 to unlock bank-grade products',
+    hint: 'Reach FundScore 800 — complete all compliance modules and fix critical blockers',
+    actionPath: '/app/my-progress',
+    actionLabel: 'View Progress',
   },
   {
     id: 'elite',
@@ -232,18 +266,22 @@ export const BADGES: Badge[] = [
     color: '#ef4444',
     category: 'score',
     isEarned: (ctx) => ctx.score >= 900,
-    hint: 'Reach a FundScore of 900 — elite capital access',
+    hint: 'Reach FundScore 900 — elite capital access, top 5% of applicants',
+    actionPath: '/app/my-progress',
+    actionLabel: 'View Progress',
   },
   {
     id: 'sbss_bankable',
     name: 'SBSS Bankable',
-    description: 'Bank Readiness Score crossed the 160 threshold',
+    description: 'Bank Readiness Score crossed the SBA threshold of 160',
     icon: '🎖️',
     gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
     color: '#6366f1',
     category: 'score',
     isEarned: (ctx) => ctx.bankableScore >= 160,
-    hint: 'Reach a Bank Readiness Score of 160+ (SBA-grade)',
+    hint: 'Reach SBSS 160+ — the SBA minimum for automated loan approval',
+    actionPath: '/app/lender-compliance',
+    actionLabel: 'Build SBSS',
   },
 ];
 
