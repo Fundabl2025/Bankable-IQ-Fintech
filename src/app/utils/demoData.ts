@@ -7,8 +7,9 @@ import type { UnifiedAnswers } from '../pages/business-assessment/types';
 
 /**
  * Demo business profile: "Acme Consulting LLC"
- * FundScore: ~680-720 (Progressing tier)
- * SBSS: ~155-165 (Near bankable threshold)
+ * FundScore: 853 (Ready band) — v1.1 scoring, full 23-question participation
+ * BankableScore: 219 (strong, well above SBSS 160 bankable threshold)
+ * NapScore: 100 (full NAP compliance)
  */
 export const DEMO_ASSESSMENT_DATA: UnifiedAnswers = {
   // Q_F1: Owner Contact Info

@@ -406,7 +406,7 @@ export function LoginPage() {
               marginTop: '10px',
               lineHeight: 1.5,
             }}>
-              Skip auth and load pre-filled assessment data for "Acme Consulting LLC" (FundScore ~700, SBSS ~160)
+              Skip auth and load pre-filled assessment data for "Acme Consulting LLC" (FundScore 853 · Ready band)
             </p>
             <div style={{
               marginTop: '12px',
