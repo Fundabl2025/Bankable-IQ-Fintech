@@ -10,14 +10,18 @@ import {
   type ComplianceModule,
 } from '../utils/lenderComplianceModules';
 import { getMembershipTier, canAccessGoal2, type MembershipTier, TIER_FEATURES } from '../lib/membership';
+import { getMembershipPricing, getMembershipPricingSync } from '../lib/platform-config';
 
 // ── Upgrade Modal ─────────────────────────────────────────────────────────────
 function UpgradeModal({ onClose }: { onClose: () => void }) {
+  const [pricing, setPricing] = useState(getMembershipPricingSync());
+  useEffect(() => { getMembershipPricing().then(setPricing); }, []);
+
   const TIERS = [
     {
       tier: 'virtual',
       label: 'Virtual Coached',
-      price: '$97/month',
+      price: `${pricing.virtual.monthlyDisplay}/month`,
       icon: '🎓',
       color: '#10b981',
       cta: 'Start Virtual Coaching',
@@ -28,7 +32,7 @@ function UpgradeModal({ onClose }: { onClose: () => void }) {
     {
       tier: 'live',
       label: 'Live Coached',
-      price: '$297/month',
+      price: `${pricing.live.monthlyDisplay}/month`,
       icon: '⭐',
       color: '#f59e0b',
       cta: 'Get a Live Coach',

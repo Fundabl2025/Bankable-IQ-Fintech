@@ -10,12 +10,13 @@
 
 import { Link } from 'react-router';
 import { motion, useInView } from 'motion/react';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import {
   ArrowRight, Lock, BarChart3, Clock, Shield, TrendingUp,
   Brain, CheckCircle, ChevronDown, Star, Zap, Building2,
   Target, Users, AlertTriangle, Eye
 } from 'lucide-react';
+import { getMembershipPricing, getMembershipPricingSync, type MembershipPricing } from '../lib/platform-config';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // FADE IN WRAPPER — Reusable scroll-triggered animation
@@ -429,6 +430,11 @@ function PricingCard({ tier, price, label, description, features, cta, highlight
 // ════════════════════════════════════════════════════════════════════════════════
 export function LandingPage() {
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
+  const [pricing, setPricing] = useState<MembershipPricing>(getMembershipPricingSync());
+
+  useEffect(() => {
+    getMembershipPricing().then(setPricing);
+  }, []);
 
   return (
     <div style={{
@@ -1225,7 +1231,7 @@ export function LandingPage() {
             />
             <PricingCard
               tier="Virtual Coached"
-              price="$97"
+              price={pricing.virtual.monthlyDisplay}
               label="Goal #2 + AI Coaching"
               description="The full compliance system with FORGE™ AI coaching every step of the way. Built to make you bankable in 60–90 days."
               features={[
@@ -1242,7 +1248,7 @@ export function LandingPage() {
             />
             <PricingCard
               tier="Live Coached"
-              price="$297"
+              price={pricing.live.monthlyDisplay}
               label="Done-For-You + Live Coach"
               description="A real human coach handles the compliance work and stays with your business for 12 months. For owners who want it done right."
               features={[
