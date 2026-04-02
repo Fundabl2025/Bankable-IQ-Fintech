@@ -830,23 +830,32 @@ export function Dashboard() {
             {/* ── YOUR CAPITAL ROADMAP — context after user knows their status ── */}
             {(() => {
               const isBankable = bankableScore >= 160;
+              // Goal 01: "funded" means either they have pipeline activity OR pre-qual products ready
+              const hasActiveFunding = pipelineCounts.funded > 0 || pipelineCounts.accepted > 0 || pipelineCounts.offer_received > 0;
+              const goal01Complete = isBankable || hasActiveFunding;
+              // Goal 01 metric — use real product eligibility, not static lookup
+              const goal01Metric = goal01Complete
+                ? (pipelineCounts.funded > 0 ? `${pipelineCounts.funded} funding${pipelineCounts.funded !== 1 ? 's' : ''} received` : 'Completed')
+                : capitalDisplay > 0
+                  ? `${formatMoney(capitalDisplay)} available — ${realCapital.count} product${realCapital.count !== 1 ? 's' : ''} ready`
+                  : 'Complete assessment to see available capital';
               const phases = [
                 {
                   num: '01',
                   title: 'Pre-Bankable Funding',
                   desc: 'Get funded now with non-bank programs — loan packaging included',
-                  status: isBankable ? 'complete' : 'active',
-                  metric: isBankable ? 'Completed' : `Up to ${formatMoney(scoreToAmount(fundScore))} available now`,
+                  status: goal01Complete ? 'complete' : 'active',
+                  metric: goal01Metric,
                   color: '#10b981',
                   cta: '/app/access-funding',
-                  ctaLabel: isBankable ? 'View Programs' : 'See What You Qualify For',
+                  ctaLabel: goal01Complete ? 'View Programs' : 'See What You Qualify For',
                 },
                 {
                   num: '02',
                   title: 'Become Bankable',
                   desc: 'Reach FICO® SBSS 160+ to unlock bank loans and SBA programs',
                   status: isBankable ? 'complete' : 'active',
-                  metric: isBankable ? `Score: ${bankableScore}/300 ✓` : `${bankableScore}/160 — ${160 - bankableScore} pts to go`,
+                  metric: isBankable ? `SBSS ${bankableScore}/300 ✓ — threshold crossed` : `SBSS ${bankableScore}/300 — ${160 - bankableScore} pts to 160`,
                   color: '#3b82f6',
                   cta: '/app/my-progress',
                   ctaLabel: isBankable ? 'View Score' : 'Fix My Blockers',
@@ -856,7 +865,7 @@ export function Dashboard() {
                   title: 'Bankable Funding',
                   desc: 'Larger loans, lower rates, longer repayment — the full capital stack',
                   status: isBankable ? 'active' : 'locked',
-                  metric: isBankable ? 'Full access unlocked' : `Requires FICO® SBSS 160+`,
+                  metric: isBankable ? `Full access unlocked · 8–15% APR` : `Requires SBSS 160+ (${160 - bankableScore} pts away)`,
                   color: '#f59e0b',
                   cta: '/app/access-funding',
                   ctaLabel: 'Access Bank Products',
