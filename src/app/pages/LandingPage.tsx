@@ -40,8 +40,16 @@ function FadeIn({ children, delay = 0, direction = 'up' as 'up' | 'left' | 'righ
 
 // ════════════════════════════════════════════════════════════════════════════════
 // LIVE SCORE CARD — Hero right column
+// FICO SBSS scale: 0–300 | 160 = bankability threshold
+//   Poor 1–159 | Fair 160–189 | Good 190–209 | Excellent 210–300
+// This card shows a real-world example: SBSS 270 (Excellent) → $125K funded
 // ════════════════════════════════════════════════════════════════════════════════
 function LiveScoreCard() {
+  // SBSS 270 out of 300 = 90% of scale
+  const sbssScore = 270;
+  const sbssMax = 300;
+  const sbssPercent = Math.round((sbssScore / sbssMax) * 100);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 32, scale: 0.97 }}
@@ -51,7 +59,7 @@ function LiveScoreCard() {
         background: '#0d1117',
         border: '1px solid rgba(16,185,129,0.3)',
         borderRadius: '16px',
-        padding: '32px',
+        padding: '28px',
         maxWidth: '380px',
         width: '100%',
         boxShadow: '0 0 80px rgba(16,185,129,0.12), 0 0 0 1px rgba(16,185,129,0.08)',
@@ -73,119 +81,128 @@ function LiveScoreCard() {
         pointerEvents: 'none',
       }} />
 
-      {/* Header label */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: '20px',
-      }}>
-        <div style={{
-          fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700,
-          color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.15em',
-        }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
           FORGE™ Capital Readiness Profile
         </div>
-        <div style={{
-          padding: '3px 8px', background: 'rgba(16,185,129,0.12)',
-          border: '1px solid rgba(16,185,129,0.25)', borderRadius: '4px',
-          fontFamily: 'var(--font-body)', fontSize: '10px', color: '#10b981',
-        }}>
+        <div style={{ padding: '3px 8px', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '4px', fontFamily: 'var(--font-body)', fontSize: '10px', color: '#10b981' }}>
           LIVE PREVIEW
         </div>
       </div>
 
-      {/* Score */}
-      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <div style={{
-          fontFamily: 'var(--font-display)', fontSize: '80px', fontWeight: 900,
-          color: '#ffffff', lineHeight: 1, marginBottom: '4px',
-          textShadow: '0 0 40px rgba(16,185,129,0.3)',
-        }}>
-          741
+      {/* Funded amount — primary identity anchor */}
+      <div style={{ textAlign: 'center', marginBottom: '6px' }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: '6px' }}>
+          Approved &amp; Funded
         </div>
-        <div style={{
-          fontFamily: 'var(--font-body)', fontSize: '13px',
-          color: '#10b981', fontWeight: 600, letterSpacing: '0.05em',
-        }}>
-          Bankable · Goal #2 Complete
-        </div>
-      </div>
-
-      {/* Score bar */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{
-          height: '6px', background: 'rgba(255,255,255,0.08)',
-          borderRadius: '999px', overflow: 'hidden',
-        }}>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: '74%' }}
-            transition={{ delay: 0.9, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-            style={{ height: '100%', background: 'linear-gradient(90deg, #10b981, #34d399)', borderRadius: '999px' }}
-          />
-        </div>
-        <div style={{
-          display: 'flex', justifyContent: 'space-between',
-          marginTop: '6px',
-        }}>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>0</span>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>1000</span>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.7, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          style={{ fontFamily: 'var(--font-display)', fontSize: '62px', fontWeight: 900, color: '#ffffff', lineHeight: 1, textShadow: '0 0 40px rgba(16,185,129,0.35)' }}
+        >
+          $125,000
+        </motion.div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '6px' }}>
+          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: '#10b981', fontWeight: 700 }}>Business Term Loan · Funded</span>
         </div>
       </div>
 
-      {/* Capital products */}
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{
-          fontFamily: 'var(--font-body)', fontSize: '10px', color: 'rgba(255,255,255,0.4)',
-          textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '10px',
-        }}>
-          Capital Paths Open
+      {/* Divider */}
+      <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '16px 0' }} />
+
+      {/* FICO SBSS Score */}
+      <div style={{ marginBottom: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '3px' }}>
+              FICO SBSS Score
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: '38px', fontWeight: 900, color: '#10b981', lineHeight: 1 }}>
+                {sbssScore}
+              </span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>
+                / {sbssMax}
+              </span>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ padding: '4px 10px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', borderRadius: '6px', fontFamily: 'var(--font-body)', fontSize: '11px', color: '#10b981', fontWeight: 700 }}>
+              Excellent
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>
+              210–300 range
+            </div>
+          </div>
+        </div>
+
+        {/* SBSS bar with threshold markers */}
+        <div style={{ position: 'relative', marginBottom: '6px' }}>
+          <div style={{ height: '7px', background: 'rgba(255,255,255,0.07)', borderRadius: '999px', overflow: 'visible', position: 'relative' }}>
+            {/* Segments: Poor (red) | Fair (amber) | Good (teal) | Excellent (green) */}
+            <div style={{ position: 'absolute', inset: 0, borderRadius: '999px', overflow: 'hidden', display: 'flex' }}>
+              <div style={{ width: `${(159/300)*100}%`, background: 'rgba(239,68,68,0.25)' }} />
+              <div style={{ width: `${(30/300)*100}%`, background: 'rgba(245,158,11,0.3)' }} />
+              <div style={{ width: `${(20/300)*100}%`, background: 'rgba(20,184,166,0.35)' }} />
+              <div style={{ flex: 1, background: 'rgba(16,185,129,0.2)' }} />
+            </div>
+            {/* Filled progress */}
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${sbssPercent}%` }}
+              transition={{ delay: 0.9, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+              style={{ position: 'absolute', top: 0, left: 0, height: '100%', background: 'linear-gradient(90deg, #f59e0b 0%, #10b981 55%, #34d399 100%)', borderRadius: '999px', boxShadow: '0 0 10px rgba(16,185,129,0.5)' }}
+            />
+            {/* Threshold marker at 160 */}
+            <div style={{ position: 'absolute', top: '-3px', left: `${(160/300)*100}%`, width: '2px', height: '13px', background: 'rgba(255,255,255,0.5)', borderRadius: '1px' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'rgba(255,255,255,0.25)' }}>0 · Poor</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'rgba(255,255,255,0.45)', fontWeight: 600 }}>160 = bankable threshold</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: '#10b981', fontWeight: 700 }}>300 · Max</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Capital paths unlocked at 270 */}
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>
+          Capital Paths Unlocked
         </div>
         {[
-          { label: 'SBA 7(a) Loan', amount: 'Up to $5M', conf: 'High' },
-          { label: 'Business Line of Credit', amount: 'Up to $250K', conf: 'High' },
-          { label: 'Equipment Financing', amount: 'Up to $500K', conf: 'High' },
+          { label: 'SBA 7(a) Loan', amount: 'Up to $5M', conf: 'High', color: '#10b981' },
+          { label: 'Business Credit Line', amount: 'Up to $750K', conf: 'High', color: '#10b981' },
+          { label: 'Equipment Financing', amount: 'Up to $500K', conf: 'High', color: '#10b981' },
         ].map((p) => (
-          <div key={p.label} style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '8px 10px', borderRadius: '6px', background: 'rgba(16,185,129,0.06)',
-            border: '1px solid rgba(16,185,129,0.12)', marginBottom: '6px',
-          }}>
-            <div>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#ffffff', fontWeight: 600 }}>
-                {p.label}
-              </div>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>
-                {p.amount}
+          <div key={p.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '6px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.12)', marginBottom: '5px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: p.color, flexShrink: 0 }} />
+              <div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#ffffff', fontWeight: 600 }}>{p.label}</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>{p.amount}</div>
               </div>
             </div>
-            <div style={{
-              padding: '2px 7px', background: 'rgba(16,185,129,0.15)',
-              borderRadius: '4px', fontFamily: 'var(--font-body)',
-              fontSize: '9px', color: '#10b981', fontWeight: 700,
-            }}>
+            <div style={{ padding: '2px 7px', background: 'rgba(16,185,129,0.15)', borderRadius: '4px', fontFamily: 'var(--font-body)', fontSize: '9px', color: '#10b981', fontWeight: 700 }}>
               {p.conf}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Footer */}
-      <div style={{
-        padding: '12px', background: 'rgba(255,255,255,0.04)',
-        borderRadius: '8px', textAlign: 'center',
-      }}>
-        <div style={{
-          fontFamily: 'var(--font-body)', fontSize: '11px',
-          color: 'rgba(255,255,255,0.5)', marginBottom: '4px',
-        }}>
-          This profile took 10 minutes to build
+      {/* Footer CTA */}
+      <div style={{ padding: '11px 14px', background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.18)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '2px' }}>
+            This profile took 10 minutes to build
+          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: '#10b981' }}>
+            See your real profile →
+          </div>
         </div>
-        <div style={{
-          fontFamily: 'var(--font-display)', fontSize: '13px',
-          fontWeight: 700, color: '#10b981',
-        }}>
-          See your real profile →
-        </div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 900, color: '#10b981', opacity: 0.6 }}>✓</div>
       </div>
     </motion.div>
   );
