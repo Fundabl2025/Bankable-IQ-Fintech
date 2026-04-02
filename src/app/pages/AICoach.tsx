@@ -73,6 +73,8 @@ interface RoadmapStage {
   name: string;
   headline: string;
   narrative: string;
+  capitalRange: string;
+  aprRange: string;
   color: string;
   bg: string;
   border: string;
@@ -194,6 +196,8 @@ function buildDynamicRoadmap(ctx: CoachContext, progress: ReturnType<typeof getC
     bg: 'rgba(59,130,246,0.06)',
     border: 'rgba(59,130,246,0.2)',
     timeframe: s.completedModules >= 4 ? '≈7–14 days to finish' : '≈14–30 days',
+    capitalRange: '$10K – $150K',
+    aprRange: '35%+ APR',
     capitalUnlock: 'Unlocks: MCA · Working Capital · Revenue-Based Loans · Credit Cards',
     complete: s.completedModules >= 5,
     items: [
@@ -246,6 +250,8 @@ function buildDynamicRoadmap(ctx: CoachContext, progress: ReturnType<typeof getC
     bg: 'rgba(16,185,129,0.06)',
     border: 'rgba(16,185,129,0.2)',
     timeframe: '≈30–120 days',
+    capitalRange: '$50K – $500K',
+    aprRange: '15–25% APR',
     capitalUnlock: 'Unlocks: Business Credit Line · Equipment Financing · Business Term Loan · Credit Unions',
     complete: s.completedModules >= 9 && s.preQualCount > 0,
     items: [
@@ -302,6 +308,8 @@ function buildDynamicRoadmap(ctx: CoachContext, progress: ReturnType<typeof getC
     bg: 'rgba(139,92,246,0.06)',
     border: 'rgba(139,92,246,0.2)',
     timeframe: s.bankableScore >= 130 ? '≈60–120 days' : '≈120–240 days',
+    capitalRange: '$250K – $5M+',
+    aprRange: '8–15% APR',
     capitalUnlock: 'Unlocks: SBA 7(a) & 504 · Bank Term Loans · DSCR Loans · Construction · Full Institutional Suite',
     complete: s.bankableScore >= 160,
     items: [
@@ -513,7 +521,7 @@ export function AICoach() {
 
     // Opening message from FORGE™
     if (ctx) {
-      const greeting = `${ctx.name ? `${ctx.name}, ` : ''}I've analyzed your complete FundReady profile. Here's where you stand:\n\n**FundScore: ${ctx.fundScore}/1000** (${ctx.tier})\n**SBSS: ${ctx.bankableScore}/300** — ${ctx.pointsToBank > 0 ? `${ctx.pointsToBank} points to institutional capital` : '✓ Bankable threshold crossed'}\n**Compliance: ${ctx.completedModules}/${ctx.totalModules} modules** complete\n**Pre-qualified: ${ctx.preQualCount} funding product${ctx.preQualCount !== 1 ? 's'  : ''}** ready to apply\n\nYour personalized 3-stage roadmap is below. Ask me anything — I know your entire profile.`;
+      const greeting = `${ctx.name ? `${ctx.name}, ` : ''}I've analyzed your complete FundReady profile. Here's where you stand:\n\n**FundScore: ${ctx.fundScore}/1000** (${ctx.tier})\n**SBSS: ${ctx.bankableScore}/300** — ${ctx.pointsToBank > 0 ? `${ctx.pointsToBank} points to institutional capital` : '✓ Bankable threshold crossed'}\n**Compliance: ${ctx.completedModules}/${ctx.totalModules} modules** complete\n**Pre-qualified: ${ctx.preQualCount} funding product${ctx.preQualCount !== 1 ? 's' : ''}** ready to apply\n\n**Your Capital Progression:**\n→ Stage 1 (Fundable): $10K–$150K at 35%+ APR — alternative capital, available now\n→ Stage 2 (Momentum): $50K–$500K at 15–25% APR — traditional products, ~30–120 days\n→ Stage 3 (Bankable): $250K–$5M+ at 8–15% APR — institutional capital, SBSS 160+ required\n\nYou're currently in **Stage ${ctx.stage}**. ${ctx.pointsToBank > 0 ? `Getting to Stage 3 saves ~$62K/year on a $250K loan.` : `You've reached the institutional capital tier.`} Your personalized roadmap is below — ask me anything.`;
       setMessages([{ role: 'forge', text: greeting, timestamp: Date.now() }]);
     }
   }, [ctx]);
@@ -701,6 +709,7 @@ export function AICoach() {
 
   return (
     <div style={{ maxWidth: '860px', margin: '0 auto', padding: '24px 20px' }}>
+      <style>{`@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }`}</style>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
@@ -716,8 +725,22 @@ export function AICoach() {
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 900, color: 'var(--foreground)', lineHeight: 1 }}>
               FORGE™ AI Coach
             </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
-              {ctx.name ? `${ctx.name}'s` : 'Your'} personalized capital roadmap · Stage {ctx.stage} of 3
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
+                {ctx.name ? `${ctx.name}'s` : 'Your'} personalized capital roadmap · Stage {ctx.stage} of 3
+              </span>
+              <span style={{
+                display: 'flex', alignItems: 'center', gap: '4px',
+                padding: '1px 6px', borderRadius: '4px',
+                background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
+              }}>
+                <span style={{
+                  width: '5px', height: '5px', borderRadius: '50%',
+                  background: '#10b981', display: 'inline-block',
+                  animation: 'pulse 2s infinite',
+                }} />
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Live</span>
+              </span>
             </div>
           </div>
         </div>
@@ -806,7 +829,8 @@ export function AICoach() {
                   {stage.complete ? <CheckCircle style={{ width: '14px', height: '14px' }} /> : <span style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 800 }}>{stage.number}</span>}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
+                  {/* Stage title row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
                     <span style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 800, color: 'var(--foreground)' }}>
                       Stage {stage.number}: {stage.name}
                     </span>
@@ -828,6 +852,36 @@ export function AICoach() {
                       {doneCount}/{stage.items.length} · {stage.timeframe}
                     </span>
                   </div>
+                  {/* Capital potential + APR cost — the money line */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap' }}>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      padding: '4px 10px', borderRadius: '6px',
+                      background: `${stage.color}12`, border: `1px solid ${stage.color}30`,
+                    }}>
+                      <DollarSign style={{ width: '12px', height: '12px', color: stage.color }} />
+                      <span style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 800, color: stage.color }}>
+                        {stage.capitalRange}
+                      </span>
+                    </div>
+                    <div style={{
+                      padding: '4px 10px', borderRadius: '6px',
+                      background: stage.number === 3 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+                      border: `1px solid ${stage.number === 3 ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.2)'}`,
+                    }}>
+                      <span style={{
+                        fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700,
+                        color: stage.number === 3 ? '#10b981' : stage.number === 2 ? '#f59e0b' : '#ef4444',
+                      }}>
+                        {stage.aprRange}
+                      </span>
+                    </div>
+                    {stage.number === 3 && (
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: '#10b981', fontWeight: 600 }}>
+                        ↓ Save ~$62K/yr vs Stage 1
+                      </span>
+                    )}
+                  </div>
                   <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: stage.color, marginBottom: '2px' }}>
                     {stage.headline}
                   </div>
@@ -848,13 +902,26 @@ export function AICoach() {
                     style={{ overflow: 'hidden' }}
                   >
                     <div style={{ padding: '0 18px 16px' }}>
-                      {/* Capital unlock */}
+                      {/* Capital unlock + cost of capital banner */}
                       <div style={{
-                        padding: '8px 12px', borderRadius: '7px', marginBottom: '12px',
+                        padding: '10px 14px', borderRadius: '9px', marginBottom: '12px',
                         background: `${stage.color}0e`, border: `1px solid ${stage.color}22`,
-                        fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: stage.color,
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px',
                       }}>
-                        🔓 {stage.capitalUnlock}
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: stage.color }}>
+                          🔓 {stage.capitalUnlock}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 800, color: stage.color }}>{stage.capitalRange}</div>
+                            <div style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Capital Range</div>
+                          </div>
+                          <div style={{ width: '1px', height: '28px', background: `${stage.color}25` }} />
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 800, color: stage.number === 3 ? '#10b981' : stage.number === 2 ? '#f59e0b' : '#ef4444' }}>{stage.aprRange}</div>
+                            <div style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Cost of Capital</div>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Items */}
