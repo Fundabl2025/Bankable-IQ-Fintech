@@ -18,6 +18,7 @@ export const PROMPT_REGISTRY = {
   'forge-chat-revenue': { key: 'forge-chat-revenue',  version: 'v1.0' },
   'forge-chat-default': { key: 'forge-chat-default',  version: 'v1.0' },
   'forge-roadmap-s1':   { key: 'forge-roadmap-s1',    version: 'v1.0' },
+  'forge-chat-personal-credit': { key: 'forge-chat-personal-credit', version: 'v1.0' },
   'forge-roadmap-s2':   { key: 'forge-roadmap-s2',    version: 'v1.0' },
   'forge-roadmap-s3':   { key: 'forge-roadmap-s3',    version: 'v1.0' },
 } as const;

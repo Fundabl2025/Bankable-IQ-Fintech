@@ -170,3 +170,27 @@ export function defaultResponse(ctx: DefaultCtx): string {
   const who = ctx.name ? ctx.name : 'your business';
   return `Good question. Based on ${who === 'your business' ? 'your' : `${ctx.name}'s`} current profile — FundScore ${ctx.fundScore}, SBSS ${ctx.bankableScore}/300, ${ctx.completedModules}/${ctx.totalModules} compliance modules, ${ctx.preQualCount} pre-qualified products — here's what I'd focus on:\n\n${ctx.stage === 1 ? `Stage 1 Foundation: Complete ${ctx.topIncompleteModule || 'remaining compliance modules'} to unlock your first funding products.` : ctx.stage === 2 ? `Stage 2 Momentum: You have ${ctx.preQualCount} products ready. Apply now to start your repayment history and push your SBSS toward 160.` : `Stage 3 Bankable: You're ${ctx.pointsToBank} points from the institutional capital threshold. Focus on comparable credit and the CD loan strategy.`}\n\nAsk me anything more specific — timeline, specific products, what's blocking you, or how a particular score works.`;
 }
+
+// ── Intent: personal credit ───────────────────────────────────────────────────
+
+export interface PersonalCreditCtx {
+  name: string;
+  bankableScore: number;
+  pointsToBank: number;
+  dimAvg: Record<string, number>;
+  personalCredit: { composite: number; utilizationPct: number; hasAnyDerog: boolean; inquiries30d: string; } | null;
+}
+export function personalCreditResponse(ctx: PersonalCreditCtx): string {
+  const who = ctx.name ? ctx.name : 'Your';
+  const pc = ctx.personalCredit;
+  const composite = pc?.composite ?? 0;
+  const utilPct = pc?.utilizationPct ?? 0;
+  const hasDerog = pc?.hasAnyDerog ?? false;
+  const inq = pc?.inquiries30d ?? '0';
+  const pcDimPct = Math.round((ctx.dimAvg['P'] || 0) * 100);
+
+  const scoreLabel = composite >= 750 ? 'Exceptional' : composite >= 700 ? 'Good' : composite >= 660 ? 'Fair' : 'Needs work';
+  const gate = composite >= 700 ? '700+ gate cleared' : `${700 - composite} points from the 700 gate`;
+
+  return `${who === 'Your' ? 'Your' : `${ctx.name}'s`} personal credit composite is estimated at **${composite}** (${scoreLabel}) — ${gate}.\n\nPersonal credit is **35% of your FICO SBSS score**, making it the single largest component. Your personal credit dimension is currently at ${pcDimPct}%.\n\nKey factors right now:\n- **Utilization:** ${utilPct}% — ${utilPct <= 10 ? 'excellent, keep it here' : utilPct <= 30 ? 'good, target under 10% for best SBSS impact' : 'high — paying down to under 30% is the fastest credit move'}\n- **Inquiries (30 days):** ${inq === '0' ? 'none — ideal' : inq + ' inquiry/ies — limit new applications until score stabilizes'}\n- **Derogatory items:** ${hasDerog ? 'flagged — address these first, they suppress your score' : 'none found — strong baseline'}\n\nThe SBSS 160 threshold requires your personal credit dimension to be above ~60%. Full report: [Personal Credit Report →](/app/status-reports/personal-credit).`;
+}

@@ -16,7 +16,7 @@ import {
   Send, Zap, TrendingUp, Lock, DollarSign, Shield,
   MessageSquare, RotateCcw, Sparkles,
 } from 'lucide-react';
-import { computeScore } from './business-assessment/engine';
+import { computeScore, computeExtendedResults } from './business-assessment/engine';
 import { DIM_LABELS } from './business-assessment/types';
 import { evaluateProducts } from './business-assessment/productEligibility';
 import { getAllAuditItems } from '../utils/businessData';
@@ -28,7 +28,7 @@ import { greetingTemplate } from '../lib/forge/chat-greeting';
 import {
   nextStepResponse, sbaResponse, scoreExplainResponse, sbssResponse,
   timelineResponse, aprResponse, preQualResponse, whatIsForgeResponse,
-  modulesResponse, blockersResponse, revenueResponse, defaultResponse,
+  modulesResponse, blockersResponse, revenueResponse, personalCreditResponse, defaultResponse,
 } from '../lib/forge/chat-responses';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -59,6 +59,7 @@ interface CoachContext {
   pointsToBank: number;
   weakestDim: string;
   weakestDimScore: number;
+  personalCredit: { composite: number; utilizationPct: number; hasAnyDerog: boolean; inquiries30d: string; } | null;
 }
 
 interface ChatMessage {
@@ -99,6 +100,7 @@ function buildContext(raw: string): CoachContext | null {
   try {
     const data = JSON.parse(raw);
     const score = computeScore(data);
+    const extended = computeExtendedResults(data);
     const progress = getComplianceProgress();
     const auditItems = getAllAuditItems();
     const preQual = getPreQualifiedPrograms();
@@ -172,6 +174,9 @@ function buildContext(raw: string): CoachContext | null {
       pointsToBank: Math.max(0, 160 - score.bankableScore),
       weakestDim: DIM_LABELS[weakest?.[0]] || 'Compliance',
       weakestDimScore: Math.round((weakest?.[1] || 0) * 100),
+      personalCredit: extended.personalCreditSummary
+        ? { composite: extended.personalCreditSummary.composite, utilizationPct: extended.personalCreditSummary.utilizationPct, hasAnyDerog: extended.personalCreditSummary.hasAnyDerog, inquiries30d: extended.personalCreditSummary.inquiries30d }
+        : null,
     };
   } catch { return null; }
 }
@@ -389,6 +394,9 @@ function getForgeResponse(input: string, ctx: CoachContext): string {
   }
   if (/revenue|cash flow|monthly|income|sales/i.test(q)) {
     return revenueResponse(ctx);
+  }
+  if (/personal credit|my credit score|credit report|fico score|bureau|experian|transunion|equifax|credit utilization/i.test(q)) {
+    return personalCreditResponse(ctx);
   }
 
   return defaultResponse(ctx);
@@ -1098,7 +1106,7 @@ export function AICoach() {
           { label: 'Bankable Status Report', path: '/app/status-reports/bankable-status' },
           { label: 'Business FICO Analysis', path: '/app/status-reports/business-fico' },
           { label: 'Capital Forecast', path: '/app/status-reports/estimated-funding' },
-          { label: "Owner's Credit Report", path: '/app/status-reports/owners-credit' },
+          { label: 'Personal Credit Report', path: '/app/status-reports/personal-credit' },
         ].map(r => (
           <Link key={r.path} to={r.path} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',

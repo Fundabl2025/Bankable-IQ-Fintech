@@ -115,6 +115,72 @@ export function StatusReports() {
           </div>
         </motion.div>
 
+        {/* ── REPORT CARDS ── 4-up navigation grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.04 }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px', marginBottom: '24px' }}
+        >
+          {[
+            {
+              label: 'Bankable Status',
+              sub: passCount + '/' + totalCount + ' items pass',
+              value: bankablePct + '%',
+              valueColor: bankablePct >= 85 ? '#10b981' : bankablePct >= 60 ? '#f59e0b' : '#ef4444',
+              accent: bankablePct >= 85 ? 'rgba(16,185,129,0.08)' : bankablePct >= 60 ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)',
+              border: bankablePct >= 85 ? 'rgba(16,185,129,0.2)' : bankablePct >= 60 ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)',
+              tag: bankablePct >= 85 ? 'Compliant' : 'Action needed',
+              path: '/app/status-reports/bankable-status',
+            },
+            {
+              label: 'Estimated Funding',
+              sub: 'Capital ceiling',
+              value: extended.fundingRange.businessOnlyMin >= 1000000 ? '$' + (extended.fundingRange.businessOnlyMin / 1000000).toFixed(1) + 'M' : '$' + Math.round(extended.fundingRange.businessOnlyMin / 1000) + 'K',
+              valueColor: '#3b82f6',
+              accent: 'rgba(59,130,246,0.06)',
+              border: 'rgba(59,130,246,0.2)',
+              tag: extended.fundingRange.currentBand || 'See report',
+              path: '/app/status-reports/estimated-funding',
+            },
+            {
+              label: 'Business FICO',
+              sub: 'FICO SBSS · 0-300',
+              value: String(sbss),
+              valueColor: sband.color,
+              accent: sbss >= 160 ? 'rgba(16,185,129,0.06)' : sbss >= 120 ? 'rgba(245,158,11,0.06)' : 'rgba(239,68,68,0.06)',
+              border: sbss >= 160 ? 'rgba(16,185,129,0.2)' : sbss >= 120 ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)',
+              tag: sband.label,
+              path: '/app/status-reports/business-fico',
+            },
+            {
+              label: 'Personal Credit',
+              sub: 'Composite estimate',
+              value: extended.personalCreditSummary ? String(extended.personalCreditSummary.composite) : '—',
+              valueColor: (extended.personalCreditSummary && extended.personalCreditSummary.composite >= 700) ? '#10b981' : (extended.personalCreditSummary && extended.personalCreditSummary.composite >= 620) ? '#f59e0b' : '#ef4444',
+              accent: (extended.personalCreditSummary && extended.personalCreditSummary.composite >= 700) ? 'rgba(16,185,129,0.06)' : 'rgba(245,158,11,0.06)',
+              border: (extended.personalCreditSummary && extended.personalCreditSummary.composite >= 700) ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)',
+              tag: (extended.personalCreditSummary && extended.personalCreditSummary.composite >= 700) ? '700+ gate checked' : 'Below 700 target',
+              path: '/app/status-reports/personal-credit',
+            },
+          ].map(card => (
+            <Link
+              key={card.label}
+              to={card.path}
+              style={{ textDecoration: 'none', display: 'block', padding: '16px 18px', borderRadius: '14px', background: card.accent, border: '1px solid ' + card.border, transition: 'transform 0.12s, box-shadow 0.12s', cursor: 'pointer' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
+            >
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: '6px' }}>{card.label}</p>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', lineHeight: 1, color: card.valueColor, marginBottom: '4px' }}>{card.value}</div>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', margin: '0 0 10px' }}>{card.sub}</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 600, color: card.valueColor }}>{card.tag}</span>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>View →</span>
+              </div>
+            </Link>
+          ))}
+        </motion.div>
         {/* ── SCORE HERO ── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
