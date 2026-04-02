@@ -23,6 +23,7 @@ import { getAllAuditItems } from '../utils/businessData';
 import { complianceModules, getComplianceProgress } from '../utils/lenderComplianceModules';
 import { getPreQualifiedPrograms } from '../utils/fundingEligibility';
 import { checkForgeOutput } from '../lib/ai/guardrails';
+import { logEvent } from '../lib/analytics/events';
 import { greetingTemplate } from '../lib/forge/chat-greeting';
 import {
   nextStepResponse, sbaResponse, scoreExplainResponse, sbssResponse,
@@ -419,6 +420,8 @@ export function AICoach() {
   const navigate = useNavigate();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // ── Analytics refs — track session message count without triggering renders ──
+  const messageIndexRef = useRef(0);
 
   const [ctx, setCtx] = useState<CoachContext | null>(null);
   const [progress, setProgress] = useState<ReturnType<typeof getComplianceProgress>>({});
@@ -475,6 +478,8 @@ export function AICoach() {
 
     // Opening message from FORGE™
     if (ctx) {
+      messageIndexRef.current = 0;
+      logEvent({ event_name: 'forge_session_started', payload: { fund_score: ctx.fundScore, stage: ctx.stage } });
       const greeting = greetingTemplate(ctx);
       setMessages([{ role: 'forge', text: checkForgeOutput(greeting, 'greeting'), timestamp: Date.now() }]);
     }
@@ -483,6 +488,9 @@ export function AICoach() {
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || !ctx) return;
     const userMsg: ChatMessage = { role: 'user', text: text.trim(), timestamp: Date.now() };
+    // Fire before appending so message_index reflects position in session (0-based)
+    logEvent({ event_name: 'forge_message_sent', payload: { message_length: text.trim().length, message_index: messageIndexRef.current } });
+    messageIndexRef.current += 1;
     setMessages(prev => [...prev, userMsg]);
     setInputValue('');
     setIsTyping(true);
@@ -699,7 +707,7 @@ export function AICoach() {
           </div>
         </div>
         <button
-          onClick={() => { setPhase('idle'); setMessages([]); }}
+          onClick={() => { setPhase('idle'); setMessages([]); messageIndexRef.current = 0; }}
           style={{
             display: 'flex', alignItems: 'center', gap: '6px',
             padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',

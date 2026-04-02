@@ -32,9 +32,11 @@ const MODULE_TIME: Record<string, string> = {
 };
 
 // ── Upgrade Modal ─────────────────────────────────────────────────────────────
-function UpgradeModal({ onClose }: { onClose: () => void }) {
+function UpgradeModal({ onClose, source }: { onClose: () => void; source: string }) {
   const [pricing, setPricing] = useState(getMembershipPricingSync());
   useEffect(() => { getMembershipPricing().then(setPricing); }, []);
+  // Fire once when modal is actually rendered on screen (not on CTA click)
+  useEffect(() => { logEvent({ event_name: 'upgrade_modal_viewed', payload: { source } }); }, []);
 
   const TIERS = [
     {
@@ -280,7 +282,7 @@ export function LenderCompliance() {
 
   const openUpgrade = () => {
     logEvent({ event_name: 'upgrade_started', payload: { source: 'lender_compliance' } });
-    openUpgrade();
+    setShowUpgrade(true);
   };
 
   useEffect(() => {
@@ -311,7 +313,7 @@ export function LenderCompliance() {
 
   return (
     <div className="flex-1 min-h-screen overflow-auto" style={{ backgroundColor: 'var(--background)' }}>
-      <AnimatePresence>{showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}</AnimatePresence>
+      <AnimatePresence>{showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} source="lender_compliance" />}</AnimatePresence>
       <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
 
         {/* FREE-TIER UPGRADE BANNER */}

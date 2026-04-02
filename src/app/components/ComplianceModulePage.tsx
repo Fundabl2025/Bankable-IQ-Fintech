@@ -311,6 +311,11 @@ export function ComplianceModulePage({ moduleId, icon, tasks }: ComplianceModule
     };
   }, []);
 
+  // Fire once per mount — each navigation to a module page is a true start
+  useEffect(() => {
+    logEvent({ event_name: 'module_started', payload: { module_id: moduleId } });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Task completion — writes to BOTH systems ──────────────────────
   const isTaskComplete = (taskId: string): boolean => {
     // Primary: audit item system (if it exists there)
