@@ -30,15 +30,71 @@ export function storePreQualifiedPrograms(programIds: string[]): void {
   window.dispatchEvent(new Event('scanDataUpdated'));
 }
 
-// Get pre-qualified programs from localStorage
-export function getPreQualifiedPrograms(): string[] {
-  const stored = localStorage.getItem('preQualifiedPrograms');
-  if (!stored) return [];
+// Derive pre-qualified list from unified_assessment (new system) when available
+function deriveFromUnifiedAssessment(): string[] {
   try {
-    return JSON.parse(stored);
+    const raw = localStorage.getItem('unified_assessment');
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    const creditMap: Record<string, number> = {
+      exceptional: 850, very_good: 770, good: 700, fair: 620, poor: 550, unknown: 580,
+    };
+    const revenueMap: Record<string, number> = {
+      under_5k: 2500, '5k_15k': 10000, '15k_40k': 27500, '40k_100k': 70000, over_100k: 125000,
+    };
+    const credit = Math.min(
+      creditMap[data.experian] ?? 580,
+      creditMap[data.transunion] ?? 580,
+      creditMap[data.equifax] ?? 580
+    );
+    const monthlyRev = revenueMap[data.monthlyRevenue] ?? 0;
+    const now = new Date();
+    const start = data.startDate ? new Date(data.startDate.year, (data.startDate.month || 1) - 1) : null;
+    const ageMonths = start ? (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()) : 0;
+    const hasBankruptcy = data.hasBankruptcy === 'recent' || data.hasBankruptcy === 'aging';
+    const hasEIN = data.hasEIN === true;
+
+    const qualified: string[] = [];
+
+    if (ageMonths >= 3 && monthlyRev >= 5000 && !hasBankruptcy) qualified.push('merchant-advance');
+    if (ageMonths >= 6 && monthlyRev >= 10000 && !hasBankruptcy) qualified.push('revenue-based-loan');
+    if (ageMonths >= 6 && monthlyRev >= 10000 && credit >= 550) qualified.push('business-term-loan');
+    if (ageMonths >= 6 && monthlyRev >= 5000 && credit >= 580) qualified.push('business-credit-line');
+    if (credit >= 580 && monthlyRev >= 5000 && hasEIN) qualified.push('equipment-financing');
+    if (credit >= 680 && hasEIN) qualified.push('business-credit-cards');
+    if (credit >= 640) qualified.push('personal-credit-cards');
+    if (monthlyRev >= 15000 && data.arBalance && data.arBalance !== 'none') qualified.push('receivable-factoring');
+    if (credit >= 640 && ageMonths >= 12 && monthlyRev >= 5000) qualified.push('credit-union-loans');
+    if (credit >= 680 && ageMonths >= 24 && monthlyRev >= 15000 && hasEIN && !hasBankruptcy) qualified.push('sba-business-loan');
+    if (monthlyRev >= 25000 && data.arBalance && data.arBalance !== 'none') qualified.push('accounts-receivable-finance');
+    if (monthlyRev >= 15000 && data.inventoryValue && data.inventoryValue !== 'none') qualified.push('inventory-line-of-credit');
+    if (data.purchaseOrders === 'yes' && monthlyRev >= 25000) qualified.push('purchase-order-finance');
+    if (data.ownProperty === 'yes' && credit >= 660 && ageMonths >= 24) qualified.push('dscr-loans');
+    if (data.ownProperty === 'yes' && credit >= 640) qualified.push('bridge-loans');
+    if (data.ownProperty === 'yes' && credit >= 660 && ageMonths >= 24 && monthlyRev >= 25000) qualified.push('construction-loans');
+
+    return [...new Set(qualified)];
   } catch {
     return [];
   }
+}
+
+// Get pre-qualified programs from localStorage.
+// Falls back to deriving from unified_assessment (new system) when key is absent.
+export function getPreQualifiedPrograms(): string[] {
+  const stored = localStorage.getItem('preQualifiedPrograms');
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch { /* fall through */ }
+  }
+  // Derive from unified_assessment and cache for this session
+  const derived = deriveFromUnifiedAssessment();
+  if (derived.length > 0) {
+    try { localStorage.setItem('preQualifiedPrograms', JSON.stringify(derived)); } catch { /* ignore */ }
+  }
+  return derived;
 }
 
 // Check if a specific program is pre-qualified

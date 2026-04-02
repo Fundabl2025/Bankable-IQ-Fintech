@@ -1,102 +1,91 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// FUNDREADY™ — FINANCES PAGE
-// ZenBusiness-inspired layout · FundReady branding · Capital-readiness framing
-// All data sourced from assessment (real) + simulated trend (labeled clearly)
+// FUNDREADY™ — FINANCES  /  Lender Financial Profile
+// Purpose: Show the user EXACTLY how an underwriter reads their finances,
+//          where they stand vs. lender thresholds, and the one move to make next.
+//
+// Elon  → No fake data. Show what we know (reported ranges), clearly labelled.
+//          Threshold bars > fabricated charts. Numbers mean nothing without
+//          benchmarks. One primary action per metric.
+//
+// Chase → Identity language: "A lender sees you as..." creates belief + urgency.
+//          Every number paired with "what this unlocks" or "what this blocks".
+//          Completion pull on the document checklist.
+//
+// Data sources (100% real, no simulation):
+//   - unified_assessment → categorical ranges (rev, balance, NSF, age, etc.)
+//   - computeScore()     → dimAvg.F (Financial Health score 0-1)
+//   - localStorage flags → doc upload status, integrate_visited
 // ════════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-} from 'recharts';
-import {
-  TrendingUp, TrendingDown, DollarSign, AlertCircle,
-  CheckCircle2, ArrowRight, Building2, CreditCard,
-  FileText, BarChart3, Zap, ChevronRight, Wallet,
-  AlertTriangle, Lock,
+  TrendingUp, DollarSign, AlertCircle, CheckCircle2,
+  ArrowRight, Wallet, FileText, BarChart3, ChevronRight,
+  AlertTriangle, Zap, Building2, CreditCard,
 } from 'lucide-react';
 import { getDataItem } from '../lib/data-adapter';
 import { useAuth } from '../contexts/AuthContext';
 import { computeScore } from './business-assessment/engine';
 import type { UnifiedAnswers } from './business-assessment/types';
 
-// ── Value converters ──────────────────────────────────────────────────────────
-
-function revenueToMidpoint(v: string): number {
-  switch (v) {
-    case 'under_5k': return 3000;
-    case '5k_15k': return 10000;
-    case '15k_40k': return 27500;
-    case '40k_100k': return 70000;
-    case 'over_100k': return 125000;
-    default: return 0;
-  }
-}
+// ── Value label helpers (no fake midpoints — show honest ranges) ──────────────
 
 function revenueToLabel(v: string): string {
   switch (v) {
-    case 'under_5k': return '< $5K / mo';
-    case '5k_15k': return '$5K – $15K / mo';
-    case '15k_40k': return '$15K – $40K / mo';
-    case '40k_100k': return '$40K – $100K / mo';
+    case 'under_5k':  return '< $5K / mo';
+    case '5k_15k':    return '$5K – $15K / mo';
+    case '15k_40k':   return '$15K – $40K / mo';
+    case '40k_100k':  return '$40K – $100K / mo';
     case 'over_100k': return '$100K+ / mo';
     default: return 'Not reported';
   }
 }
 
-function balanceToMidpoint(v: string): number {
+function revenueTierIndex(v: string): number {
   switch (v) {
-    case 'near_zero': return 400;
-    case '500_2k': return 1250;
-    case '2k_10k': return 6000;
-    case '10k_25k': return 17500;
-    case 'over_25k': return 35000;
-    default: return 0;
+    case 'under_5k': return 0; case '5k_15k': return 1;
+    case '15k_40k': return 2; case '40k_100k': return 3;
+    case 'over_100k': return 4;
+    default: return -1;
   }
 }
 
 function balanceToLabel(v: string): string {
   switch (v) {
     case 'near_zero': return '~$0';
-    case '500_2k': return '$500 – $2K';
-    case '2k_10k': return '$2K – $10K';
-    case '10k_25k': return '$10K – $25K';
-    case 'over_25k': return '$25K+';
+    case '500_2k':    return '$500 – $2K';
+    case '2k_10k':    return '$2K – $10K';
+    case '10k_25k':   return '$10K – $25K';
+    case 'over_25k':  return '$25K+';
     default: return 'Not reported';
+  }
+}
+
+function balanceTierIndex(v: string): number {
+  switch (v) {
+    case 'near_zero': return 0; case '500_2k': return 1;
+    case '2k_10k': return 2; case '10k_25k': return 3;
+    case 'over_25k': return 4;
+    default: return -1;
   }
 }
 
 function nsfToLabel(v: string): string {
   switch (v) {
-    case '0': return '0 events';
-    case '1_2': return '1 – 2 events';
-    case '3_5': return '3 – 5 events';
-    case '5plus': return '5+ events';
+    case '0': return '0 events'; case '1_2': return '1 – 2';
+    case '3_5': return '3 – 5'; case '5plus': return '5+';
     default: return 'Not reported';
   }
 }
 
-function nsfToCount(v: string): number {
-  switch (v) { case '0': return 0; case '1_2': return 1; case '3_5': return 4; case '5plus': return 7; default: return 0; }
-}
-
-function arToLabel(v: string): string {
+function nsfTierIndex(v: string): number {
   switch (v) {
-    case 'none': return 'None';
-    case 'under_10k': return '< $10K';
-    case '10k_50k': return '$10K – $50K';
-    case '50k_250k': return '$50K – $250K';
-    case 'over_250k': return '$250K+';
-    default: return 'Not reported';
+    case '0': return 4; case '1_2': return 2;
+    case '3_5': return 1; case '5plus': return 0;
+    default: return -1;
   }
-}
-
-function formatMoney(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
-  return `$${n.toLocaleString()}`;
 }
 
 function getYearsInBusiness(startDate?: { month: number; year: number }): number {
@@ -105,40 +94,131 @@ function getYearsInBusiness(startDate?: { month: number; year: number }): number
   return Math.max(0, Math.round(months / 12 * 10) / 10);
 }
 
-// Generate 8-month simulated cash flow from balance midpoint
-function generateCashFlow(baseMid: number, revMid: number): { month: string; balance: number; revenue: number }[] {
-  const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'];
-  const seed = baseMid || 5000;
-  return months.map((month, i) => {
-    const drift = 1 + (i * 0.02); // slight upward trend
-    const noise = 0.85 + Math.sin(i * 1.7) * 0.12;
-    return {
-      month,
-      balance: Math.round(seed * drift * noise),
-      revenue: Math.round(revMid * (0.9 + Math.sin(i * 2.1 + 1) * 0.12)),
-    };
-  });
+function ageTierIndex(years: number): number {
+  if (years >= 2) return 4;
+  if (years >= 1) return 3;
+  if (years >= 0.5) return 2;
+  if (years >= 0.25) return 1;
+  return 0;
 }
 
-// ── Custom tooltip for AreaChart ──────────────────────────────────────────────
-function CashTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
-  if (!active || !payload?.length) return null;
+// ── Threshold Bar ─────────────────────────────────────────────────────────────
+// Shows user position on a 5-step lender threshold scale.
+// tierIndex: 0 = worst, 4 = best. minViable = first tier that qualifies.
+
+function ThresholdBar({
+  tierIndex, minViable, labels, color, notReported,
+}: {
+  tierIndex: number; minViable: number;
+  labels: string[]; color: string; notReported?: boolean;
+}) {
+  const pct = notReported || tierIndex < 0 ? 0 : ((tierIndex + 1) / labels.length) * 100;
+  const meetsMin = !notReported && tierIndex >= minViable;
+
   return (
-    <div style={{ background: '#111827', borderRadius: '8px', padding: '10px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>
-      <div style={{ color: '#94a3b8', fontSize: '11px', marginBottom: '4px' }}>{label}</div>
-      <div style={{ color: 'white', fontWeight: 800, fontSize: '15px' }}>{formatMoney(payload[0].value)}</div>
+    <div>
+      <div style={{ position: 'relative', height: '8px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden', marginBottom: '6px' }}>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.9, ease: 'easeOut', delay: 0.1 }}
+          style={{ height: '100%', background: meetsMin ? color : '#ef4444', borderRadius: '99px' }}
+        />
+        {/* Minimum viable threshold marker */}
+        <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${((minViable) / labels.length) * 100}%`, width: '2px', background: 'rgba(255,255,255,0.7)' }} />
+      </div>
+      {/* Tier labels */}
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        {labels.map((l, i) => (
+          <span
+            key={i}
+            style={{
+              fontFamily: 'var(--font-body)', fontSize: '9px',
+              color: i === tierIndex ? color : 'var(--muted-foreground)',
+              fontWeight: i === tierIndex ? 800 : 400,
+            }}
+          >
+            {l}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
 
-// ── Main Component ─────────────────────────────────────────────────────────────
+// ── Metric Card ───────────────────────────────────────────────────────────────
+
+function MetricCard({
+  icon: Icon, iconColor, title, value, status, statusColor,
+  lenderRead, threshold, action, actionLabel, actionPath,
+  thresholdBar,
+}: {
+  icon: any; iconColor: string; title: string; value: string;
+  status: string; statusColor: string;
+  lenderRead: string; threshold: string;
+  action?: string; actionLabel?: string; actionPath?: string;
+  thresholdBar: React.ReactNode;
+}) {
+  const navigate = useNavigate();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${iconColor}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon size={17} style={{ color: iconColor }} />
+          </div>
+          <div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{title}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '18px', color: 'var(--foreground)', lineHeight: 1.1, marginTop: '1px' }}>{value}</div>
+          </div>
+        </div>
+        <div style={{ padding: '3px 10px', borderRadius: '8px', background: `${statusColor}12`, border: `1px solid ${statusColor}30` }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 800, color: statusColor }}>{status}</span>
+        </div>
+      </div>
+
+      {/* Threshold bar */}
+      {thresholdBar}
+
+      {/* Lender read */}
+      <div style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '8px', padding: '10px 12px' }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '3px' }}>How a lender sees this</div>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--foreground)', lineHeight: 1.5 }}>{lenderRead}</div>
+      </div>
+
+      {/* Threshold */}
+      <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', lineHeight: 1.4 }}>
+        <span style={{ fontWeight: 700, color: 'var(--foreground)' }}>Lender target: </span>{threshold}
+      </div>
+
+      {/* Action */}
+      {action && actionPath && (
+        <button
+          onClick={() => navigate(actionPath)}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 14px', background: `${iconColor}10`, border: `1px solid ${iconColor}30`, borderRadius: '9px', color: iconColor, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', cursor: 'pointer', alignSelf: 'flex-start', transition: 'all 0.12s' }}
+        >
+          {actionLabel || 'Fix This'} <ArrowRight size={12} />
+        </button>
+      )}
+    </motion.div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═════════════════════════════════════════════════════════════════════════════
+
 export function Finances() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [data, setData] = useState<UnifiedAnswers | null>(null);
   const [dimF, setDimF] = useState(0);
   const [hasAssessment, setHasAssessment] = useState(false);
-  const [activeChecklist, setActiveChecklist] = useState<string | null>(null);
   const [bankStatementsUploaded, setBankStatementsUploaded] = useState(false);
   const [taxReturnsUploaded, setTaxReturnsUploaded] = useState(false);
   const [creditIntegrated, setCreditIntegrated] = useState(false);
@@ -155,16 +235,11 @@ export function Finances() {
           setDimF(result.dimAvg?.F ?? 0);
         }
       } catch { /* non-fatal */ }
-
-      // Read cross-platform flags set by Document Portal + Integrate Reports
       setBankStatementsUploaded(localStorage.getItem('fundready_bank_statements_uploaded') === '1');
       setTaxReturnsUploaded(localStorage.getItem('fundready_tax_returns_uploaded') === '1');
       setCreditIntegrated(localStorage.getItem('fundready_integrate_visited') === '1');
     };
-
     load();
-
-    // Re-run when any platform page updates data
     window.addEventListener('fundscoreUpdated', load);
     window.addEventListener('auditItemUpdated', load);
     window.addEventListener('storage', load);
@@ -175,83 +250,79 @@ export function Finances() {
     };
   }, [user]);
 
-  // Derived values
-  const revMid = revenueToMidpoint(data?.monthlyRevenue ?? '');
-  const balMid = balanceToMidpoint(data?.avgDailyBalance ?? '');
-  const nsfCount = nsfToCount(data?.nsfCount ?? '');
-  const cashFlow = generateCashFlow(balMid, revMid);
-  const latestBalance = cashFlow[cashFlow.length - 1]?.balance ?? 0;
-  const prevBalance = cashFlow[cashFlow.length - 2]?.balance ?? 0;
-  const balanceTrend = latestBalance >= prevBalance;
   const years = getYearsInBusiness(data?.startDate);
-
+  const fHealthPct = Math.round(dimF * 100);
   const fHealthColor = dimF >= 0.75 ? '#10b981' : dimF >= 0.5 ? '#f59e0b' : dimF >= 0.25 ? '#f97316' : '#ef4444';
   const fHealthLabel = dimF >= 0.75 ? 'Strong' : dimF >= 0.5 ? 'Growing' : dimF >= 0.25 ? 'Weak' : 'Barrier';
 
-  // Checklist items — each tied to assessment answers
-  const checklist = [
-    {
-      id: 'assessment',
-      label: 'Complete Business Success Scan',
-      detail: 'Generates your FundScore and financial health baseline',
-      done: hasAssessment,
-      action: () => navigate('/business-assessment'),
-      actionLabel: 'Start Scan',
-    },
-    {
-      id: 'bank_account',
-      label: 'Open a dedicated business bank account',
-      detail: 'Required for every capital product. Lenders verify account age + activity.',
-      done: data?.bankAccount === 'dedicated',
-      warning: data?.bankAccount === 'personal',
-      action: () => navigate('/app/lender-compliance'),
-      actionLabel: 'Learn more',
-    },
-    {
-      id: 'bank_statements',
-      label: 'Upload last 3 months of bank statements',
-      detail: 'Lenders use statements to verify revenue and average daily balance.',
-      done: bankStatementsUploaded,
-      action: () => navigate('/app/document-collection'),
-      actionLabel: 'Upload docs',
-    },
-    {
-      id: 'tax_returns',
-      label: 'Upload last 2 years of business tax returns',
-      detail: 'Required for SBA loans and most bank products.',
-      done: taxReturnsUploaded,
-      warning: !taxReturnsUploaded && data?.hasTaxLiens !== 'no' && !!data?.hasTaxLiens,
-      action: () => navigate('/app/document-collection'),
-      actionLabel: 'Upload returns',
-    },
-    {
-      id: 'credit',
-      label: 'Integrate personal credit reports',
-      detail: 'Pulls all 3 bureaus so lenders see your middle FICO score.',
-      done: creditIntegrated,
-      action: () => navigate('/app/integrate-reports'),
-      actionLabel: 'Connect now',
-    },
+  // Lender document checklist
+  const docs = [
+    { label: '3 months business bank statements', done: bankStatementsUploaded, required: 'All products', path: '/app/document-collection', actionLabel: 'Upload' },
+    { label: '2 years business tax returns', done: taxReturnsUploaded, required: 'SBA & bank loans', path: '/app/document-collection', actionLabel: 'Upload' },
+    { label: 'Personal credit reports (all 3 bureaus)', done: creditIntegrated, required: 'All products', path: '/app/integrate-reports', actionLabel: 'Connect' },
+    { label: 'Dedicated business bank account', done: data?.bankAccount === 'dedicated', required: 'All products', path: '/app/lender-compliance/business-banking', actionLabel: 'Open Account' },
+    { label: 'EIN (Employer Identification Number)', done: data?.hasEIN === true, required: 'All products', path: '/app/lender-compliance/ein-licenses', actionLabel: 'Get EIN' },
   ];
+  const docsDone = docs.filter(d => d.done).length;
 
-  const doneCount = checklist.filter(c => c.done).length;
+  // Derive revenue context
+  const revIdx = revenueTierIndex(data?.monthlyRevenue ?? '');
+  const revColor = revIdx >= 3 ? '#10b981' : revIdx >= 2 ? '#f59e0b' : revIdx >= 1 ? '#f97316' : '#ef4444';
+  const revStatus = revIdx >= 3 ? 'Excellent' : revIdx >= 2 ? 'Qualifies' : revIdx >= 1 ? 'Limited' : revIdx === 0 ? 'Below Min' : '—';
+  const revLenderRead = revIdx >= 3 ? 'Strong revenue — qualifies for SBA, term loans, and most bank products. Monthly deposits confirm business viability.'
+    : revIdx === 2 ? 'Qualifies for term loans and many alternative products. Lenders want 3+ months at this level consistently.'
+    : revIdx === 1 ? 'MCA and some credit lines are possible. Below the threshold most traditional lenders require ($15K+/mo).'
+    : revIdx === 0 ? 'Most lenders require minimum $5K/month in deposits. This is the first threshold to cross.'
+    : 'Complete the assessment to show revenue.';
+  const revAction = revIdx < 2 ? 'How to grow deposits' : undefined;
+  const revActionPath = revIdx < 2 ? '/app/ai-coach' : undefined;
 
-  // Revenue bar data (simulated monthly variance)
-  const revBars = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'].map((m, i) => ({
-    month: m,
-    revenue: Math.round(revMid * (0.88 + Math.sin(i * 1.9 + 0.5) * 0.1)),
-  }));
+  // Balance context
+  const balIdx = balanceTierIndex(data?.avgDailyBalance ?? '');
+  const balColor = balIdx >= 3 ? '#10b981' : balIdx >= 2 ? '#f59e0b' : '#ef4444';
+  const balStatus = balIdx >= 3 ? 'Strong' : balIdx >= 2 ? 'Acceptable' : balIdx >= 1 ? 'Low' : balIdx === 0 ? 'Critical' : '—';
+  const balLenderRead = balIdx >= 4 ? 'Bank-grade average daily balance. Signals financial stability and disciplined cash management.'
+    : balIdx === 3 ? 'Acceptable for most products. Lenders want to see $25K+ for the best rates. Close to the strong tier.'
+    : balIdx === 2 ? 'Meets the minimum for alternative capital. Below the $10K floor most banks require.'
+    : balIdx === 1 ? 'Below $2K average daily balance signals cash flow stress. May trigger manual review.'
+    : balIdx === 0 ? 'Near-zero balance is an automatic red flag. Lenders see this as inability to service debt.'
+    : 'Complete the assessment to show bank balance.';
+  const balAction = balIdx < 3 ? 'Strategies to raise ADB' : undefined;
+  const balActionPath = balIdx < 3 ? '/app/ai-coach' : undefined;
 
+  // NSF context
+  const nsfIdx = nsfTierIndex(data?.nsfCount ?? '');
+  const nsfColor = nsfIdx >= 4 ? '#10b981' : nsfIdx >= 2 ? '#f59e0b' : '#ef4444';
+  const nsfStatus = nsfIdx >= 4 ? 'Clean' : nsfIdx >= 3 ? 'Caution' : nsfIdx >= 2 ? 'Flagged' : nsfIdx >= 1 ? 'Serious' : data?.nsfCount ? 'Blocker' : '—';
+  const nsfLenderRead = data?.nsfCount === '0' ? 'Zero NSF events. Clean cash management — lenders view this as a strong positive signal.'
+    : data?.nsfCount === '1_2' ? '1-2 NSF events is flagged by most lenders. Explainable if isolated, but often triggers extra scrutiny.'
+    : data?.nsfCount === '3_5' ? '3-5 NSF events is a serious concern. Many lenders will decline or demand explanation + 6 months clean history.'
+    : data?.nsfCount === '5plus' ? '5+ NSF events is an automatic red flag at most institutions. Requires a sustained clean period before applying.'
+    : 'Complete the assessment to show NSF history.';
+  const nsfAction = (data?.nsfCount && data.nsfCount !== '0') ? 'How to clear NSF history' : undefined;
+  const nsfActionPath = nsfAction ? '/app/ai-coach' : undefined;
+
+  // Business age context
+  const ageColor = years >= 2 ? '#10b981' : years >= 1 ? '#f59e0b' : '#ef4444';
+  const ageStatus = years >= 2 ? 'SBA Ready' : years >= 1 ? 'Term Eligible' : years >= 0.5 ? 'Alt Only' : 'Very Limited';
+  const ageLenderRead = years >= 2 ? '2+ years in business — qualifies for SBA loans, conventional bank products, and most lender programs.'
+    : years >= 1 ? '1-2 years unlocks term loans and many non-bank programs. SBA requires 2 years minimum.'
+    : years >= 0.5 ? '6-12 months: alternative capital (MCA, revenue-based) is available. Traditional lenders require 1+ year minimum.'
+    : 'Under 6 months limits most products. Focus on building revenue history and opening a dedicated business bank account.';
+  const ageAction = years < 2 ? 'See products available now' : undefined;
+  const ageActionPath = ageAction ? '/app/access-funding' : undefined;
+
+  // ── No assessment state ─────────────────────────────────────────────────────
   if (!hasAssessment) {
     return (
       <div className="flex-1 min-h-screen overflow-auto" style={{ backgroundColor: 'var(--background)' }}>
-        <div className="max-w-[1200px] mx-auto px-6 py-10">
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', color: 'var(--foreground)', marginBottom: '8px' }}>Finances</h1>
+        <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '28px', color: 'var(--foreground)', marginBottom: '8px' }}>Lender Financial Profile</h1>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: 'center', padding: '60px 32px', background: 'var(--card)', border: '2px dashed var(--border)', borderRadius: '20px', marginTop: '32px' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>💰</div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--foreground)', marginBottom: '10px' }}>Complete your assessment first</h2>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', maxWidth: '380px', margin: '0 auto 24px', lineHeight: 1.6 }}>
-              Your Finances dashboard is built from your Business Success Scan — revenue, banking health, and lending metrics in one place.
+              Your Lender Financial Profile is built from your Business Success Scan — showing exactly how a lender reads your revenue, balance, and cash flow health.
             </p>
             <button onClick={() => navigate('/business-assessment')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', padding: '12px 28px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer' }}>
               Start Free Assessment →
@@ -264,282 +335,251 @@ export function Finances() {
 
   return (
     <div className="flex-1 min-h-screen overflow-auto" style={{ backgroundColor: 'var(--background)' }}>
-      <div className="max-w-[1200px] mx-auto px-6 py-8 lg:px-8 lg:py-10">
+      <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
 
-        {/* HEADER */}
+        {/* ── HEADER ──────────────────────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
           <div>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
-              Financial Health
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
+              Lender Financial Profile
             </p>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(22px, 3vw, 32px)', color: 'var(--foreground)', lineHeight: 1.1, letterSpacing: '-0.02em', margin: 0 }}>
-              Finances
+            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(24px, 3.5vw, 34px)', color: 'var(--foreground)', lineHeight: 1.1, letterSpacing: '-0.02em', margin: 0 }}>
+              How A Lender Sees Your Finances
             </h1>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', background: fHealthColor + '12', border: '1px solid ' + fHealthColor + '30' }}>
-              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: fHealthColor }} />
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: fHealthColor }}>Financial Health: {fHealthLabel}</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '10px', background: fHealthColor + '12', border: '1px solid ' + fHealthColor + '30' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '18px', color: fHealthColor, lineHeight: 1 }}>{fHealthPct}%</div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '9px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Financial Health</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: fHealthColor }}>{fHealthLabel}</div>
+              </div>
             </div>
-            <button onClick={() => navigate('/app/integrate-reports')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: 'var(--primary)', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '7px 14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              Connect Bank →
+            <button onClick={() => navigate('/app/integrate-reports')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: '#10b981', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              Connect Live Data →
             </button>
           </div>
         </div>
 
-        {/* ROW 1: KPI CARDS */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '20px' }}>
+        {/* ── DATA SOURCE BANNER ──────────────────────────────────────────── */}
+        <div style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '10px', padding: '10px 16px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <AlertCircle size={14} style={{ color: '#f59e0b', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', lineHeight: 1.4 }}>
+            <strong style={{ color: 'var(--foreground)' }}>Based on your reported ranges</strong> from the Business Success Scan. Connect live bank data via Integrate Reports for real-time numbers.{' '}
+            <span style={{ color: '#f59e0b', fontWeight: 700, cursor: 'pointer' }} onClick={() => navigate('/business-assessment')}>Update scan →</span>
+          </span>
+        </div>
+
+        {/* ── 4 LENDER METRICS ─────────────────────────────────────────────── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+
           {/* Monthly Revenue */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Monthly Revenue</span>
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <TrendingUp size={15} style={{ color: '#10b981' }} />
-              </div>
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '26px', color: 'var(--foreground)', letterSpacing: '-0.02em', marginBottom: '4px' }}>
-              {revMid > 0 ? formatMoney(revMid) : '—'}
-            </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>{revenueToLabel(data?.monthlyRevenue ?? '')}</div>
-            {revMid > 0 && (
-              <div style={{ marginTop: '14px', height: '40px' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={revBars.slice(-5)} barSize={8}>
-                    <Bar dataKey="revenue" fill="#10b98140" radius={[3, 3, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </motion.div>
+          <MetricCard
+            icon={TrendingUp} iconColor={revColor}
+            title="Monthly Revenue"
+            value={revenueToLabel(data?.monthlyRevenue ?? '')}
+            status={revStatus} statusColor={revColor}
+            lenderRead={revLenderRead}
+            threshold="$15K+/mo for term loans · $40K+ for SBA/bank"
+            action={revAction} actionLabel="Build Revenue Strategy" actionPath={revActionPath}
+            thresholdBar={
+              <ThresholdBar
+                tierIndex={revIdx} minViable={2}
+                labels={['<$5K', '$5–15K', '$15–40K', '$40–100K', '$100K+']}
+                color={revColor} notReported={revIdx < 0}
+              />
+            }
+          />
 
           {/* Avg Daily Balance */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Avg Daily Balance</span>
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Wallet size={15} style={{ color: '#3b82f6' }} />
-              </div>
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '26px', color: 'var(--foreground)', letterSpacing: '-0.02em', marginBottom: '4px' }}>
-              {balMid > 0 ? formatMoney(balMid) : '—'}
-            </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>{balanceToLabel(data?.avgDailyBalance ?? '')}</div>
-            <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {balanceTrend ? <TrendingUp size={12} style={{ color: '#10b981' }} /> : <TrendingDown size={12} style={{ color: '#ef4444' }} />}
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: balanceTrend ? '#10b981' : '#ef4444', fontWeight: 600 }}>
-                {balanceTrend ? 'Trending up' : 'Trending down'}
-              </span>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>· Lenders want $25K+</span>
-            </div>
-          </motion.div>
+          <MetricCard
+            icon={Wallet} iconColor={balColor}
+            title="Avg Daily Balance"
+            value={balanceToLabel(data?.avgDailyBalance ?? '')}
+            status={balStatus} statusColor={balColor}
+            lenderRead={balLenderRead}
+            threshold="$10K minimum · $25K+ for bank-grade rates"
+            action={balAction} actionLabel="Raise My Balance" actionPath={balActionPath}
+            thresholdBar={
+              <ThresholdBar
+                tierIndex={balIdx} minViable={2}
+                labels={['~$0', '$500-2K', '$2-10K', '$10-25K', '$25K+']}
+                color={balColor} notReported={balIdx < 0}
+              />
+            }
+          />
 
           {/* NSF Events */}
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>NSF Events</span>
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: nsfCount === 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {nsfCount === 0 ? <CheckCircle2 size={15} style={{ color: '#10b981' }} /> : <AlertTriangle size={15} style={{ color: '#ef4444' }} />}
-              </div>
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '26px', color: nsfCount === 0 ? '#10b981' : '#ef4444', letterSpacing: '-0.02em', marginBottom: '4px' }}>
-              {nsfToLabel(data?.nsfCount ?? '')}
-            </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
-              {nsfCount === 0 ? 'Clean account · No negative marks' : 'NSFs signal cash flow risk to lenders'}
-            </div>
-            <div style={{ marginTop: '10px', padding: '5px 10px', borderRadius: '6px', display: 'inline-block', background: nsfCount === 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', border: '1px solid ' + (nsfCount === 0 ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)') }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: nsfCount === 0 ? '#10b981' : '#ef4444' }}>
-                {nsfCount === 0 ? '✓ Lender-approved' : '⚠ Review with lender'}
-              </span>
-            </div>
-          </motion.div>
+          <MetricCard
+            icon={AlertTriangle} iconColor={nsfColor}
+            title="NSF Events (12 months)"
+            value={nsfToLabel(data?.nsfCount ?? '')}
+            status={nsfStatus} statusColor={nsfColor}
+            lenderRead={nsfLenderRead}
+            threshold="0 events required for bank products · Even 1 triggers review"
+            action={nsfAction} actionLabel="Clear NSF History" actionPath={nsfActionPath}
+            thresholdBar={
+              <ThresholdBar
+                tierIndex={nsfIdx} minViable={4}
+                labels={['5+', '3–5', '1–2', 'Caution', '0 ✓']}
+                color={nsfColor} notReported={!data?.nsfCount}
+              />
+            }
+          />
+
+          {/* Business Age */}
+          <MetricCard
+            icon={Building2} iconColor={ageColor}
+            title="Time in Business"
+            value={years > 0 ? `${years} yr${years !== 1 ? 's' : ''}` : data?.startDate?.year ? '< 1 year' : 'Not reported'}
+            status={ageStatus} statusColor={ageColor}
+            lenderRead={ageLenderRead}
+            threshold="6 months = alt capital · 1 yr = term loans · 2 yrs = SBA/bank"
+            action={ageAction} actionLabel="See Products Now" actionPath={ageActionPath}
+            thresholdBar={
+              <ThresholdBar
+                tierIndex={ageTierIndex(years)} minViable={2}
+                labels={['<3mo', '3–6mo', '6–12mo', '1–2yr', '2yr+ ✓']}
+                color={ageColor} notReported={!data?.startDate?.year}
+              />
+            }
+          />
         </div>
 
-        {/* ROW 2: CASH FLOW CHART */}
-        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px 20px 12px', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px', gap: '12px', flexWrap: 'wrap' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--foreground)', margin: 0 }}>Cash Flow Overview</h3>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b' }}>Based on reported data</span>
-              </div>
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: 0 }}>
-                Estimated balance trend · Connect your bank for live data
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: '10px', height: '3px', borderRadius: '99px', background: '#10b981' }} />
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>Balance</span>
-              </div>
-              <button onClick={() => navigate('/app/integrate-reports')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '11px', color: '#10b981', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', padding: '5px 12px', cursor: 'pointer' }}>
-                Connect Bank →
-              </button>
-            </div>
-          </div>
-          {/* Large balance display */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '16px' }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '36px', color: 'var(--foreground)', letterSpacing: '-0.02em' }}>
-              {formatMoney(latestBalance)}
-            </span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>estimated balance</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '6px', background: balanceTrend ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)' }}>
-              {balanceTrend ? <TrendingUp size={11} style={{ color: '#10b981' }} /> : <TrendingDown size={11} style={{ color: '#ef4444' }} />}
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: balanceTrend ? '#10b981' : '#ef4444' }}>
-                {balanceTrend ? '+' : ''}{Math.round(((latestBalance - prevBalance) / Math.max(prevBalance, 1)) * 100)}%
-              </span>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={160}>
-            <AreaChart data={cashFlow} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="balGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.18} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontFamily: 'var(--font-body)', fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={(v: number) => formatMoney(v)} tick={{ fontFamily: 'var(--font-body)', fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} width={55} />
-              <Tooltip content={<CashTooltip />} />
-              <Area type="monotone" dataKey="balance" stroke="#10b981" strokeWidth={2.5} fill="url(#balGrad)" dot={false} activeDot={{ r: 5, fill: '#10b981', stroke: 'white', strokeWidth: 2 }} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        {/* ── ACCOUNT HEALTH BREAKDOWN ─────────────────────────────────────── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
 
-        {/* ROW 3: 3-COLUMN DETAILS */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '20px' }}>
-
-          {/* Revenue by Month */}
-          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '18px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--foreground)' }}>Revenue</span>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>Estimated</span>
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--foreground)', marginBottom: '2px' }}>
-              {revMid > 0 ? formatMoney(revMid * 12) : '—'}
-            </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginBottom: '14px' }}>Annual estimated revenue</div>
-            <ResponsiveContainer width="100%" height={70}>
-              <BarChart data={revBars} barSize={8} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                <Bar dataKey="revenue" radius={[3, 3, 0, 0]}>
-                  {revBars.map((_, i) => (
-                    <Cell key={i} fill={i === revBars.length - 1 ? '#94a3b8' : '#10b98155'} />
-                  ))}
-                </Bar>
-                <XAxis dataKey="month" tick={{ fontFamily: 'var(--font-body)', fontSize: 9, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-              </BarChart>
-            </ResponsiveContainer>
-            {data?.ccSales && data.ccSales !== 'no_cards' && (
-              <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border)', fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
-                CC Sales: <span style={{ fontWeight: 700, color: 'var(--foreground)' }}>
-                  {data.ccSales === 'under_5k' ? '< $5K' : data.ccSales === '5k_15k' ? '$5K–$15K' : data.ccSales === '15k_50k' ? '$15K–$50K' : '$50K+'}
-                </span> / mo
-              </div>
-            )}
-          </div>
-
-          {/* Account Health */}
-          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '18px' }}>
-            <div style={{ marginBottom: '14px' }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--foreground)' }}>Account Health</span>
-            </div>
+          {/* Account health table */}
+          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--foreground)', marginBottom: '14px' }}>Account Health Details</div>
             {[
-              { label: 'Account Type', value: data?.bankAccount === 'dedicated' ? 'Dedicated Business' : data?.bankAccount === 'personal' ? 'Personal (needs fix)' : 'No account', ok: data?.bankAccount === 'dedicated', warn: data?.bankAccount === 'personal' },
-              { label: 'Account Age', value: data?.bankAge === '0_6mo' ? '< 6 months' : data?.bankAge === '6_12mo' ? '6–12 months' : data?.bankAge === '12_24mo' ? '1–2 years' : data?.bankAge === '24plus' ? '2+ years' : '—', ok: data?.bankAge === '12_24mo' || data?.bankAge === '24plus' },
-              { label: 'Avg Daily Balance', value: balanceToLabel(data?.avgDailyBalance ?? ''), ok: (data?.avgDailyBalance === '10k_25k' || data?.avgDailyBalance === 'over_25k') },
-              { label: 'NSF Events', value: nsfToLabel(data?.nsfCount ?? ''), ok: data?.nsfCount === '0', warn: data?.nsfCount !== '0' && !!data?.nsfCount },
-              { label: 'Years in Business', value: years > 0 ? `${years} years` : 'New business', ok: years >= 2 },
-            ].map(row => (
-              <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>{row.label}</span>
+              {
+                label: 'Account type',
+                value: data?.bankAccount === 'dedicated' ? 'Dedicated business' : data?.bankAccount === 'personal' ? '⚠ Personal (fix required)' : '—',
+                ok: data?.bankAccount === 'dedicated',
+                warn: data?.bankAccount === 'personal',
+              },
+              {
+                label: 'Account age',
+                value: data?.bankAge === '0_6mo' ? '< 6 months' : data?.bankAge === '6_12mo' ? '6–12 months' : data?.bankAge === '12_24mo' ? '1–2 years' : data?.bankAge === '24plus' ? '2+ years' : '—',
+                ok: data?.bankAge === '12_24mo' || data?.bankAge === '24plus',
+                warn: data?.bankAge === '0_6mo',
+              },
+              {
+                label: 'Credit card sales',
+                value: !data?.ccSales || data.ccSales === 'no_cards' ? 'None reported' : data.ccSales === 'under_5k' ? '< $5K/mo' : data.ccSales === '5k_15k' ? '$5K–$15K/mo' : data.ccSales === '15k_50k' ? '$15K–$50K/mo' : '$50K+/mo',
+                ok: data?.ccSales === '15k_50k' || data?.ccSales === 'over_50k',
+              },
+              {
+                label: 'Tax liens',
+                value: !data?.hasTaxLiens || data.hasTaxLiens === 'no' ? '✓ None' : data.hasTaxLiens === 'federal' ? 'Federal lien' : data.hasTaxLiens === 'state' ? 'State lien' : 'Federal + State',
+                ok: !data?.hasTaxLiens || data.hasTaxLiens === 'no',
+                warn: data?.hasTaxLiens && data.hasTaxLiens !== 'no',
+              },
+              {
+                label: 'Bankruptcy',
+                value: !data?.hasBankruptcy || data.hasBankruptcy === 'none' ? '✓ None' : data.hasBankruptcy === 'recent' ? 'Recent (< 7 yrs)' : 'Discharged (> 7 yrs)',
+                ok: !data?.hasBankruptcy || data.hasBankruptcy === 'none',
+                warn: data?.hasBankruptcy === 'recent',
+              },
+            ].map((row, i, arr) => (
+              <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)' }}>{row.label}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  {row.ok ? <CheckCircle2 size={11} style={{ color: '#10b981' }} /> : row.warn ? <AlertTriangle size={11} style={{ color: '#f59e0b' }} /> : null}
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: row.ok ? '#10b981' : row.warn ? '#f59e0b' : 'var(--foreground)' }}>{row.value}</span>
+                  {row.ok && <CheckCircle2 size={12} style={{ color: '#10b981' }} />}
+                  {row.warn && <AlertTriangle size={12} style={{ color: '#f59e0b' }} />}
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700, color: row.ok ? '#10b981' : row.warn ? '#f59e0b' : 'var(--foreground)' }}>
+                    {row.value}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Assets & Liabilities */}
-          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '18px' }}>
-            <div style={{ marginBottom: '14px' }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--foreground)' }}>Assets &amp; Receivables</span>
-            </div>
+          {/* Assets & receivables */}
+          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '0' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--foreground)', marginBottom: '14px' }}>Assets & Collateral</div>
             {[
-              { label: 'Accounts Receivable', value: arToLabel(data?.arBalance ?? ''), icon: '📋' },
-              { label: 'Equipment Value', value: arToLabel(data?.equipmentValue ?? ''), icon: '⚙️' },
-              { label: 'Real Property', value: data?.ownsProperty === 'yes' ? 'Owns property' : data?.ownsProperty === 'planning' ? 'Planning to buy' : 'No property', icon: '🏠' },
-              { label: 'Tax Liens', value: data?.hasTaxLiens === 'no' || !data?.hasTaxLiens ? 'None' : data?.hasTaxLiens === 'federal' ? 'Federal lien' : data?.hasTaxLiens === 'state' ? 'State lien' : 'Federal + State', ok: data?.hasTaxLiens === 'no', warn: data?.hasTaxLiens !== 'no' && !!data?.hasTaxLiens, icon: '⚖️' },
-            ].map(row => (
-              <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '13px' }}>{row.icon}</span>
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>{row.label}</span>
+              { icon: '📋', label: 'Accounts Receivable', value: !data?.arBalance || data.arBalance === 'none' ? 'None' : data.arBalance === 'under_10k' ? '< $10K' : data.arBalance === '10k_50k' ? '$10K–$50K' : data.arBalance === '50k_250k' ? '$50K–$250K' : '$250K+', tip: data?.arBalance && data.arBalance !== 'none' ? 'Can be used as collateral for AR financing' : undefined },
+              { icon: '⚙️', label: 'Equipment Value', value: !data?.equipmentValue || data.equipmentValue === 'none' ? 'None' : data.equipmentValue === 'under_10k' ? '< $10K' : data.equipmentValue === '10k_50k' ? '$10K–$50K' : data.equipmentValue === '50k_250k' ? '$50K–$250K' : '$250K+', tip: data?.equipmentValue && data.equipmentValue !== 'none' ? 'Equipment value supports equipment financing & SBA collateral' : undefined },
+              { icon: '🏠', label: 'Real Property', value: data?.ownsProperty === 'yes' ? 'Owned' : data?.ownsProperty === 'planning' ? 'Planning to buy' : 'None / Renting', tip: data?.ownsProperty === 'yes' ? 'Property as collateral expands SBA and bank loan options significantly' : undefined },
+            ].map((row, i, arr) => (
+              <div key={row.label} style={{ padding: '10px 0', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '14px' }}>{row.icon}</span>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)' }}>{row.label}</span>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700, color: 'var(--foreground)' }}>{row.value}</span>
                 </div>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: (row as { warn?: boolean }).warn ? '#f59e0b' : (row as { ok?: boolean }).ok ? '#10b981' : 'var(--foreground)' }}>{row.value}</span>
+                {row.tip && (
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#10b981', marginTop: '3px', paddingLeft: '22px', lineHeight: 1.4 }}>
+                    ↑ {row.tip}
+                  </div>
+                )}
               </div>
             ))}
-            <div style={{ marginTop: '12px', padding: '10px', borderRadius: '8px', background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#3b82f6', fontWeight: 700, marginBottom: '3px' }}>Lender tip</div>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
-                AR &amp; equipment can serve as collateral, increasing loan size by 20–40%.
+            <div style={{ marginTop: '12px', padding: '12px', borderRadius: '10px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#10b981', marginBottom: '4px' }}>Collateral tip</div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+                AR and equipment as collateral can increase loan size by 20–40% and lower your interest rate. Disclose all assets upfront.
               </div>
             </div>
           </div>
         </div>
 
-        {/* ROW 4: GET STARTED CHECKLIST */}
-        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px' }}>
+        {/* ── DOCUMENT READINESS ────────────────────────────────────────────── */}
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', marginBottom: '24px' }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
             <div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--foreground)', margin: 0 }}>Get Lender-Ready</h3>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--foreground)', margin: 0 }}>Document Readiness</h3>
               <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: '3px 0 0' }}>
-                {doneCount} of {checklist.length} items complete
+                {docsDone} of {docs.length} items ready · A complete file closes 40% faster and at better terms
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '100px', height: '5px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
-                <motion.div initial={{ width: 0 }} animate={{ width: `${(doneCount / checklist.length) * 100}%` }} transition={{ duration: 0.8, ease: 'easeOut' }} style={{ height: '100%', background: 'linear-gradient(90deg, #10b981, #3b82f6)', borderRadius: '99px' }} />
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(docsDone / docs.length) * 100}%` }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                  style={{ height: '100%', background: 'linear-gradient(90deg, #10b981, #3b82f6)', borderRadius: '99px' }}
+                />
               </div>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: 'var(--muted-foreground)' }}>{Math.round((doneCount / checklist.length) * 100)}%</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: 'var(--muted-foreground)' }}>
+                {Math.round((docsDone / docs.length) * 100)}%
+              </span>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {checklist.map((item, i) => (
+            {docs.map((doc, i) => (
               <div
-                key={item.id}
-                style={{ padding: '14px 20px', borderBottom: i < checklist.length - 1 ? '1px solid var(--border)' : 'none', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', transition: 'background 0.15s', background: activeChecklist === item.id ? 'var(--background)' : 'transparent' }}
-                onClick={() => setActiveChecklist(activeChecklist === item.id ? null : item.id)}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--background)')}
-                onMouseLeave={e => (e.currentTarget.style.background = activeChecklist === item.id ? 'var(--background)' : 'transparent')}
+                key={doc.label}
+                style={{ padding: '13px 20px', borderBottom: i < docs.length - 1 ? '1px solid var(--border)' : 'none', display: 'flex', alignItems: 'center', gap: '14px' }}
               >
                 <div style={{ flexShrink: 0 }}>
-                  {item.done ? (
-                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <CheckCircle2 size={15} style={{ color: '#10b981' }} />
-                    </div>
-                  ) : item.warning ? (
-                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <AlertTriangle size={15} style={{ color: '#f59e0b' }} />
+                  {doc.done ? (
+                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <CheckCircle2 size={13} style={{ color: '#10b981' }} />
                     </div>
                   ) : (
-                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--border)' }} />
-                    </div>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: '1.5px solid var(--border)', background: 'var(--background)' }} />
                   )}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: item.done ? 'var(--muted-foreground)' : 'var(--foreground)', textDecoration: item.done ? 'line-through' : 'none' }}>{item.label}</div>
-                  {activeChecklist === item.id && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '4px', lineHeight: 1.5 }}>{item.detail}</div>
-                    </motion.div>
-                  )}
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: doc.done ? 'var(--muted-foreground)' : 'var(--foreground)', textDecoration: doc.done ? 'line-through' : 'none' }}>
+                    {doc.label}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '1px' }}>
+                    Required for: {doc.required}
+                  </div>
                 </div>
-                {!item.done && (
-                  <button onClick={e => { e.stopPropagation(); item.action(); }} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '11px', color: '#10b981', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', padding: '5px 12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                    {item.actionLabel}
+                {!doc.done && (
+                  <button
+                    onClick={() => navigate(doc.path)}
+                    style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '11px', color: '#10b981', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', padding: '5px 12px', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+                  >
+                    {doc.actionLabel} →
                   </button>
                 )}
               </div>
@@ -547,31 +587,25 @@ export function Finances() {
           </div>
         </div>
 
-        {/* ROW 5: QUICK TOOLS */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-          {[
-            { icon: BarChart3, label: 'Status Reports', desc: 'Bankable status, FICO score, estimated funding range', path: '/app/status-reports', color: '#3b82f6', cta: 'View Reports' },
-            { icon: FileText, label: 'Document Portal', desc: 'Upload bank statements, tax returns, and financial docs', path: '/app/document-collection', color: '#8b5cf6', cta: 'Manage Docs' },
-            { icon: TrendingUp, label: 'Integrate Reports', desc: 'Connect bank data and credit reports for live scoring', path: '/app/integrate-reports', color: '#10b981', cta: 'Connect Now' },
-          ].map(tool => (
-            <div
-              key={tool.path}
-              onClick={() => navigate(tool.path)}
-              style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '14px', padding: '18px', cursor: 'pointer', transition: 'border-color 0.15s, transform 0.15s' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = tool.color + '50'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; }}
-            >
-              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: tool.color + '12', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-                <tool.icon size={18} style={{ color: tool.color }} />
-              </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)', marginBottom: '5px' }}>{tool.label}</div>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', lineHeight: 1.5, marginBottom: '14px' }}>{tool.desc}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: tool.color }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px' }}>{tool.cta}</span>
-                <ArrowRight size={12} />
-              </div>
+        {/* ── CONNECT LIVE DATA CTA ─────────────────────────────────────────── */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.06), rgba(59,130,246,0.06))', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '16px', padding: '24px', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(16,185,129,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Zap size={22} style={{ color: '#10b981' }} />
+          </div>
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px', color: 'var(--foreground)', marginBottom: '4px' }}>
+              Connect Live Bank &amp; Credit Data
             </div>
-          ))}
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+              Right now these metrics are based on ranges you reported. Connecting your bank and credit data gives lenders verified, real-time numbers — which dramatically increases approval confidence.
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/app/integrate-reports')}
+            style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', padding: '12px 24px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', boxShadow: '0 4px 14px rgba(16,185,129,0.3)', whiteSpace: 'nowrap', flexShrink: 0 }}
+          >
+            Connect Now →
+          </button>
         </div>
 
       </div>
