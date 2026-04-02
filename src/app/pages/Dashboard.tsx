@@ -36,6 +36,7 @@ import type { UnifiedAnswers } from './business-assessment/types';
 import { BadgeStrip, BadgeToastContainer } from '../components/BadgeGrid';
 import { checkAndAwardBadges, syncBadgesFromCloud, recordInitialScore, getInitialScore } from '../lib/badges';
 import { getPreQualifiedPrograms } from '../utils/fundingEligibility';
+import { evaluateProducts } from './business-assessment/productEligibility';
 import { getPipelineCounts, type PipelineCounts } from '../lib/funding-service';
 import { complianceModules, getComplianceProgress } from '../utils/lenderComplianceModules';
 
@@ -102,7 +103,35 @@ function getStatusInfo(bankableScore: number): StatusInfo {
 // CAPITAL PROJECTION SYSTEM
 // ════════════════════════════════════════════════════════════════════════════════
 
-// Standalone — used in gauge, blocker card, and projection timeline
+// Parse product maxAmount strings like '$5M', '$500K', '$1M+', '$250K' → number
+function parseMaxAmount(str: string): number {
+  const s = str.replace(/[$,+\s]/g, '').toUpperCase();
+  if (s.endsWith('M')) return parseFloat(s) * 1_000_000;
+  if (s.endsWith('K')) return parseFloat(s) * 1_000;
+  return parseInt(s) || 0;
+}
+
+// Compute real capital potential from actual qualifying products.
+// Returns: { total (sum of all eligible maxAmounts), highest (single largest), count }
+function computeRealCapital(assessment: UnifiedAnswers | null, score: number): { total: number; highest: number; count: number; productLabel: string } {
+  if (!assessment) return { total: 0, highest: 0, count: 0, productLabel: '' };
+  const products = evaluateProducts(assessment, score);
+  const eligible = products.filter(p => p.qualifies);
+  if (eligible.length === 0) return { total: 0, highest: 0, count: 0, productLabel: '' };
+  const amounts = eligible.map(p => parseMaxAmount(p.maxAmount));
+  const highest = Math.max(...amounts);
+  // Sum is misleading — show the highest single product as primary potential
+  // because lenders don't stack all products simultaneously
+  const topProduct = eligible.find(p => parseMaxAmount(p.maxAmount) === highest);
+  return {
+    total: amounts.reduce((a, b) => a + b, 0),
+    highest,
+    count: eligible.length,
+    productLabel: topProduct?.name || '',
+  };
+}
+
+// Fallback for when no assessment exists — score-band baseline
 function scoreToAmount(score: number): number {
   if (score < 300) return 0;
   if (score < 500) return 10000;
@@ -447,6 +476,9 @@ export function Dashboard() {
   const DIM_ORDER = ['P', 'B', 'F', 'C', 'S', 'N'];
   const DIM_LABELS: Record<string, string> = { P: 'Personal Credit', B: 'Business Profile', F: 'Financial Health', C: 'Compliance', S: 'Stability', N: 'Documentation' };
   const preQualPrograms = getPreQualifiedPrograms();
+  // Real capital potential from actual qualifying products — replaces static scoreToAmount lookup
+  const realCapital = computeRealCapital(storedAssessment, fundScore);
+  const capitalDisplay = realCapital.highest > 0 ? realCapital.highest : scoreToAmount(fundScore);
   const FEATURED_PROGRAMS = [
     { path: '/app/access-funding/business-credit-line', label: 'Business Credit Line', range: '$10K–$250K', icon: '💳' },
     { path: '/app/access-funding/revenue-based-loan', label: 'Revenue-Based Loan', range: '$5K–$500K', icon: '📈' },
@@ -526,9 +558,16 @@ export function Dashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                   >
-                    {scoreToAmount(fundScore) > 0 ? (
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(32px, 5vw, 44px)', color: gaugeColor, lineHeight: 1, letterSpacing: '-0.02em' }}>
-                        {formatMoney(scoreToAmount(fundScore))}
+                    {capitalDisplay > 0 ? (
+                      <div>
+                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(32px, 5vw, 44px)', color: gaugeColor, lineHeight: 1, letterSpacing: '-0.02em' }}>
+                          {formatMoney(capitalDisplay)}
+                        </div>
+                        {realCapital.count > 0 && (
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', marginTop: '2px' }}>
+                            based on <span style={{ fontWeight: 700, color: gaugeColor }}>{realCapital.count} pre-qualified product{realCapital.count !== 1 ? 's' : ''}</span>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '38px', color: '#ef4444', lineHeight: 1 }}>
@@ -536,7 +575,7 @@ export function Dashboard() {
                       </div>
                     )}
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '4px', fontWeight: 500 }}>
-                      Estimated Capital Potential
+                      {realCapital.count > 0 ? `Largest single product: ${realCapital.productLabel}` : 'Estimated Capital Potential'}
                     </div>
                   </motion.div>
                 </div>
@@ -558,9 +597,9 @@ export function Dashboard() {
                       style={{ height: '100%', background: `linear-gradient(90deg, ${gaugeColor}99, ${gaugeColor})`, borderRadius: '99px' }}
                     />
                   </div>
-                  {/* Milestone labels */}
+                  {/* Milestone labels — real product tier thresholds */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-                    {[{ v: 300, l: '$10K' }, { v: 500, l: '$50K' }, { v: 700, l: '$150K' }, { v: 900, l: '$750K' }].map(m => (
+                    {[{ v: 300, l: 'Alt Cap' }, { v: 500, l: 'Working Capital' }, { v: 700, l: 'Term Loans' }, { v: 900, l: 'SBA/Bank' }].map(m => (
                       <div key={m.v} style={{ textAlign: 'center' }}>
                         <div style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: fundScore >= m.v ? gaugeColor : 'var(--muted-foreground)', fontWeight: fundScore >= m.v ? 700 : 400, opacity: fundScore >= m.v ? 1 : 0.5 }}>{m.l}</div>
                       </div>
