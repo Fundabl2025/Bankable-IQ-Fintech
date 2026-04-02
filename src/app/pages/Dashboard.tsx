@@ -379,6 +379,7 @@ export function Dashboard() {
   const { user } = useAuth();
   const [fundScore, setFundScore] = useState(0);
   const [bankableScore, setBankableScore] = useState(0);
+  const [bankablePassPct, setBankablePassPct] = useState(0); // % of bankable items passing
   const [scoreBand, setScoreBand] = useState({ name: 'Not Assessed', color: '#64748b' });
   const [hasAssessment, setHasAssessment] = useState(false);
   const [dimAvg, setDimAvg] = useState<Record<string, number>>({});
@@ -428,6 +429,9 @@ export function Dashboard() {
           setFundScore(scoreResult.score);
           setDimAvg(scoreResult.dimAvg || {});
           setBankableScore(bs);
+          const bItems = extendedResults.bankableItems || [];
+          const bPass = bItems.filter((i: any) => i.status === 'pass').length;
+          setBankablePassPct(bItems.length > 0 ? Math.round((bPass / bItems.length) * 100) : 0);
           setScoreBand(band);
           setNapScore(scoreResult.napScore || 0);
           setStoredAssessment(assessmentData);
@@ -706,10 +710,26 @@ export function Dashboard() {
 
                 {/* FICO SBSS Bankable Score — The Primary Goal */}
                 {(() => {
-                  const sbssTier = bankableScore >= 210 ? { label: 'Excellent', color: '#10b981', msg: 'You qualify for all bank and SBA products' }
-                    : bankableScore >= 190 ? { label: 'Good', color: '#22c55e', msg: 'Bank-grade products are within reach' }
-                    : bankableScore >= 160 ? { label: 'Fair', color: '#f59e0b', msg: 'You have reached minimum bankable threshold' }
-                    : { label: 'Poor', color: '#ef4444', msg: `${160 - bankableScore} points away from bank approval` };
+                  // Score tier — label based on SBSS number alone (honest label for the digit shown)
+                  const scoreTier = bankableScore >= 210 ? { label: 'Excellent', color: '#10b981' }
+                    : bankableScore >= 190 ? { label: 'Good',    color: '#22c55e' }
+                    : bankableScore >= 160 ? { label: 'Fair',    color: '#f59e0b' }
+                    :                        { label: 'Poor',    color: '#ef4444' };
+                  // Compliance gate — separate from the score: bankable items pass %
+                  const isCompliant   = bankablePassPct >= 85;
+                  const isApproaching = bankablePassPct >= 60;
+                  const approxFail    = Math.max(1, Math.round(((100 - bankablePassPct) / 100) * 20));
+                  // Composite message — BOTH gates must clear. Never claim approval on score alone.
+                  const sbssMsg = bankableScore < 160
+                    ? `${160 - bankableScore} points from bank approval threshold`
+                    : isCompliant && bankableScore >= 210
+                    ? 'Score and compliance clear — bank & SBA products accessible'
+                    : isCompliant
+                    ? 'Score qualifies — verify compliance items to apply'
+                    : isApproaching
+                    ? `Score clears threshold · ${approxFail} compliance item${approxFail !== 1 ? 's' : ''} still needed`
+                    : `Score clears threshold · Significant compliance work needed before applying`;
+                  const sbssTier = { ...scoreTier, msg: sbssMsg };
                   const sbssPct = Math.min((bankableScore / 300) * 100, 100);
                   const thresholdPct = (160 / 300) * 100;
                   return (
