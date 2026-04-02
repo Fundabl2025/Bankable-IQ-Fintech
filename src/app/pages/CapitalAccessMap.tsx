@@ -369,11 +369,11 @@ export function CapitalAccessMap() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-base)' }}>
-      <div className="flex">
+      <div className="flex capital-map-layout">
         {/* Internal Sidebar - 300px */}
-        <aside 
-          className="sticky top-0 h-screen overflow-y-auto flex-shrink-0"
-          style={{ 
+        <aside
+          className="sticky top-0 h-screen overflow-y-auto flex-shrink-0 capital-map-sidebar"
+          style={{
             width: '300px',
             backgroundColor: 'var(--bg-surface-2)',
             borderRight: '1px solid var(--border-subtle)'
@@ -701,7 +701,7 @@ export function CapitalAccessMap() {
                 Capital Access Map
               </h1>
 
-              <div className="flex gap-1">
+              <div className="flex gap-1 capital-map-tabs">
                 {[
                   { id: 'products' as TabType, label: 'Capital Access' },
                   { id: 'compliance' as TabType, label: 'Lender Compliance' },

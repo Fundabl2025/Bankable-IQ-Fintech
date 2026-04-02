@@ -464,7 +464,7 @@ export function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════════ */}
       {/* NAV */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      <nav style={{
+      <nav className="landing-nav" style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         padding: '14px 40px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -504,7 +504,7 @@ export function LandingPage() {
           }}>
             Sign In
           </Link>
-          <Link to="/business-assessment" style={{
+          <Link to="/business-assessment" className="landing-cta-pill" style={{
             padding: '10px 22px',
             background: 'linear-gradient(135deg, #10b981, #059669)',
             color: '#ffffff',
@@ -612,6 +612,7 @@ export function LandingPage() {
             >
               <Link
                 to="/business-assessment"
+                className="landing-hero-cta"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '10px',
                   padding: '17px 40px',
@@ -671,7 +672,7 @@ export function LandingPage() {
       {/* THE INVISIBLE WALL — Pattern language + numbers = credibility          */}
       {/* Chase: Specificity = Credibility. Not "most" — "33 million."            */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      <section style={{
+      <section className="landing-section-padding" style={{
         padding: '80px 40px',
         background: 'var(--surface-1)',
         borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)',
@@ -736,11 +737,11 @@ export function LandingPage() {
               },
             ].map(({ stat, label, note, color }) => (
               <FadeIn key={stat}>
-                <div style={{
+                <div className="landing-stat-cell" style={{
                   padding: '40px 32px', background: 'var(--surface-1)',
                   textAlign: 'center',
                 }}>
-                  <div style={{
+                  <div className="landing-stat-number" style={{
                     fontFamily: 'var(--font-display)', fontSize: '56px',
                     fontWeight: 900, color, marginBottom: '12px', lineHeight: 1,
                   }}>
@@ -771,9 +772,9 @@ export function LandingPage() {
       {/* Chase: Story = identity shift. They become the type of person who uses  */}
       {/* AI to win, not the person who "tries to figure it out."                 */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      <section style={{ padding: '96px 40px' }}>
+      <section className="landing-section-padding" style={{ padding: '96px 40px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{
+          <div className="landing-forge-grid" style={{
             display: 'grid', gridTemplateColumns: '1fr 1fr',
             gap: '64px', alignItems: 'center',
           }}>
@@ -941,7 +942,7 @@ export function LandingPage() {
       {/* THE 3-GOAL SYSTEM — Future pace + completion pull                       */}
       {/* Chase: Show them the full journey. People want a map, not a miracle.    */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      <section id="how-it-works" style={{
+      <section id="how-it-works" className="landing-section-padding" style={{
         padding: '96px 40px',
         background: 'var(--surface-1)',
         borderTop: '1px solid var(--border)',
@@ -980,7 +981,7 @@ export function LandingPage() {
             </div>
           </FadeIn>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+          <div className="landing-goals-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
             <GoalStep
               index={0}
               number="01"
@@ -1034,7 +1035,7 @@ export function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════════ */}
       {/* HOW IT WORKS — Process steps                                            */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      <section style={{ padding: '96px 40px' }}>
+      <section className="landing-section-padding" style={{ padding: '96px 40px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <FadeIn>
             <div style={{ textAlign: 'center', marginBottom: '60px' }}>
@@ -1050,7 +1051,7 @@ export function LandingPage() {
             </div>
           </FadeIn>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+          <div className="landing-steps-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
             {[
               {
                 icon: BarChart3, step: '01',
@@ -1123,7 +1124,7 @@ export function LandingPage() {
       {/* Chase: The most powerful persuasion is identity-based. "You're not     */}
       {/* someone who gets rejected. You're the 1%."                             */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      <section style={{
+      <section className="landing-section-padding" style={{
         padding: '80px 40px',
         background: '#0d1117',
         borderTop: '1px solid rgba(16,185,129,0.15)',
@@ -1196,7 +1197,7 @@ export function LandingPage() {
       {/* PRICING — Tier comparison                                               */}
       {/* Chase: Anchor the premium first. Free is the door; paid is the house.  */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      <section id="pricing" style={{ padding: '96px 40px' }}>
+      <section id="pricing" className="landing-section-padding" style={{ padding: '96px 40px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <FadeIn>
             <div style={{ textAlign: 'center', marginBottom: '60px' }}>
@@ -1296,7 +1297,7 @@ export function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════════ */}
       {/* FAQ */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      <section style={{
+      <section className="landing-section-padding" style={{
         padding: '80px 40px',
         background: 'var(--surface-1)',
         borderTop: '1px solid var(--border)',
@@ -1382,7 +1383,7 @@ export function LandingPage() {
       {/* FINAL CTA — Identity anchor + completion pull                           */}
       {/* Chase: End with an identity statement. They decide who they are here.   */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      <section style={{ padding: '120px 40px', textAlign: 'center' }}>
+      <section className="landing-section-padding" style={{ padding: '120px 40px', textAlign: 'center' }}>
         <div style={{ maxWidth: '760px', margin: '0 auto' }}>
           <FadeIn>
             <div style={{
@@ -1421,6 +1422,7 @@ export function LandingPage() {
 
             <Link
               to="/business-assessment"
+              className="landing-hero-cta"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '12px',
                 padding: '20px 52px', borderRadius: '12px',

@@ -441,6 +441,19 @@ h6 {
     display: none !important;
   }
 
+  /* ── LandingPage: nav ── */
+  .landing-nav {
+    padding: 10px 16px !important;
+  }
+  .landing-nav-links {
+    display: none !important;
+  }
+  .landing-cta-pill {
+    padding: 8px 14px !important;
+    font-size: 11px !important;
+    white-space: nowrap;
+  }
+
   /* ── LandingPage: hero, pricing, stats layout ── */
   .landing-hero-grid {
     grid-template-columns: 1fr !important;
@@ -453,18 +466,61 @@ h6 {
   .landing-pricing-grid {
     grid-template-columns: 1fr !important;
   }
+
+  /* Stats: single column on mobile to prevent horizontal overflow */
   .landing-stats-grid {
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: 1fr !important;
   }
+  .landing-stat-cell {
+    padding: 28px 20px !important;
+  }
+  .landing-stat-number {
+    font-size: 42px !important;
+  }
+
   .landing-section-padding {
     padding-top: 40px !important;
     padding-bottom: 40px !important;
-  }
-  .landing-nav-links {
-    display: none !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
   }
   .landing-hero-padding {
-    padding: 60px 16px 40px !important;
+    padding: 72px 16px 40px !important;
+    min-height: unset !important;
+  }
+  .landing-hero-cta {
+    padding: 14px 28px !important;
+    font-size: 14px !important;
+  }
+
+  /* Multi-column grids that need to stack on mobile */
+  .landing-forge-grid {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+  .landing-goals-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .landing-signals-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+  .landing-steps-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+  .landing-testimonials-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .landing-faq-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Inner padding for sections */
+  .landing-inner-padding {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
   }
 
   /* ── Dashboard: stacking cards and stats ── */
@@ -522,11 +578,36 @@ h6 {
   .assessment-category-label {
     display: none !important;
   }
+  .assessment-step-circles {
+    display: none !important;
+  }
   .assessment-answer-card {
     width: 100% !important;
   }
   .assessment-padding {
     padding: 16px !important;
+  }
+
+  /* ── CapitalAccessMap: stack sidebar above main on mobile ── */
+  .capital-map-layout {
+    flex-direction: column !important;
+  }
+  .capital-map-sidebar {
+    width: 100% !important;
+    height: auto !important;
+    position: static !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    overflow-y: visible !important;
+  }
+  .capital-map-tabs {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .capital-map-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   /* ── Generic responsive helpers ── */

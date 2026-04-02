@@ -1,1 +1,0 @@
-import{j as a}from"./index-C-Sj7oxj.js";import{c as e}from"./utils-DjqsqOe8.js";function s({className:r,...o}){return a.jsx("div",{"data-slot":"card",className:e("bg-[var(--card)] text-[var(--card-foreground)] flex flex-col gap-6 rounded-lg border border-[var(--border)] p-5 transition-colors hover:border-[var(--border-medium)]",r),...o})}export{s as C};

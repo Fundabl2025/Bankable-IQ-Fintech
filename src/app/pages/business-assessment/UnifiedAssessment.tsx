@@ -322,7 +322,7 @@ function AssessmentStepTrack({ currentQuestion, totalQuestions }: { currentQuest
           const isCompleted = status === 'completed';
 
           return (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+            <div key={i} className="assessment-step-circles" style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
               {/* Connector line */}
               {i > 0 && (
                 <div
