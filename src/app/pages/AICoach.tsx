@@ -1,71 +1,69 @@
 // ════════════════════════════════════════════════════════════════════════════════
 // FUNDREADY™ — FORGE™ AI Coach
-// Your always-on capital transformation engine.
-// Replaces "Capital Intelligence" — contains all the same data + personalized roadmap.
+// Not a dashboard. Not a report. A capital transformation engine with a voice.
 //
-// Elon: one page, one truth function, every item drives a specific capital outcome.
-// Chase: identity-first framing. User sees who they ARE and who they're BECOMING.
-//        3-stage roadmap with completion pull at every step.
+// Elon: one truth function drives everything. Every response uses real data.
+//       If two users get the same response, the system is broken.
+// Chase: identity-first. Greet by name. Use behavioral language that creates
+//        forward momentum. The Q&A is where belief and action are built.
 // ════════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Zap, ArrowRight, CheckCircle, Circle, ChevronDown, ChevronRight,
-  TrendingUp, Lock, Unlock, DollarSign, Target, BarChart3, AlertCircle,
-  BookOpen, Shield, Brain,
+  Brain, ArrowRight, CheckCircle, Circle, ChevronDown,
+  Send, Zap, TrendingUp, Lock, DollarSign, Shield,
+  MessageSquare, RotateCcw, Sparkles,
 } from 'lucide-react';
-import { computeScore, computeExtendedResults } from './business-assessment/engine';
+import { computeScore } from './business-assessment/engine';
 import { evaluateProducts } from './business-assessment/productEligibility';
 import { getAllAuditItems } from '../utils/businessData';
 import { complianceModules, getComplianceProgress } from '../utils/lenderComplianceModules';
 import { getPreQualifiedPrograms } from '../utils/fundingEligibility';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-function fmt(n: number): string {
-  if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000)    return `$${Math.round(n / 1000)}K`;
-  return `$${n}`;
+interface CoachContext {
+  name: string;
+  businessName: string;
+  fundScore: number;
+  bankableScore: number;
+  dimAvg: Record<string, number>;
+  completedModules: number;
+  totalModules: number;
+  preQualCount: number;
+  preQualIds: string[];
+  criticalBlockers: string[];
+  topIncompleteModule: string;
+  topIncompleteModulePath: string;
+  actualMaxFunding: number;
+  monthsInBusiness: number;
+  creditCategory: string;
+  monthlyRevenue: string;
+  hasBankAccount: boolean;
+  hasEIN: boolean;
+  stage: 1 | 2 | 3;
+  stageLabel: string;
+  tier: 'Fundable' | 'Approaching Bankable' | 'Bankable';
+  tierColor: string;
+  pointsToBank: number;
+  weakestDim: string;
+  weakestDimScore: number;
 }
 
-function getTier(bankableScore: number, fundScore: number): {
-  label: string; color: string; bg: string; border: string;
-  aprRange: string; aprLabel: string; capitalDesc: string;
-} {
-  if (bankableScore >= 200 || fundScore >= 850) return {
-    label: 'Bankable', color: '#10b981', bg: 'rgba(16,185,129,0.07)',
-    border: 'rgba(16,185,129,0.25)', aprRange: '8–15%', aprLabel: 'Bank Capital',
-    capitalDesc: 'You qualify for institutional bank capital — the lowest-cost, longest-term funding available.',
-  };
-  if (bankableScore >= 160 || fundScore >= 700) return {
-    label: 'Approaching Bankable', color: '#f59e0b', bg: 'rgba(245,158,11,0.07)',
-    border: 'rgba(245,158,11,0.25)', aprRange: '15–25%', aprLabel: 'Transitioning',
-    capitalDesc: 'You\'re crossing into traditional lending. A few more compliance steps unlock bank-rate capital.',
-  };
-  return {
-    label: 'Fundable', color: '#3b82f6', bg: 'rgba(59,130,246,0.07)',
-    border: 'rgba(59,130,246,0.25)', aprRange: '35%+', aprLabel: 'Expensive Capital',
-    capitalDesc: 'You have access to alternative capital now. This is the starting point — not the destination.',
-  };
+interface ChatMessage {
+  role: 'forge' | 'user';
+  text: string;
+  timestamp: number;
 }
-
-const DIM_LABELS: Record<string, string> = {
-  P: 'Personal Credit', B: 'Business Profile', F: 'Financials',
-  C: 'Compliance', S: 'Stability', N: 'File Strength',
-};
-const DIM_WEIGHTS: Record<string, number> = {
-  P: 20, B: 10, F: 25, C: 20, S: 15, N: 10,
-};
-
-// ─── Roadmap Generator ───────────────────────────────────────────────────────
 
 interface RoadmapItem {
   id: string;
   label: string;
-  done: boolean;
+  why: string;
   impact: string;
+  done: boolean;
   path?: string;
   pathLabel?: string;
 }
@@ -73,225 +71,416 @@ interface RoadmapItem {
 interface RoadmapStage {
   number: 1 | 2 | 3;
   name: string;
-  tagline: string;
+  headline: string;
+  narrative: string;
   color: string;
   bg: string;
   border: string;
-  icon: React.ReactNode;
   items: RoadmapItem[];
   capitalUnlock: string;
-  daysToComplete: string;
+  timeframe: string;
+  complete: boolean;
 }
 
-function buildRoadmap(
-  fundScore: number,
-  bankableScore: number,
-  complianceProgress: ReturnType<typeof getComplianceProgress>,
-  auditItems: ReturnType<typeof getAllAuditItems>,
-  preQualifiedIds: string[],
-): RoadmapStage[] {
-  const completedModules = complianceModules.filter(m => complianceProgress[m.id]?.completed);
-  const incompleteModules = complianceModules.filter(m => !complianceProgress[m.id]?.completed);
-  const criticalItems = auditItems.filter(i => i.status !== 'complete' && (i.priority === 'critical' || i.priority === 'high'));
-  const hasFirstFunding = preQualifiedIds.length > 0;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-  // Stage 1: Foundation — fix structural blockers + establish compliance base
-  const stage1Items: RoadmapItem[] = [
-    {
-      id: 'entity',
-      label: 'Form a legal business entity (LLC or Corp)',
-      done: complianceProgress['entity-filings']?.completed ?? false,
-      impact: '+40 FundScore · Required for SBA',
-      path: '/app/lender-compliance/entity-filings', pathLabel: 'Complete →',
-    },
-    {
-      id: 'ein',
-      label: 'Obtain EIN and business licenses',
-      done: complianceProgress['ein-licenses']?.completed ?? false,
-      impact: '+35 FundScore · Required for all bank products',
-      path: '/app/lender-compliance/ein-licenses', pathLabel: 'Complete →',
-    },
-    {
-      id: 'banking',
-      label: 'Open dedicated business bank account',
-      done: complianceProgress['business-banking']?.completed ?? false,
-      impact: '+30 FundScore · Required for 12 of 17 products',
-      path: '/app/lender-compliance/business-banking', pathLabel: 'Complete →',
-    },
-    {
-      id: 'location',
-      label: 'Establish verified business address',
-      done: complianceProgress['business-location']?.completed ?? false,
-      impact: '+25 FundScore · Lender verification',
-      path: '/app/lender-compliance/business-location', pathLabel: 'Complete →',
-    },
-    {
-      id: 'nap',
-      label: 'Establish consistent NAP (Name / Address / Phone)',
-      done: complianceProgress['phones-411']?.completed ?? false,
-      impact: '+20 FundScore · NAP consistency across all bureaus',
-      path: '/app/lender-compliance/phones-411', pathLabel: 'Complete →',
-    },
-  ];
-
-  // Stage 2: Momentum — compliance depth + first funding + tradeline building
-  const stage2Items: RoadmapItem[] = [
-    {
-      id: 'website',
-      label: 'Build professional website + business email',
-      done: complianceProgress['website-email']?.completed ?? false,
-      impact: '+20 FundScore · Lender credibility check',
-      path: '/app/lender-compliance/website-email', pathLabel: 'Complete →',
-    },
-    {
-      id: 'agencies',
-      label: 'Register with D&B, Experian Business, NAICS',
-      done: complianceProgress['agencies-naics']?.completed ?? false,
-      impact: '+35 FundScore · Business credit profile starts here',
-      path: '/app/lender-compliance/agencies-naics', pathLabel: 'Complete →',
-    },
-    {
-      id: 'first-funding',
-      label: hasFirstFunding
-        ? `Apply for first pre-qualified program (${preQualifiedIds.length} ready)`
-        : 'Complete assessment to unlock first funding products',
-      done: false,
-      impact: 'Starts cash flow + repayment history — feeds SBSS score',
-      path: hasFirstFunding ? '/app/access-funding' : '/business-assessment',
-      pathLabel: hasFirstFunding ? 'Apply Now →' : 'Complete Scan →',
-    },
-    {
-      id: 'bank-rating',
-      label: 'Achieve business bank rating of 1-5 (BankScore)',
-      done: complianceProgress['bank-rating']?.completed ?? false,
-      impact: '+30 FundScore · Banks assign internal score 1-9',
-      path: '/app/lender-compliance/bank-rating', pathLabel: 'Learn More →',
-    },
-    {
-      id: 'business-plan',
-      label: 'Create lender-ready business plan',
-      done: complianceProgress['business-plan']?.completed ?? false,
-      impact: 'Required for SBA + bank term loans',
-      path: '/app/lender-compliance/business-plan', pathLabel: 'Complete →',
-    },
-  ];
-
-  // Stage 3: Optimization — cross SBSS 160, unlock institutional capital
-  const stage3Items: RoadmapItem[] = [
-    {
-      id: 'assets-ucc',
-      label: 'Document assets + UCC filing status',
-      done: complianceProgress['assets-ucc']?.completed ?? false,
-      impact: '+25 FundScore · Collateral signals for bank lenders',
-      path: '/app/lender-compliance/assets-ucc', pathLabel: 'Complete →',
-    },
-    {
-      id: 'comparable-credit',
-      label: 'Build comparable credit (3+ business tradelines)',
-      done: complianceProgress['comparable-credit']?.completed ?? false,
-      impact: '+40 FundScore · SBSS 15% weighting — critical for 160 threshold',
-      path: '/app/lender-compliance/comparable-credit', pathLabel: 'Complete →',
-    },
-    {
-      id: 'corp-facts',
-      label: 'Understand corp-only lending advantages',
-      done: complianceProgress['corp-only-facts']?.completed ?? false,
-      impact: 'Unlocks corp-exclusive products + lower personal guarantee requirements',
-      path: '/app/lender-compliance/corp-only-facts', pathLabel: 'Complete →',
-    },
-    {
-      id: 'cd-loan',
-      label: 'CD-secured business loan strategy',
-      done: complianceProgress['cd-business-loan']?.completed ?? false,
-      impact: 'Establishes banking track record — fast-tracks SBSS to 160+',
-      path: '/app/lender-compliance/cd-business-loan', pathLabel: 'Learn More →',
-    },
-    {
-      id: 'sbss-target',
-      label: `Reach SBSS 160+ (currently ${bankableScore}/300)`,
-      done: bankableScore >= 160,
-      impact: 'Crosses bankability threshold — SBA + bank loans unlock',
-      path: '/app/lender-compliance', pathLabel: 'View Path →',
-    },
-  ];
-
-  return [
-    {
-      number: 1, name: 'Foundation', tagline: 'Establish the structure lenders require.',
-      color: '#3b82f6', bg: 'rgba(59,130,246,0.06)', border: 'rgba(59,130,246,0.2)',
-      icon: <Shield style={{ width: '15px', height: '15px' }} />,
-      items: stage1Items,
-      capitalUnlock: 'Unlocks: MCA · Working Capital · Credit Cards · Revenue-Based',
-      daysToComplete: '7–30 days',
-    },
-    {
-      number: 2, name: 'Momentum', tagline: 'Get first funding. Build your credit profile.',
-      color: '#10b981', bg: 'rgba(16,185,129,0.06)', border: 'rgba(16,185,129,0.2)',
-      icon: <TrendingUp style={{ width: '15px', height: '15px' }} />,
-      items: stage2Items,
-      capitalUnlock: 'Unlocks: Business Credit Line · Equipment Financing · Business Term Loan',
-      daysToComplete: '30–120 days',
-    },
-    {
-      number: 3, name: 'Bankable', tagline: 'Cross SBSS 160. Access institutional capital.',
-      color: '#8b5cf6', bg: 'rgba(139,92,246,0.06)', border: 'rgba(139,92,246,0.2)',
-      icon: <DollarSign style={{ width: '15px', height: '15px' }} />,
-      items: stage3Items,
-      capitalUnlock: 'Unlocks: SBA 7a/504 · Bank Term Loans · DSCR · Construction',
-      daysToComplete: '120–240 days',
-    },
-  ];
+function fmt(n: number): string {
+  if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `$${Math.round(n / 1000)}K`;
+  return `$${n}`;
 }
+
+const DIM_LABELS: Record<string, string> = {
+  P: 'Personal Credit', B: 'Business Profile', F: 'Financials',
+  C: 'Compliance', S: 'Stability', N: 'File Strength',
+};
+
+// ─── Context Builder ──────────────────────────────────────────────────────────
+
+function buildContext(raw: string): CoachContext | null {
+  try {
+    const data = JSON.parse(raw);
+    const score = computeScore(data);
+    const progress = getComplianceProgress();
+    const auditItems = getAllAuditItems();
+    const preQual = getPreQualifiedPrograms();
+    const prods = evaluateProducts(data, score.score);
+    const eligible = prods.filter(p => p.qualifies);
+
+    const maxFunding = eligible.length > 0
+      ? Math.max(...eligible.map(p => {
+          const a = p.maxAmount.replace(/[$,KM+]/g, '');
+          return a.includes('.') ? parseFloat(a) * 1_000_000 : parseInt(a) * 1000;
+        })) : 0;
+
+    const completedMods = complianceModules.filter(m => progress[m.id]?.completed);
+    const incompleteMods = complianceModules.filter(m => !progress[m.id]?.completed);
+    const nextMod = incompleteMods[0];
+
+    const criticalBlockers = auditItems
+      .filter(i => i.status !== 'complete' && i.priority === 'critical')
+      .map(i => i.title)
+      .slice(0, 3);
+
+    const dimAvg = score.dimAvg as unknown as Record<string, number>;
+    const weakest = Object.entries(dimAvg).sort((a, b) => a[1] - b[1])[0];
+
+    // Stage determination
+    const stage = completedMods.length >= 8 && score.bankableScore >= 130 ? 3
+      : completedMods.length >= 4 && preQual.length > 0 ? 2 : 1;
+
+    const tier = score.bankableScore >= 160 ? 'Bankable'
+      : score.bankableScore >= 120 ? 'Approaching Bankable' : 'Fundable';
+
+    const tierColor = tier === 'Bankable' ? '#10b981'
+      : tier === 'Approaching Bankable' ? '#f59e0b' : '#3b82f6';
+
+    // Business age in months
+    const startYear = data.startDate?.year ? parseInt(data.startDate.year) : 0;
+    const startMonth = data.startDate?.month ? parseInt(data.startDate.month) : 0;
+    const now = new Date();
+    const monthsInBiz = startYear
+      ? (now.getFullYear() - startYear) * 12 + (now.getMonth() + 1 - startMonth)
+      : 0;
+
+    const revenueLabel: Record<string, string> = {
+      under_5k: 'under $5K/mo', '5k_15k': '$5K–$15K/mo',
+      '15k_40k': '$15K–$40K/mo', '40k_100k': '$40K–$100K/mo', over_100k: 'over $100K/mo',
+    };
+
+    return {
+      name: data.ownerFirstName || data.ownerName?.split(' ')[0] || data.firstName || '',
+      businessName: data.businessName || '',
+      fundScore: score.score,
+      bankableScore: score.bankableScore,
+      dimAvg,
+      completedModules: completedMods.length,
+      totalModules: complianceModules.length,
+      preQualCount: preQual.length,
+      preQualIds: preQual,
+      criticalBlockers,
+      topIncompleteModule: nextMod?.title || '',
+      topIncompleteModulePath: nextMod ? `/app/lender-compliance/${nextMod.id}` : '/app/lender-compliance',
+      actualMaxFunding: maxFunding,
+      monthsInBusiness: monthsInBiz,
+      creditCategory: data.experian || 'unknown',
+      monthlyRevenue: revenueLabel[data.monthlyRevenue] || 'unknown',
+      hasBankAccount: data.bankAccount === 'dedicated',
+      hasEIN: data.hasEIN === true,
+      stage: stage as 1 | 2 | 3,
+      stageLabel: stage === 3 ? 'Bankable' : stage === 2 ? 'Momentum' : 'Foundation',
+      tier,
+      tierColor,
+      pointsToBank: Math.max(0, 160 - score.bankableScore),
+      weakestDim: DIM_LABELS[weakest?.[0]] || 'Compliance',
+      weakestDimScore: Math.round((weakest?.[1] || 0) * 100),
+    };
+  } catch { return null; }
+}
+
+// ─── Dynamic Roadmap Generator ────────────────────────────────────────────────
+
+function buildDynamicRoadmap(ctx: CoachContext, progress: ReturnType<typeof getComplianceProgress>): RoadmapStage[] {
+  const s = ctx;
+
+  const stage1: RoadmapStage = {
+    number: 1,
+    name: 'Foundation',
+    headline: s.completedModules >= 5 ? 'Foundation nearly complete' : 'Build the structure lenders verify first',
+    narrative: s.completedModules >= 5
+      ? `You've completed ${s.completedModules} of 13 compliance modules. The lender verification layer is mostly in place. ${s.criticalBlockers.length > 0 ? `One critical item still flags: ${s.criticalBlockers[0]}.` : 'No critical blockers detected.'}`
+      : `Lenders verify ${s.businessName || 'your business'} before approving anything. Right now ${s.completedModules === 0 ? 'none of' : `${s.completedModules} of`} the 13 verification layers are confirmed. Until these are in place, even a great credit score won't move approvals forward.`,
+    color: '#3b82f6',
+    bg: 'rgba(59,130,246,0.06)',
+    border: 'rgba(59,130,246,0.2)',
+    timeframe: s.completedModules >= 4 ? '≈7–14 days to finish' : '≈14–30 days',
+    capitalUnlock: 'Unlocks: MCA · Working Capital · Revenue-Based Loans · Credit Cards',
+    complete: s.completedModules >= 5,
+    items: [
+      {
+        id: 'entity', label: 'Form a legal business entity (LLC or Corp)',
+        why: 'Lenders and bureaus can\'t verify a sole prop. An LLC or Corp creates a separate credit file.',
+        impact: 'Required for SBA, bank loans, and all traditional products',
+        done: progress['entity-filings']?.completed ?? false,
+        path: '/app/lender-compliance/entity-filings', pathLabel: 'Complete module →',
+      },
+      {
+        id: 'ein', label: 'Obtain EIN and all required licenses',
+        why: 'Your EIN is your business Social Security Number — without it, lenders can\'t pull your business credit.',
+        impact: '+35 FundScore · Required for 14 of 17 funding products',
+        done: progress['ein-licenses']?.completed ?? false,
+        path: '/app/lender-compliance/ein-licenses', pathLabel: 'Complete module →',
+      },
+      {
+        id: 'banking', label: 'Open a dedicated business bank account',
+        why: 'Bank statements are the #1 document lenders request. A personal account disqualifies you from most products.',
+        impact: '+30 FundScore · Required for 12 of 17 products · Starts 3-month statement clock',
+        done: progress['business-banking']?.completed ?? false,
+        path: '/app/lender-compliance/business-banking', pathLabel: 'Complete module →',
+      },
+      {
+        id: 'location', label: 'Establish a verified business address',
+        why: `Lenders run a database check on ${s.businessName || 'your business'} address. A home address or virtual office can trigger a decline.`,
+        impact: '+25 FundScore · Lender verification required',
+        done: progress['business-location']?.completed ?? false,
+        path: '/app/lender-compliance/business-location', pathLabel: 'Complete module →',
+      },
+      {
+        id: 'nap', label: 'Establish consistent NAP across all directories',
+        why: 'Name, Address, Phone must match exactly on Google, 411, D&B, Experian Business. Inconsistency = lender red flag.',
+        impact: `+20 FundScore · NAP inconsistency is one of the most common silent declines`,
+        done: progress['phones-411']?.completed ?? false,
+        path: '/app/lender-compliance/phones-411', pathLabel: 'Complete module →',
+      },
+    ],
+  };
+
+  const stage2: RoadmapStage = {
+    number: 2,
+    name: 'Momentum',
+    headline: s.preQualCount > 0 ? `${s.preQualCount} funding products ready to apply` : 'Get your first funding + build your credit profile',
+    narrative: s.preQualCount > 0
+      ? `You have ${s.preQualCount} pre-qualified product${s.preQualCount !== 1 ? 's' : ''} ready to apply for now. Your first funding starts your repayment history — which feeds your SBSS score. Use this stage to establish ${s.completedModules < 7 ? 'the remaining compliance modules and' : ''} 3+ business tradelines.`
+      : `Stage 2 is where capital velocity begins. Getting your first funding — even a small working capital line — starts your repayment history. Complete your business registration with D&B and Experian Business so your payments report to the bureaus that actually matter for SBSS.`,
+    color: '#10b981',
+    bg: 'rgba(16,185,129,0.06)',
+    border: 'rgba(16,185,129,0.2)',
+    timeframe: '≈30–120 days',
+    capitalUnlock: 'Unlocks: Business Credit Line · Equipment Financing · Business Term Loan · Credit Unions',
+    complete: s.completedModules >= 9 && s.preQualCount > 0,
+    items: [
+      {
+        id: 'website', label: 'Build a professional website + business email',
+        why: 'Lenders Google you. A domain email (info@yourbusiness.com) signals legitimacy. Without it, 40%+ of applications get flagged for manual review.',
+        impact: '+20 FundScore · Credibility check by underwriters',
+        done: progress['website-email']?.completed ?? false,
+        path: '/app/lender-compliance/website-email', pathLabel: 'Complete module →',
+      },
+      {
+        id: 'agencies', label: 'Register with D&B, Experian Business, and get NAICS code',
+        why: `This is where ${s.businessName || 'your business'} credit file starts. Without D&B registration, no business payments report — your SBSS stays at zero regardless of how well you perform.`,
+        impact: '+35 FundScore · SBSS 15% weighting starts here',
+        done: progress['agencies-naics']?.completed ?? false,
+        path: '/app/lender-compliance/agencies-naics', pathLabel: 'Complete module →',
+      },
+      {
+        id: 'first-funding',
+        label: s.preQualCount > 0
+          ? `Apply for first pre-qualified program (${s.preQualCount} available now)`
+          : 'Complete assessment to unlock first funding products',
+        why: 'Your first funding creates a repayment track record. This is what converts your compliance work into a live credit event that reports.',
+        impact: 'Starts SBSS repayment history · Opens door to 2nd round at better terms',
+        done: false,
+        path: s.preQualCount > 0 ? '/app/access-funding' : '/business-assessment',
+        pathLabel: s.preQualCount > 0 ? `Apply Now (${s.preQualCount} ready) →` : 'Complete Scan →',
+      },
+      {
+        id: 'bank-rating', label: 'Achieve business bank rating of 1-5 (BankScore)',
+        why: 'Banks assign an internal score from 1-9. Scores above 5 trigger automatic review flags. This module shows exactly how to stay in the 1-5 range.',
+        impact: '+30 FundScore · Internal bank scoring affects ALL bank product decisions',
+        done: progress['bank-rating']?.completed ?? false,
+        path: '/app/lender-compliance/bank-rating', pathLabel: 'Complete module →',
+      },
+      {
+        id: 'biz-plan', label: 'Create a lender-ready business plan',
+        why: 'Required by SBA, all bank term loans, and equipment financing. A well-structured plan can add 15-20 points to your SBSS scoring.',
+        impact: 'Required for SBA · Improves terms on all traditional products',
+        done: progress['business-plan']?.completed ?? false,
+        path: '/app/lender-compliance/business-plan', pathLabel: 'Complete module →',
+      },
+    ],
+  };
+
+  const stage3: RoadmapStage = {
+    number: 3,
+    name: 'Bankable',
+    headline: s.bankableScore >= 160 ? '✓ Bankable threshold crossed' : `${s.pointsToBank} SBSS points to bank capital`,
+    narrative: s.bankableScore >= 160
+      ? `${s.name ? s.name + ', you\'ve' : 'You\'ve'} crossed the SBSS 160 bankability threshold. You now qualify for institutional capital — SBA loans, bank term loans, and the full suite of traditional products. The cost of your capital just dropped from 35%+ to 8-15%.`
+      : `The SBSS 160 threshold is the line between expensive capital and institutional bank capital. ${s.name ? s.name + ' is' : 'You\'re'} currently at ${s.bankableScore}/300 — ${s.pointsToBank} points away. The path: complete all compliance modules and establish 3+ reporting business tradelines.`,
+    color: '#8b5cf6',
+    bg: 'rgba(139,92,246,0.06)',
+    border: 'rgba(139,92,246,0.2)',
+    timeframe: s.bankableScore >= 130 ? '≈60–120 days' : '≈120–240 days',
+    capitalUnlock: 'Unlocks: SBA 7(a) & 504 · Bank Term Loans · DSCR Loans · Construction · Full Institutional Suite',
+    complete: s.bankableScore >= 160,
+    items: [
+      {
+        id: 'assets', label: 'Document business assets and UCC filing status',
+        why: 'Collateral documentation strengthens your lender file. Even intangible assets — receivables, equipment, IP — can be used as collateral signals.',
+        impact: '+25 FundScore · Required for secured bank products',
+        done: progress['assets-ucc']?.completed ?? false,
+        path: '/app/lender-compliance/assets-ucc', pathLabel: 'Complete module →',
+      },
+      {
+        id: 'comparable', label: 'Build 3+ business tradelines (comparable credit)',
+        why: 'This is 15% of your SBSS score. Three reporting tradelines from Net-30 vendors is the minimum to move the SBSS needle. Without them, your business credit file is empty regardless of personal credit.',
+        impact: '+40 FundScore · Critical for SBSS 160 threshold',
+        done: progress['comparable-credit']?.completed ?? false,
+        path: '/app/lender-compliance/comparable-credit', pathLabel: 'Complete module →',
+      },
+      {
+        id: 'corp-facts', label: 'Leverage corp-only lending advantages',
+        why: 'Corporations access products sole props and LLCs cannot. Understanding the corp structure unlocks higher limits and lower personal guarantee requirements.',
+        impact: 'Higher limits · Lower PG requirements · Corp-exclusive products',
+        done: progress['corp-only-facts']?.completed ?? false,
+        path: '/app/lender-compliance/corp-only-facts', pathLabel: 'Complete module →',
+      },
+      {
+        id: 'cd-loan', label: 'Execute a CD-secured business loan strategy',
+        why: 'A CD loan creates an instant, fully-paid tradeline that reports to all 3 business bureaus. It\'s the fastest single action to push your SBSS score.',
+        impact: `Fastest path to SBSS 160 — can add 20-30 points in one move`,
+        done: progress['cd-business-loan']?.completed ?? false,
+        path: '/app/lender-compliance/cd-business-loan', pathLabel: 'Learn strategy →',
+      },
+      {
+        id: 'sbss-target',
+        label: `Reach SBSS 160+ (currently ${s.bankableScore}/300)`,
+        why: `SBSS 160 is the SBA\'s minimum threshold. Below it: automatic review. Above it: automated approval for SBA Express loans and preferred rates on 7(a).`,
+        impact: 'Crosses bankability threshold → 35%+ APR drops to 8-15% APR',
+        done: s.bankableScore >= 160,
+        path: '/app/lender-compliance', pathLabel: 'View all modules →',
+      },
+    ],
+  };
+
+  return [stage1, stage2, stage3];
+}
+
+// ─── FORGE™ Response Engine ───────────────────────────────────────────────────
+
+function getForgeResponse(input: string, ctx: CoachContext): string {
+  const q = input.toLowerCase().trim();
+  const n = ctx.name ? ctx.name : 'your business';
+
+  // Next step
+  if (/next step|what (should|do) i|where (do|should) i start|what now|priority/i.test(q)) {
+    if (ctx.stage === 1 && ctx.topIncompleteModule) {
+      return `The single highest-impact action right now is completing your **${ctx.topIncompleteModule}** module. Here's why it matters: your FundScore is ${ctx.fundScore} and your weakest dimension is ${ctx.weakestDim} at ${ctx.weakestDimScore}%. Fixing the compliance foundation addresses that directly. Each module you complete adds 20-40 points. Go to: [${ctx.topIncompleteModulePath}]`;
+    }
+    if (ctx.stage === 2 && ctx.preQualCount > 0) {
+      return `${n} has ${ctx.preQualCount} funding product${ctx.preQualCount !== 1 ? 's' : ''} pre-qualified right now. The next step is applying — specifically to start building a repayment track record. Even a small first draw creates a live credit event that starts reporting to D&B and Experian Business. That reporting is what moves your SBSS score from ${ctx.bankableScore} toward the 160 bankability threshold. [Go to Access Funding →]`;
+    }
+    return `You're in Stage ${ctx.stage}: ${ctx.stageLabel}. The most impactful next move: complete the remaining ${ctx.totalModules - ctx.completedModules} compliance modules — especially the ones in the "Getting Approved" category. Each one is worth 15-40 SBSS points. You're ${ctx.pointsToBank > 0 ? `${ctx.pointsToBank} points from the 160 bankability threshold` : 'past the bankability threshold — apply for SBA now'}.`;
+  }
+
+  // SBA / bank loans
+  if (/sba|bank loan|traditional|institutional|7a|504/i.test(q)) {
+    return `SBA loans require a SBSS score of 160+. ${n === 'your business' ? 'Your' : `${ctx.name}'s`} current SBSS is **${ctx.bankableScore}/300** — ${ctx.pointsToBank > 0 ? `${ctx.pointsToBank} points away from eligibility` : '**above the threshold ✓**'}. \n\nThe SBSS is weighted: Personal Credit (35%), Business Financials (30%), Business Profile (20%), Business Credit Reports (15%). Your personal credit dimension is at ${Math.round((ctx.dimAvg['P'] || 0) * 100)}%. The fastest path to 160: complete comparable credit module (builds the 15% business credit component) and ensure all 13 compliance modules are done. Timeline from your current position: ${ctx.bankableScore >= 130 ? '60-90 days' : ctx.bankableScore >= 100 ? '90-150 days' : '150-240 days'}.`;
+  }
+
+  // Score explanation
+  if (/why is my score|explain my score|what (affects|impacts|drives) my score|fundscore/i.test(q)) {
+    const dims = Object.entries(DIM_LABELS).map(([k, label]) => {
+      const pct = Math.round((ctx.dimAvg[k] || 0) * 100);
+      const emoji = pct >= 70 ? '✓' : pct >= 40 ? '⚠' : '✗';
+      return `${emoji} ${label}: ${pct}%`;
+    }).join('\n');
+    return `Your FundScore of **${ctx.fundScore}/1000** breaks down across 6 dimensions:\n\n${dims}\n\nYour lowest dimension is **${ctx.weakestDim} at ${ctx.weakestDimScore}%**. That's the highest-leverage area — improving it from ${ctx.weakestDimScore}% to 70%+ would add approximately ${Math.round((70 - ctx.weakestDimScore) * 2)} points to your total FundScore.`;
+  }
+
+  // Bankable score / SBSS
+  if (/sbss|bankable score|bank readiness|160|300 scale/i.test(q)) {
+    return `The SBSS (Small Business Scoring Service) is the 0-300 scale lenders and the SBA use internally to score businesses. **160 is the threshold** — below it, you're in automatic review or decline territory for SBA and most bank products.\n\n${n === 'your business' ? 'You\'re' : `${ctx.name} is`} at **${ctx.bankableScore}/300**. It's weighted: Personal Credit (35%), Business Financials (30%), Business Profile (20%), Business Credit Reports (15%). The fastest moves to raise it: establish business tradelines (the 15% component is often 0 for new businesses) and complete your compliance modules. You need ${ctx.pointsToBank} more points.`;
+  }
+
+  // Timeline / how long
+  if (/how long|timeline|when can i|how many days|how many months/i.test(q)) {
+    const stage1Days = ctx.completedModules >= 4 ? 7 : 30;
+    return `Based on ${n === 'your business' ? 'your' : `${ctx.name}'s`} current profile (FundScore ${ctx.fundScore}, SBSS ${ctx.bankableScore}, ${ctx.completedModules}/${ctx.totalModules} modules done):\n\n**Alternative capital (MCA, Working Capital):** Available now — ${ctx.preQualCount > 0 ? `${ctx.preQualCount} products pre-qualified` : 'complete 2-3 compliance modules first'}\n\n**Traditional lending (Business Term Loans, Credit Unions):** ~${stage1Days + 60} days from today — requires consistent bank deposits and business credit profile forming\n\n**SBA / Bank Loans:** ~${ctx.bankableScore >= 130 ? '90 days' : ctx.bankableScore >= 100 ? '150 days' : '240 days'} — SBSS 160+ threshold needs to be crossed (${ctx.pointsToBank} points away)\n\nThe timeline compresses fast once you complete compliance modules and get first funding reporting.`;
+  }
+
+  // APR / cost of capital
+  if (/apr|interest rate|cost|expensive|cheap|rate/i.test(q)) {
+    return `Right now, ${n === 'your business' ? 'your' : `${ctx.name}'s`} tier is **${ctx.tier}** — which means the available capital costs **${ctx.tier === 'Bankable' ? '8-15%' : ctx.tier === 'Approaching Bankable' ? '15-25%' : '35-50%+'} APR**.\n\nHere's what that means in real dollars: on a $250K loan, the difference between 35% and 10% APR is **$62,500/year in interest**. That's money that goes to lenders instead of back into ${ctx.businessName || 'the business'}.\n\nThe path to bank-rate capital is SBSS 160+ — ${ctx.pointsToBank > 0 ? `you need ${ctx.pointsToBank} more points` : 'you\'ve already crossed it'}. Every compliance module you complete moves you closer.`;
+  }
+
+  // Pre-qualified programs
+  if (/pre.?qualif|qualify|eligible|which (products|programs|loans)/i.test(q)) {
+    if (ctx.preQualCount === 0) {
+      return `${n === 'your business' ? 'You don\'t' : `${ctx.name} doesn't`} have any pre-qualified programs yet. The fastest path to first qualification: complete the Entity & Filings, EIN & Licenses, and Business Banking compliance modules. Once those are done, Working Capital Loans and MCA products typically unlock. Complete your Business Success Scan too — the more data in the system, the more products can be evaluated.`;
+    }
+    return `Based on ${n === 'your business' ? 'your' : `${ctx.name}'s`} profile, **${ctx.preQualCount} funding product${ctx.preQualCount !== 1 ? 's' : ''}** are pre-qualified right now. You can view and apply at [Access Funding →].\n\nThese are alternative capital products (${ctx.actualMaxFunding > 0 ? `up to ${fmt(ctx.actualMaxFunding)}` : ''}). As you complete more compliance modules, the pre-qualified list expands into traditional and bank products.`;
+  }
+
+  // What is FORGE
+  if (/what (is|are) (forge|you|this)|how (does|do) (forge|you|this) work/i.test(q)) {
+    return `FORGE™ is your capital transformation engine — an always-on AI coach that reads every data point in your FundReady profile and tells you exactly what to do next to move from expensive alternative capital to institutional bank capital.\n\nI know your FundScore (${ctx.fundScore}), your SBSS score (${ctx.bankableScore}/300), which compliance modules are done (${ctx.completedModules}/${ctx.totalModules}), and which funding products you qualify for (${ctx.preQualCount} right now). Every answer I give uses your actual data — not generic advice.\n\nAsk me anything about your capital path, your scores, timelines, or specific products.`;
+  }
+
+  // Compliance modules
+  if (/compliance|module|lender compliance/i.test(q)) {
+    const pct = Math.round((ctx.completedModules / ctx.totalModules) * 100);
+    return `${n === 'your business' ? 'You\'ve' : `${ctx.name} has`} completed **${ctx.completedModules} of ${ctx.totalModules} compliance modules** (${pct}%). ${ctx.topIncompleteModule ? `The next one to complete is **${ctx.topIncompleteModule}**.` : ''}\n\nCompliance is your FundScore's "C" dimension — currently at ${Math.round((ctx.dimAvg['C'] || 0) * 100)}%. Every module adds 15-40 FundScore points and directly affects your SBSS. The full suite is required for SBA approval. Go to [Lender Compliance →] to continue.`;
+  }
+
+  // Blockers
+  if (/block|prevent|stop|holding (me|us) back|what's wrong|issue|problem/i.test(q)) {
+    if (ctx.criticalBlockers.length > 0) {
+      return `I'm seeing **${ctx.criticalBlockers.length} critical item${ctx.criticalBlockers.length !== 1 ? 's' : ''}** flagged in your profile:\n\n${ctx.criticalBlockers.map((b, i) => `${i + 1}. ${b}`).join('\n')}\n\nThese aren't suggestions — they're automatic decline triggers at most lenders. Fix these first before anything else. The Denial Diagnosis tool ([here →](/app/denial-diagnosis)) breaks them down in detail.`;
+    }
+    return `No critical blockers detected in ${n === 'your business' ? 'your' : `${ctx.name}'s`} profile. The main limiting factor right now is your SBSS score (${ctx.bankableScore}/300) — it's not a blocker per se, but it's what separates your current alternative capital options from institutional bank capital. Complete compliance modules and establish business tradelines to close the gap.`;
+  }
+
+  // Revenue / cash flow
+  if (/revenue|cash flow|monthly|income|sales/i.test(q)) {
+    return `${n === 'your business' ? 'Your' : `${ctx.name}'s`} reported revenue is **${ctx.monthlyRevenue || 'not yet specified in your profile'}**. This feeds directly into your Financial Health dimension (currently ${Math.round((ctx.dimAvg['F'] || 0) * 100)}% — weighted at 25% of your FundScore).\n\nFor revenue-based products (Working Capital, MCA, Revenue-Based Loans), lenders typically want to see 3+ months of consistent bank deposits matching what you've reported. If there's a gap between reported and deposited revenue, that creates a verification flag. Update your assessment if revenue has changed — it affects which products you qualify for.`;
+  }
+
+  // Default — catch-all with context
+  return `Good question. Based on ${n === 'your business' ? 'your' : `${ctx.name}'s`} current profile — FundScore ${ctx.fundScore}, SBSS ${ctx.bankableScore}/300, ${ctx.completedModules}/${ctx.totalModules} compliance modules, ${ctx.preQualCount} pre-qualified products — here's what I'd focus on:\n\n${ctx.stage === 1 ? `Stage 1 Foundation: Complete ${ctx.topIncompleteModule || 'remaining compliance modules'} to unlock your first funding products.` : ctx.stage === 2 ? `Stage 2 Momentum: You have ${ctx.preQualCount} products ready. Apply now to start your repayment history and push your SBSS toward 160.` : `Stage 3 Bankable: You're ${ctx.pointsToBank} points from the institutional capital threshold. Focus on comparable credit and the CD loan strategy.`}\n\nAsk me anything more specific — timeline, specific products, what's blocking you, or how a particular score works.`;
+}
+
+// ─── Build Animation Steps ────────────────────────────────────────────────────
+
+const BUILD_STEPS = [
+  'Reading your FundScore and dimension breakdown…',
+  'Analyzing compliance module progress…',
+  'Identifying capital blockers and quick wins…',
+  'Mapping pre-qualified products to your profile…',
+  'Calculating SBSS trajectory and bankability timeline…',
+  'Generating your personalized 3-stage roadmap…',
+];
+
+const SUGGESTED_QUESTIONS = [
+  'What\'s my single next step?',
+  'How do I qualify for an SBA loan?',
+  'Why is my FundScore what it is?',
+  'What\'s blocking me right now?',
+  'When can I access bank-rate capital?',
+  'How many products do I pre-qualify for?',
+];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function AICoach() {
   const navigate = useNavigate();
-  const [fundScore, setFundScore] = useState(0);
-  const [bankableScore, setBankableScore] = useState(0);
-  const [dimAvg, setDimAvg] = useState<Record<string, number>>({});
-  const [businessName, setBusinessName] = useState('');
-  const [complianceProgress, setComplianceProgress] = useState<ReturnType<typeof getComplianceProgress>>({});
-  const [auditItems, setAuditItems] = useState<ReturnType<typeof getAllAuditItems>>([]);
-  const [preQualifiedIds, setPreQualifiedIds] = useState<string[]>([]);
-  const [hasAssessment, setHasAssessment] = useState(false);
-  const [expandedStage, setExpandedStage] = useState<number | null>(1);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const [ctx, setCtx] = useState<CoachContext | null>(null);
+  const [progress, setProgress] = useState<ReturnType<typeof getComplianceProgress>>({});
   const [roadmap, setRoadmap] = useState<RoadmapStage[]>([]);
-  const [actualMaxFunding, setActualMaxFunding] = useState(0);
+  const [hasAssessment, setHasAssessment] = useState(false);
+
+  const [phase, setPhase] = useState<'idle' | 'building' | 'ready'>('idle');
+  const [buildStep, setBuildStep] = useState(0);
+  const [expandedStage, setExpandedStage] = useState<number | null>(1);
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
 
   const load = useCallback(() => {
     const raw = localStorage.getItem('unified_assessment');
-    if (!raw) return;
-    try {
-      const data = JSON.parse(raw);
-      const scoreResult = computeScore(data);
-      setFundScore(scoreResult.score);
-      setBankableScore(scoreResult.bankableScore);
-      setDimAvg(scoreResult.dimAvg as unknown as Record<string, number>);
-      setBusinessName(data.businessName || data.ownerName || '');
-      setHasAssessment(true);
-
-      const items = getAllAuditItems();
-      setAuditItems(items);
-
-      const progress = getComplianceProgress();
-      setComplianceProgress(progress);
-
-      const preQ = getPreQualifiedPrograms();
-      setPreQualifiedIds(preQ);
-
-      const prods = evaluateProducts(data, scoreResult.score);
-      const eligible = prods.filter(p => p.qualifies);
-      const maxFunding = eligible.length > 0
-        ? Math.max(...eligible.map(p => {
-            const amt = p.maxAmount.replace(/[$,KM+]/g, '');
-            return amt.includes('.') ? parseFloat(amt) * 1000000 : parseInt(amt) * 1000;
-          }))
-        : 0;
-      setActualMaxFunding(maxFunding);
-
-      setRoadmap(buildRoadmap(scoreResult.score, scoreResult.bankableScore, progress, items, preQ));
-    } catch { /* non-fatal */ }
+    if (!raw) { setHasAssessment(false); return; }
+    setHasAssessment(true);
+    const context = buildContext(raw);
+    if (!context) return;
+    const prog = getComplianceProgress();
+    setCtx(context);
+    setProgress(prog);
+    setRoadmap(buildDynamicRoadmap(context, prog));
   }, []);
 
   useEffect(() => {
@@ -307,34 +496,68 @@ export function AICoach() {
     };
   }, [load]);
 
-  const tier = getTier(bankableScore, fundScore);
-  const completedModules = complianceModules.filter(m => complianceProgress[m.id]?.completed).length;
-  const totalModules = complianceModules.length;
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
 
-  // This week's focus: top 3 undone, highest-impact items across all stages
-  const thisWeek = roadmap
-    .flatMap(s => s.items)
-    .filter(i => !i.done)
-    .slice(0, 3);
+  const handleBuildRoadmap = useCallback(async () => {
+    setPhase('building');
+    setBuildStep(0);
+    for (let i = 0; i < BUILD_STEPS.length; i++) {
+      await new Promise(r => setTimeout(r, 420));
+      setBuildStep(i + 1);
+    }
+    await new Promise(r => setTimeout(r, 300));
+    setPhase('ready');
 
-  // Projected capital at 240 days
-  const score240 = Math.min(fundScore + 200, 1000);
-  const potentialMax = score240 >= 900 ? 1500000 : score240 >= 800 ? 500000 : score240 >= 700 ? 150000 : 75000;
+    // Opening message from FORGE™
+    if (ctx) {
+      const greeting = `${ctx.name ? `${ctx.name}, ` : ''}I've analyzed your complete FundReady profile. Here's where you stand:\n\n**FundScore: ${ctx.fundScore}/1000** (${ctx.tier})\n**SBSS: ${ctx.bankableScore}/300** — ${ctx.pointsToBank > 0 ? `${ctx.pointsToBank} points to institutional capital` : '✓ Bankable threshold crossed'}\n**Compliance: ${ctx.completedModules}/${ctx.totalModules} modules** complete\n**Pre-qualified: ${ctx.preQualCount} funding product${ctx.preQualCount !== 1 ? 's'  : ''}** ready to apply\n\nYour personalized 3-stage roadmap is below. Ask me anything — I know your entire profile.`;
+      setMessages([{ role: 'forge', text: greeting, timestamp: Date.now() }]);
+    }
+  }, [ctx]);
 
+  const sendMessage = useCallback(async (text: string) => {
+    if (!text.trim() || !ctx) return;
+    const userMsg: ChatMessage = { role: 'user', text: text.trim(), timestamp: Date.now() };
+    setMessages(prev => [...prev, userMsg]);
+    setInputValue('');
+    setIsTyping(true);
+    await new Promise(r => setTimeout(r, 600 + Math.random() * 600));
+    const response = getForgeResponse(text, ctx);
+    setIsTyping(false);
+    setMessages(prev => [...prev, { role: 'forge', text: response, timestamp: Date.now() }]);
+  }, [ctx]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(inputValue); }
+  };
+
+  // ── No assessment ─────────────────────────────────────────────────────────
   if (!hasAssessment) {
     return (
-      <div style={{ maxWidth: '720px', margin: '0 auto', padding: '48px 24px', textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔥</div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 800, color: 'var(--foreground)', margin: '0 0 8px 0' }}>
-          FORGE™ needs your business data
+      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '64px 24px', textAlign: 'center' }}>
+        <div style={{
+          width: '64px', height: '64px', borderRadius: '16px', margin: '0 auto 20px',
+          background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Brain style={{ width: '28px', height: '28px', color: 'white' }} />
+        </div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 900, color: 'var(--foreground)', margin: '0 0 8px 0' }}>
+          Meet FORGE™
         </h1>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', margin: '0 0 28px 0' }}>
-          Complete the Business Success Scan and FORGE™ will build your personalized roadmap from Fundable to Bankable.
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', margin: '0 0 6px 0', lineHeight: 1.6 }}>
+          Your always-on AI capital coach. FORGE™ reads your complete business profile and builds a personalized roadmap from Fundable to Bankable — then answers any capital question in real time.
+        </p>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', margin: '0 0 32px 0' }}>
+          Complete the Business Success Scan first so FORGE™ has your data.
         </p>
         <button
           onClick={() => navigate('/business-assessment')}
           style={{
-            padding: '12px 28px', borderRadius: '10px',
+            padding: '14px 32px', borderRadius: '12px',
             background: 'linear-gradient(135deg, #10b981, #3b82f6)',
             border: 'none', cursor: 'pointer',
             fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'white',
@@ -346,547 +569,519 @@ export function AICoach() {
     );
   }
 
-  return (
-    <div style={{ maxWidth: '860px', margin: '0 auto', padding: '28px 20px' }}>
+  // ── Idle: intro screen ────────────────────────────────────────────────────
+  if (phase === 'idle' && ctx) {
+    return (
+      <div style={{ maxWidth: '700px', margin: '0 auto', padding: '48px 24px' }}>
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+          {/* FORGE header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '32px' }}>
+            <div style={{
+              width: '52px', height: '52px', borderRadius: '14px', flexShrink: 0,
+              background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Brain style={{ width: '24px', height: '24px', color: 'white' }} />
+            </div>
+            <div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 900, color: 'var(--foreground)', lineHeight: 1 }}>
+                FORGE™
+              </div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
+                Your AI Capital Coach · always-on · always synced with your profile
+              </div>
+            </div>
+          </div>
 
-      {/* ── FORGE™ HEADER ─────────────────────────────────────────────────── */}
-      <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-              <div style={{
-                width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
-                background: 'linear-gradient(135deg, #10b981, #3b82f6)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+          {/* Greeting */}
+          <div style={{
+            padding: '24px 28px', borderRadius: '16px', marginBottom: '24px',
+            background: `${ctx.tierColor}08`, border: `1.5px solid ${ctx.tierColor}25`,
+          }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: 'var(--foreground)', marginBottom: '8px', lineHeight: 1.3 }}>
+              {ctx.name ? `Hey ${ctx.name} —` : 'Hey —'} I've been watching your profile.
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
+              Your current tier is <strong style={{ color: ctx.tierColor }}>{ctx.tier}</strong>. You're at FundScore <strong style={{ color: 'var(--foreground)' }}>{ctx.fundScore}/1000</strong> and SBSS <strong style={{ color: ctx.bankableScore >= 160 ? '#10b981' : 'var(--foreground)' }}>{ctx.bankableScore}/300</strong> — {ctx.pointsToBank > 0 ? <>{ctx.pointsToBank} points from institutional bank capital</> : <>past the bankability threshold</>}. {ctx.preQualCount > 0 ? <>{ctx.preQualCount} funding product{ctx.preQualCount !== 1 ? 's' : ''} are pre-qualified and ready to apply now.</> : <>Complete your first compliance modules to unlock funding products.</>}
+            </div>
+          </div>
+
+          {/* Snapshot stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '28px' }}>
+            {[
+              { label: 'FundScore', value: `${ctx.fundScore}`, sub: '/ 1000', color: ctx.fundScore >= 800 ? '#10b981' : ctx.fundScore >= 600 ? '#f59e0b' : '#ef4444' },
+              { label: 'SBSS', value: `${ctx.bankableScore}`, sub: '/ 300', color: ctx.bankableScore >= 160 ? '#10b981' : '#f59e0b' },
+              { label: 'Compliance', value: `${ctx.completedModules}`, sub: `/ ${ctx.totalModules}`, color: ctx.completedModules === ctx.totalModules ? '#10b981' : '#3b82f6' },
+              { label: 'Pre-Qualified', value: `${ctx.preQualCount}`, sub: 'products', color: ctx.preQualCount > 0 ? '#10b981' : 'var(--muted-foreground)' },
+            ].map(stat => (
+              <div key={stat.label} style={{
+                padding: '14px', borderRadius: '10px', textAlign: 'center',
+                background: 'var(--card)', border: '1px solid var(--border)',
               }}>
-                <Brain style={{ width: '18px', height: '18px', color: 'white' }} />
-              </div>
-              <div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 900, color: 'var(--foreground)', lineHeight: 1 }}>
-                  FORGE™
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: stat.color, lineHeight: 1 }}>
+                  {stat.value}
                 </div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
-                  Your AI Capital Coach · always-on · always synced
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>
+                  {stat.sub}
                 </div>
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <div style={{
-              padding: '6px 12px', borderRadius: '8px',
-              background: tier.bg, border: `1px solid ${tier.border}`,
-            }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: '11px', fontWeight: 700, color: tier.color }}>
-                {tier.label}
-              </span>
-            </div>
-            <div style={{
-              padding: '6px 12px', borderRadius: '8px',
-              background: 'var(--card)', border: '1px solid var(--border)',
-              display: 'flex', gap: '10px',
-            }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
-                FundScore <strong style={{ color: 'var(--foreground)' }}>{fundScore}</strong>
-              </span>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
-                SBSS <strong style={{ color: bankableScore >= 160 ? '#10b981' : 'var(--foreground)' }}>{bankableScore}</strong>/300
-              </span>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* ── TWO-SYSTEM STATUS STRIP ────────────────────────────────────────── */}
-      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-        style={{
-          display: 'grid', gridTemplateColumns: '1fr auto 1fr',
-          borderRadius: '12px', border: '1px solid var(--border)',
-          overflow: 'hidden', marginBottom: '20px',
-        }}
-      >
-        <div style={{ padding: '16px 20px', background: 'rgba(239,68,68,0.04)' }}>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
-            Today — {tier.aprLabel}
-          </div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: '#ef4444', lineHeight: 1, marginBottom: '4px' }}>
-            {tier.aprRange} APR
-          </div>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
-            {actualMaxFunding > 0 ? fmt(actualMaxFunding) : '—'} accessible · {preQualifiedIds.length} programs pre-qualified
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', background: 'var(--card)', borderLeft: '1px solid var(--border)', borderRight: '1px solid var(--border)' }}>
-          <ArrowRight style={{ width: '16px', height: '16px', color: 'var(--muted-foreground)' }} />
-        </div>
-        <div style={{ padding: '16px 20px', background: 'rgba(16,185,129,0.04)' }}>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
-            240 Days — Bank Capital
-          </div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: '#10b981', lineHeight: 1, marginBottom: '4px' }}>
-            8–15% APR
-          </div>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
-            Up to {fmt(potentialMax)} · SBA + bank suite unlocked
-          </div>
-        </div>
-      </motion.div>
-
-      {/* ── THIS WEEK'S FOCUS ─────────────────────────────────────────────── */}
-      {thisWeek.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
-          style={{
-            padding: '16px 20px', borderRadius: '12px', marginBottom: '20px',
-            background: 'linear-gradient(135deg, rgba(16,185,129,0.07), rgba(59,130,246,0.05))',
-            border: '1px solid rgba(16,185,129,0.2)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <Zap style={{ width: '14px', height: '14px', color: '#10b981' }} />
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: 'var(--foreground)' }}>
-              This Week's Focus
-            </span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
-              — complete these to advance your stage
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {thisWeek.map((item, idx) => (
-              <div key={item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{
-                  width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0,
-                  background: idx === 0 ? '#10b981' : idx === 1 ? '#3b82f6' : '#8b5cf6',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--font-display)', fontSize: '10px', fontWeight: 700, color: 'white',
-                }}>
-                  {idx + 1}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--foreground)', fontWeight: 500 }}>
-                    {item.label}
-                  </span>
-                  {item.path && (
-                    <Link to={item.path} style={{
-                      marginLeft: '8px', fontFamily: 'var(--font-body)', fontSize: '11px',
-                      fontWeight: 600, color: '#10b981', textDecoration: 'none',
-                    }}>
-                      {item.pathLabel}
-                    </Link>
-                  )}
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '2px' }}>
-                    {item.impact}
-                  </div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 600, color: 'var(--muted-foreground)', marginTop: '2px' }}>
+                  {stat.label}
                 </div>
               </div>
             ))}
           </div>
-        </motion.div>
-      )}
 
-      {/* ── PERSONALIZED 3-STAGE ROADMAP ─────────────────────────────────── */}
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ marginBottom: '12px' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: 'var(--foreground)', margin: '0 0 2px 0' }}>
-            Your Personalized Roadmap
-          </h2>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: 0 }}>
-            Built from your assessment + compliance data. Updates automatically as you complete modules.
-          </p>
-        </div>
-
-        {/* Stage progress bar */}
-        <div style={{ display: 'flex', gap: '4px', marginBottom: '14px' }}>
-          {roadmap.map(stage => {
-            const done = stage.items.filter(i => i.done).length;
-            const total = stage.items.length;
-            const pct = total > 0 ? (done / total) * 100 : 0;
-            return (
-              <div key={stage.number} style={{ flex: 1 }}>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 600, color: stage.color, marginBottom: '4px' }}>
-                  Stage {stage.number} · {done}/{total}
-                </div>
-                <div style={{ height: '4px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: stage.color, borderRadius: '99px', transition: 'width 0.8s ease' }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Stage accordions */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {roadmap.map((stage, sIdx) => {
-            const isOpen = expandedStage === stage.number;
-            const doneCount = stage.items.filter(i => i.done).length;
-            const totalCount = stage.items.length;
-            const isComplete = doneCount === totalCount;
-
-            return (
-              <motion.div key={stage.number}
-                initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 + sIdx * 0.04 }}
-                style={{
-                  borderRadius: '12px', overflow: 'hidden',
-                  border: `1.5px solid ${isOpen ? stage.color : 'var(--border)'}`,
-                  background: isOpen ? stage.bg : 'var(--card)',
-                  transition: 'border-color 0.15s, background 0.15s',
-                }}
-              >
-                {/* Header */}
-                <button
-                  onClick={() => setExpandedStage(isOpen ? null : stage.number)}
-                  style={{
-                    width: '100%', padding: '14px 18px', background: 'none', border: 'none',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px',
-                    textAlign: 'left',
-                  }}
-                >
-                  <div style={{
-                    width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0,
-                    background: isComplete ? stage.color : `${stage.color}20`,
-                    border: `1.5px solid ${stage.color}40`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: isComplete ? 'white' : stage.color,
-                  }}>
-                    {isComplete ? <CheckCircle style={{ width: '14px', height: '14px' }} /> : stage.icon}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: 'var(--foreground)' }}>
-                        Stage {stage.number}: {stage.name}
-                      </span>
-                      <span style={{
-                        fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 600,
-                        color: stage.color, background: `${stage.color}15`,
-                        border: `1px solid ${stage.color}25`, padding: '1px 6px', borderRadius: '4px',
-                      }}>
-                        {doneCount}/{totalCount} complete
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
-                        · {stage.daysToComplete}
-                      </span>
-                    </div>
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '2px' }}>
-                      {stage.tagline}
-                    </div>
-                  </div>
-                  <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.18 }}>
-                    <ChevronDown style={{ width: '16px', height: '16px', color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                  </motion.div>
-                </button>
-
-                {/* Expanded content */}
-                <AnimatePresence>
-                  {isOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-                      style={{ overflow: 'hidden' }}
-                    >
-                      <div style={{ padding: '0 18px 16px' }}>
-                        {/* Capital unlock badge */}
-                        <div style={{
-                          padding: '8px 12px', borderRadius: '8px', marginBottom: '12px',
-                          background: `${stage.color}10`, border: `1px solid ${stage.color}25`,
-                          fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: stage.color,
-                        }}>
-                          🔓 {stage.capitalUnlock}
-                        </div>
-
-                        {/* Items */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {stage.items.map(item => (
-                            <div key={item.id} style={{
-                              display: 'flex', alignItems: 'flex-start', gap: '10px',
-                              padding: '10px 12px', borderRadius: '8px',
-                              background: item.done ? 'rgba(16,185,129,0.05)' : 'var(--background)',
-                              border: `1px solid ${item.done ? 'rgba(16,185,129,0.2)' : 'var(--border)'}`,
-                            }}>
-                              <div style={{ flexShrink: 0, marginTop: '1px' }}>
-                                {item.done
-                                  ? <CheckCircle style={{ width: '14px', height: '14px', color: '#10b981' }} />
-                                  : <Circle style={{ width: '14px', height: '14px', color: 'var(--muted-foreground)' }} />
-                                }
-                              </div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{
-                                  fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 500,
-                                  color: item.done ? 'var(--muted-foreground)' : 'var(--foreground)',
-                                  textDecoration: item.done ? 'line-through' : 'none',
-                                  marginBottom: '2px',
-                                }}>
-                                  {item.label}
-                                </div>
-                                <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
-                                  {item.impact}
-                                </div>
-                              </div>
-                              {!item.done && item.path && (
-                                <Link to={item.path} style={{
-                                  flexShrink: 0, fontFamily: 'var(--font-body)', fontSize: '11px',
-                                  fontWeight: 600, color: stage.color, textDecoration: 'none',
-                                  padding: '3px 8px', borderRadius: '5px',
-                                  background: `${stage.color}10`, border: `1px solid ${stage.color}25`,
-                                  whiteSpace: 'nowrap',
-                                }}>
-                                  {item.pathLabel}
-                                </Link>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── CAPITAL PROGRESSION SEQUENCE (60 / 120 / 240 days) ────────────── */}
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ marginBottom: '12px' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: 'var(--foreground)', margin: '0 0 2px 0' }}>
-            Capital Progression Sequence
-          </h2>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: 0 }}>
-            After first funding — what credit sees at each milestone, and what it unlocks.
-          </p>
-        </div>
-
-        {[
-          {
-            label: 'TODAY', sub: 'First Funding Available', color: '#3b82f6', apr: '35–50%+', aprLabel: 'EXPENSIVE',
-            range: actualMaxFunding > 0 ? `${fmt(Math.round(actualMaxFunding * 0.4))}–${fmt(actualMaxFunding)}` : '$5K–$50K',
-            what: 'EIN obtained · business bank open · alternative lenders can approve in 24-48 hours',
-            products: ['MCA', 'Working Capital', 'Revenue-Based', 'Credit Cards', 'Factoring'],
-            icon: <Zap style={{ width: '13px', height: '13px' }} />, isCurrent: true,
-          },
-          {
-            label: '60 DAYS', sub: 'After First Funding', color: '#06b6d4', apr: '25–35%', aprLabel: 'IMPROVING',
-            range: '$25K–$150K',
-            what: '60 days bank history · 1st credit card reporting cycle complete · NAP verified across directories',
-            products: ['Business Credit Line', 'Credit Union Loans', 'Equipment Financing', 'PO Finance'],
-            icon: <TrendingUp style={{ width: '13px', height: '13px' }} />, isCurrent: false,
-          },
-          {
-            label: '120 DAYS', sub: 'Approaching Bankable', color: '#10b981', apr: '15–25%', aprLabel: 'TRANSITIONING',
-            range: '$75K–$500K',
-            what: '3 months bank statements · 2-3 tradeline cycles · SBSS score climbing · business credit forming',
-            products: ['Business Term Loan', 'AR Finance', 'Inventory Line', 'SBA (approaching)'],
-            icon: <Unlock style={{ width: '13px', height: '13px' }} />, isCurrent: false,
-          },
-          {
-            label: '240 DAYS', sub: 'Full Bankability', color: '#8b5cf6', apr: '8–15%', aprLabel: 'BANK CAPITAL',
-            range: `$250K–${fmt(potentialMax)}`,
-            what: 'SBSS 160+ crossed · full compliance suite done · 3+ reporting agencies · 8+ months statements',
-            products: ['SBA 7(a) & 504', 'Bank Term Loans', 'DSCR Loans', 'Construction', 'Full Institutional Suite'],
-            icon: <DollarSign style={{ width: '13px', height: '13px' }} />, isCurrent: false,
-          },
-        ].map((stage, idx, arr) => (
-          <div key={stage.label}>
-            <div style={{
-              display: 'grid', gridTemplateColumns: '100px 1fr',
-              border: `1.5px solid ${stage.isCurrent ? stage.color : 'var(--border)'}`,
-              borderRadius: '10px', overflow: 'hidden',
-              background: stage.isCurrent ? `${stage.color}08` : 'var(--card)',
-            }}>
-              {/* Left */}
-              <div style={{
-                padding: '14px 12px', textAlign: 'center',
-                background: `${stage.color}08`,
-                borderRight: `1px solid ${stage.color}20`,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
-              }}>
-                {stage.isCurrent && (
-                  <div style={{
-                    fontFamily: 'var(--font-body)', fontSize: '8px', fontWeight: 700,
-                    color: stage.color, textTransform: 'uppercase', letterSpacing: '0.08em',
-                    background: `${stage.color}20`, padding: '1px 5px', borderRadius: '3px', marginBottom: '2px',
-                  }}>
-                    NOW
-                  </div>
-                )}
-                <div style={{ color: stage.color }}>{stage.icon}</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '12px', fontWeight: 800, color: stage.color, lineHeight: 1.1 }}>
-                  {stage.label}
-                </div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'var(--muted-foreground)', lineHeight: 1.3, textAlign: 'center' }}>
-                  {stage.sub}
-                </div>
-                <div style={{
-                  marginTop: '4px', padding: '2px 6px', borderRadius: '4px',
-                  background: `${stage.color}15`, border: `1px solid ${stage.color}25`,
-                }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '11px', fontWeight: 800, color: stage.color }}>
-                    {stage.apr}
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '8px', color: stage.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {stage.aprLabel}
-                  </div>
-                </div>
-              </div>
-              {/* Right */}
-              <div style={{ padding: '12px 16px' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '17px', fontWeight: 800, color: 'var(--foreground)' }}>
-                    {stage.range}
-                  </div>
-                </div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginBottom: '8px', lineHeight: 1.5 }}>
-                  {stage.what}
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                  {stage.products.map(p => (
-                    <span key={p} style={{
-                      fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 500,
-                      color: stage.color, background: `${stage.color}10`,
-                      border: `1px solid ${stage.color}20`, padding: '2px 6px', borderRadius: '4px',
-                    }}>{p}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-            {idx < arr.length - 1 && (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '3px 0' }}>
-                <ChevronDown style={{ width: '14px', height: '14px', color: 'var(--muted-foreground)' }} />
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* ── CAPITAL INTELLIGENCE (FundScore breakdown + SBSS) ─────────────── */}
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ marginBottom: '12px' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: 'var(--foreground)', margin: '0 0 2px 0' }}>
-            Capital Intelligence
-          </h2>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: 0 }}>
-            Your complete lender profile — every dimension scored and explained.
-          </p>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          {/* FundScore */}
-          <div style={{
-            padding: '18px', borderRadius: '12px',
-            background: 'var(--card)', border: '1px solid var(--border)',
-          }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>
-              FundScore™
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '36px', fontWeight: 900, color: fundScore >= 800 ? '#10b981' : fundScore >= 650 ? '#f59e0b' : '#ef4444', lineHeight: 1, marginBottom: '6px' }}>
-              {fundScore}
-              <span style={{ fontSize: '14px', fontWeight: 400, color: 'var(--muted-foreground)' }}>/1000</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              {Object.entries(DIM_LABELS).map(([key, label]) => {
-                const val = typeof dimAvg[key] === 'number' ? dimAvg[key] : 0;
-                const pct = Math.round(val * 100);
-                const color = pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444';
-                return (
-                  <div key={key}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
-                        {label} ({DIM_WEIGHTS[key]}%)
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-display)', fontSize: '11px', fontWeight: 700, color }}>
-                        {pct}%
-                      </span>
-                    </div>
-                    <div style={{ height: '3px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: '99px' }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* SBSS / Bankable Score */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{
-              padding: '18px', borderRadius: '12px', flex: 1,
-              background: 'var(--card)', border: '1px solid var(--border)',
-            }}>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>
-                Bank Readiness (SBSS)
-              </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 900, color: bankableScore >= 160 ? '#10b981' : bankableScore >= 120 ? '#f59e0b' : '#ef4444', lineHeight: 1, marginBottom: '6px' }}>
-                {bankableScore}
-                <span style={{ fontSize: '13px', fontWeight: 400, color: 'var(--muted-foreground)' }}>/300</span>
-              </div>
-              <div style={{ height: '6px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden', marginBottom: '6px', position: 'relative' }}>
-                <div style={{ height: '100%', width: `${(bankableScore / 300) * 100}%`, background: bankableScore >= 160 ? '#10b981' : '#f59e0b', borderRadius: '99px' }} />
-                {/* 160 threshold marker */}
-                <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${(160 / 300) * 100}%`, width: '2px', background: '#ef4444' }} />
-              </div>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: bankableScore >= 160 ? '#10b981' : 'var(--muted-foreground)' }}>
-                {bankableScore >= 160
-                  ? '✓ Bankable threshold reached'
-                  : `${160 - bankableScore} points to bankable threshold (160)`}
-              </div>
-            </div>
-
-            {/* Compliance */}
-            <div style={{
-              padding: '16px', borderRadius: '12px',
-              background: 'var(--card)', border: '1px solid var(--border)',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                  Compliance
-                </div>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: completedModules === totalModules ? '#10b981' : 'var(--foreground)' }}>
-                  {completedModules}/{totalModules}
-                </span>
-              </div>
-              <div style={{ height: '5px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden', marginBottom: '8px' }}>
-                <div style={{ height: '100%', width: `${(completedModules / totalModules) * 100}%`, background: '#10b981', borderRadius: '99px' }} />
-              </div>
-              <Link to="/app/lender-compliance" style={{
-                display: 'flex', alignItems: 'center', gap: '4px',
-                fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600,
-                color: '#10b981', textDecoration: 'none',
-              }}>
-                {completedModules < totalModules ? 'Continue compliance modules' : 'All modules complete ✓'}
-                <ChevronRight style={{ width: '12px', height: '12px' }} />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── DEEP REPORTS LINKS ────────────────────────────────────────────── */}
-      <div style={{ marginBottom: '8px' }}>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
-          Detailed Reports
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-          {[
-            { label: 'Bankable Status Report', path: '/app/status-reports/bankable-status', icon: <Target style={{ width: '13px', height: '13px' }} /> },
-            { label: 'Business FICO Analysis', path: '/app/status-reports/business-fico', icon: <BarChart3 style={{ width: '13px', height: '13px' }} /> },
-            { label: 'Capital Forecast', path: '/app/status-reports/estimated-funding', icon: <DollarSign style={{ width: '13px', height: '13px' }} /> },
-            { label: "Owner's Credit Report", path: '/app/status-reports/owners-credit', icon: <Shield style={{ width: '13px', height: '13px' }} /> },
-          ].map(item => (
-            <Link key={item.path} to={item.path} style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '11px 14px', borderRadius: '9px', textDecoration: 'none',
-              background: 'var(--card)', border: '1px solid var(--border)',
-              transition: 'border-color 0.12s',
+          {/* Build CTA */}
+          <motion.button
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            onClick={handleBuildRoadmap}
+            style={{
+              width: '100%', padding: '18px', borderRadius: '14px',
+              background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
             }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = '#10b981')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+          >
+            <Sparkles style={{ width: '18px', height: '18px', color: 'white' }} />
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: 'white' }}>
+              Build My Personalized Roadmap
+            </span>
+            <ArrowRight style={{ width: '16px', height: '16px', color: 'white' }} />
+          </motion.button>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', textAlign: 'center', marginTop: '8px' }}>
+            FORGE™ reads your full profile — no forms to fill out
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ── Building animation ────────────────────────────────────────────────────
+  if (phase === 'building') {
+    return (
+      <div style={{ maxWidth: '560px', margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
+        <div style={{
+          width: '56px', height: '56px', borderRadius: '14px', margin: '0 auto 24px',
+          background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}>
+            <Brain style={{ width: '24px', height: '24px', color: 'white' }} />
+          </motion.div>
+        </div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: 'var(--foreground)', marginBottom: '28px' }}>
+          FORGE™ is analyzing your profile…
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left' }}>
+          {BUILD_STEPS.map((step, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: idx < buildStep ? 1 : 0.3, x: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '8px', background: idx < buildStep ? 'rgba(16,185,129,0.07)' : 'var(--card)', border: `1px solid ${idx < buildStep ? 'rgba(16,185,129,0.2)' : 'var(--border)'}` }}
             >
-              <span style={{ color: '#10b981', flexShrink: 0 }}>{item.icon}</span>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 500, color: 'var(--foreground)' }}>
-                {item.label}
+              {idx < buildStep
+                ? <CheckCircle style={{ width: '14px', height: '14px', color: '#10b981', flexShrink: 0 }} />
+                : <Circle style={{ width: '14px', height: '14px', color: 'var(--muted-foreground)', flexShrink: 0 }} />
+              }
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: idx < buildStep ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
+                {step}
               </span>
-              <ChevronRight style={{ width: '12px', height: '12px', color: 'var(--muted-foreground)', marginLeft: 'auto' }} />
-            </Link>
+            </motion.div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  // ── Ready: full roadmap + chat ────────────────────────────────────────────
+  if (!ctx) return null;
+  const completedStages = roadmap.filter(s => s.complete).length;
+
+  return (
+    <div style={{ maxWidth: '860px', margin: '0 auto', padding: '24px 20px' }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
+            background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Brain style={{ width: '18px', height: '18px', color: 'white' }} />
+          </div>
+          <div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 900, color: 'var(--foreground)', lineHeight: 1 }}>
+              FORGE™ AI Coach
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
+              {ctx.name ? `${ctx.name}'s` : 'Your'} personalized capital roadmap · Stage {ctx.stage} of 3
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => { setPhase('idle'); setMessages([]); }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
+            background: 'var(--card)', border: '1px solid var(--border)',
+            fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)',
+          }}
+        >
+          <RotateCcw style={{ width: '12px', height: '12px' }} />
+          Rebuild
+        </button>
+      </div>
+
+      {/* Stage progress bar */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '20px',
+        padding: '14px 16px', borderRadius: '12px',
+        background: 'var(--card)', border: '1px solid var(--border)',
+      }}>
+        {roadmap.map((stage, idx) => {
+          const done = stage.items.filter(i => i.done).length;
+          const total = stage.items.length;
+          const pct = total > 0 ? (done / total) * 100 : 0;
+          const isActive = ctx.stage === stage.number;
+          return (
+            <button
+              key={stage.number}
+              onClick={() => setExpandedStage(expandedStage === stage.number ? null : stage.number)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: isActive ? 700 : 500, color: isActive ? stage.color : 'var(--muted-foreground)' }}>
+                  Stage {stage.number}: {stage.name}
+                </span>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: stage.color, fontWeight: 600 }}>
+                  {done}/{total}
+                </span>
+              </div>
+              <div style={{ height: '5px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
+                <motion.div
+                  initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.8, delay: idx * 0.1 }}
+                  style={{ height: '100%', background: stage.color, borderRadius: '99px' }}
+                />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 3-Stage roadmap accordions */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+        {roadmap.map((stage, sIdx) => {
+          const isOpen = expandedStage === stage.number;
+          const doneCount = stage.items.filter(i => i.done).length;
+          const isCurrentStage = ctx.stage === stage.number;
+
+          return (
+            <motion.div key={stage.number}
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: sIdx * 0.06 }}
+              style={{
+                borderRadius: '12px', overflow: 'hidden',
+                border: `1.5px solid ${isOpen || isCurrentStage ? stage.color : 'var(--border)'}`,
+                background: isOpen ? stage.bg : 'var(--card)',
+                transition: 'border-color 0.15s, background 0.15s',
+              }}
+            >
+              <button
+                onClick={() => setExpandedStage(isOpen ? null : stage.number)}
+                style={{
+                  width: '100%', padding: '16px 18px', background: 'none', border: 'none',
+                  cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '12px', textAlign: 'left',
+                }}
+              >
+                <div style={{
+                  width: '30px', height: '30px', borderRadius: '8px', flexShrink: 0, marginTop: '1px',
+                  background: stage.complete ? stage.color : `${stage.color}18`,
+                  border: `1.5px solid ${stage.color}40`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: stage.complete ? 'white' : stage.color,
+                }}>
+                  {stage.complete ? <CheckCircle style={{ width: '14px', height: '14px' }} /> : <span style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 800 }}>{stage.number}</span>}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 800, color: 'var(--foreground)' }}>
+                      Stage {stage.number}: {stage.name}
+                    </span>
+                    {isCurrentStage && (
+                      <span style={{
+                        fontFamily: 'var(--font-body)', fontSize: '9px', fontWeight: 700,
+                        color: stage.color, background: `${stage.color}18`,
+                        border: `1px solid ${stage.color}30`, padding: '1px 6px', borderRadius: '4px',
+                        textTransform: 'uppercase', letterSpacing: '0.08em',
+                      }}>
+                        Current Stage
+                      </span>
+                    )}
+                    <span style={{
+                      fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 600,
+                      color: stage.color, background: `${stage.color}10`,
+                      border: `1px solid ${stage.color}20`, padding: '1px 6px', borderRadius: '4px',
+                    }}>
+                      {doneCount}/{stage.items.length} · {stage.timeframe}
+                    </span>
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: stage.color, marginBottom: '2px' }}>
+                    {stage.headline}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+                    {stage.narrative}
+                  </div>
+                </div>
+                <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.18 }} style={{ flexShrink: 0 }}>
+                  <ChevronDown style={{ width: '16px', height: '16px', color: 'var(--muted-foreground)' }} />
+                </motion.div>
+              </button>
+
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div style={{ padding: '0 18px 16px' }}>
+                      {/* Capital unlock */}
+                      <div style={{
+                        padding: '8px 12px', borderRadius: '7px', marginBottom: '12px',
+                        background: `${stage.color}0e`, border: `1px solid ${stage.color}22`,
+                        fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: stage.color,
+                      }}>
+                        🔓 {stage.capitalUnlock}
+                      </div>
+
+                      {/* Items */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {stage.items.map(item => (
+                          <div key={item.id} style={{
+                            display: 'flex', alignItems: 'flex-start', gap: '10px',
+                            padding: '12px 14px', borderRadius: '9px',
+                            background: item.done ? 'rgba(16,185,129,0.04)' : 'var(--background)',
+                            border: `1px solid ${item.done ? 'rgba(16,185,129,0.18)' : 'var(--border)'}`,
+                          }}>
+                            <div style={{ flexShrink: 0, marginTop: '2px' }}>
+                              {item.done
+                                ? <CheckCircle style={{ width: '14px', height: '14px', color: '#10b981' }} />
+                                : <Circle style={{ width: '14px', height: '14px', color: 'var(--muted-foreground)' }} />
+                              }
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{
+                                fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600,
+                                color: item.done ? 'var(--muted-foreground)' : 'var(--foreground)',
+                                textDecoration: item.done ? 'line-through' : 'none', marginBottom: '3px',
+                              }}>
+                                {item.label}
+                              </div>
+                              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', lineHeight: 1.5, marginBottom: '3px' }}>
+                                {item.why}
+                              </div>
+                              <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 600, color: stage.color }}>
+                                {item.impact}
+                              </div>
+                            </div>
+                            {!item.done && item.path && (
+                              <Link to={item.path} style={{
+                                flexShrink: 0, fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600,
+                                color: stage.color, textDecoration: 'none',
+                                padding: '4px 10px', borderRadius: '6px',
+                                background: `${stage.color}10`, border: `1px solid ${stage.color}25`,
+                                whiteSpace: 'nowrap',
+                              }}>
+                                {item.pathLabel}
+                              </Link>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* ── FORGE™ CHAT ─────────────────────────────────────────────────────── */}
+      <div style={{
+        borderRadius: '16px', border: '1.5px solid rgba(16,185,129,0.25)',
+        background: 'rgba(16,185,129,0.02)', overflow: 'hidden',
+      }}>
+        {/* Chat header */}
+        <div style={{
+          padding: '12px 18px', borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', gap: '8px',
+          background: 'rgba(16,185,129,0.05)',
+        }}>
+          <div style={{
+            width: '26px', height: '26px', borderRadius: '7px',
+            background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <MessageSquare style={{ width: '13px', height: '13px', color: 'white' }} />
+          </div>
+          <div>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: 'var(--foreground)' }}>
+              Ask FORGE™
+            </span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginLeft: '6px' }}>
+              · knows your complete profile
+            </span>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div style={{ padding: '16px 18px', maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {messages.map((msg, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+              style={{
+                display: 'flex', gap: '10px',
+                flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+                alignItems: 'flex-start',
+              }}
+            >
+              {msg.role === 'forge' && (
+                <div style={{
+                  width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0,
+                  background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Brain style={{ width: '13px', height: '13px', color: 'white' }} />
+                </div>
+              )}
+              <div style={{
+                maxWidth: '82%', padding: '12px 14px', borderRadius: '12px',
+                background: msg.role === 'user'
+                  ? 'linear-gradient(135deg, #10b981, #3b82f6)'
+                  : 'var(--card)',
+                border: msg.role === 'user' ? 'none' : '1px solid var(--border)',
+                borderTopLeftRadius: msg.role === 'forge' ? '4px' : '12px',
+                borderTopRightRadius: msg.role === 'user' ? '4px' : '12px',
+              }}>
+                {msg.text.split('\n').map((line, i) => {
+                  // Bold markdown **text**
+                  const parts = line.split(/\*\*(.*?)\*\*/g);
+                  return (
+                    <p key={i} style={{
+                      fontFamily: 'var(--font-body)', fontSize: '13px', margin: i === 0 ? 0 : '6px 0 0 0',
+                      color: msg.role === 'user' ? 'white' : 'var(--foreground)', lineHeight: 1.6,
+                    }}>
+                      {parts.map((part, j) =>
+                        j % 2 === 1
+                          ? <strong key={j} style={{ fontWeight: 700 }}>{part}</strong>
+                          : part
+                      )}
+                    </p>
+                  );
+                })}
+              </div>
+            </motion.div>
+          ))}
+
+          {/* Typing indicator */}
+          {isTyping && (
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <div style={{
+                width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0,
+                background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Brain style={{ width: '13px', height: '13px', color: 'white' }} />
+              </div>
+              <div style={{ padding: '12px 14px', borderRadius: '12px', borderTopLeftRadius: '4px', background: 'var(--card)', border: '1px solid var(--border)', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                {[0, 1, 2].map(i => (
+                  <motion.div key={i}
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.15 }}
+                    style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981' }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Suggested questions */}
+        {messages.length <= 1 && (
+          <div style={{ padding: '0 18px 12px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {SUGGESTED_QUESTIONS.map(q => (
+              <button
+                key={q}
+                onClick={() => sendMessage(q)}
+                style={{
+                  padding: '5px 11px', borderRadius: '20px', cursor: 'pointer',
+                  background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
+                  fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 500, color: '#10b981',
+                }}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Input */}
+        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px' }}>
+          <input
+            ref={inputRef}
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask FORGE™ anything about your capital path…"
+            style={{
+              flex: 1, padding: '10px 14px', borderRadius: '10px',
+              background: 'var(--background)', border: '1px solid var(--border)',
+              fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--foreground)',
+              outline: 'none',
+            }}
+          />
+          <button
+            onClick={() => sendMessage(inputValue)}
+            disabled={!inputValue.trim() || isTyping}
+            style={{
+              width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
+              background: inputValue.trim() ? 'linear-gradient(135deg, #10b981, #3b82f6)' : 'var(--card)',
+              border: inputValue.trim() ? 'none' : '1px solid var(--border)',
+              cursor: inputValue.trim() ? 'pointer' : 'default',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 0.15s',
+            }}
+          >
+            <Send style={{ width: '14px', height: '14px', color: inputValue.trim() ? 'white' : 'var(--muted-foreground)' }} />
+          </button>
+        </div>
+      </div>
+
+      {/* Deep report links */}
+      <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+        {[
+          { label: 'Bankable Status Report', path: '/app/status-reports/bankable-status' },
+          { label: 'Business FICO Analysis', path: '/app/status-reports/business-fico' },
+          { label: 'Capital Forecast', path: '/app/status-reports/estimated-funding' },
+          { label: "Owner's Credit Report", path: '/app/status-reports/owners-credit' },
+        ].map(r => (
+          <Link key={r.path} to={r.path} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '10px 14px', borderRadius: '9px', textDecoration: 'none',
+            background: 'var(--card)', border: '1px solid var(--border)',
+          }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 500, color: 'var(--foreground)' }}>
+              {r.label}
+            </span>
+            <ArrowRight style={{ width: '12px', height: '12px', color: 'var(--muted-foreground)' }} />
+          </Link>
+        ))}
       </div>
 
     </div>
