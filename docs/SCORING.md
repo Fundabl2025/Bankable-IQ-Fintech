@@ -207,3 +207,25 @@ AI MAY NOT:
 - every recommendation must have rationale
 - every major scoring change must be versioned
 - public copy must not overstate certainty
+
+---
+
+## Version History
+
+### v1.1 (2026-04-02)
+**Type:** Scoring correction — expanded question participation
+
+`calculatePartialScore()` was corrected from `new Array(14)` to `new Array(23)`.
+Questions Q_R15–Q_R23 (utilization depth, negative items, bankruptcy, collections,
+tax liens, business credit, inquiries, avg daily balance, NSF events, monthly
+revenue) now fully participate in scoring. Previously these 9 answers were
+silently dropped from the partial-score calculation. Full-assessment scoring
+via `computeScore()` was unaffected — the bug only occurred in the partial-score
+path used during live assessment display.
+
+All fixture readinessAnswers extended to 23 elements. demoData.ts extended to 23
+elements. Question model: 10 foundation + 23 readiness = 33 total.
+
+### v1.0 (initial)
+Initial 6-dimension scoring engine. FundScore 0–1000, SBSS proxy, NAP score.
+Partial-score path incorrectly initialized to 14 elements (bug, corrected in v1.1).

@@ -7,7 +7,10 @@ import { UnifiedAnswers, ScoreResult, ExtendedResultsOutput } from './types';
 import { READINESS_QUESTIONS } from './questions';
 
 // ── Scoring version — increment when weights, thresholds, or bands change ──────
-export const SCORING_VERSION = 'v1.0';
+// v1.0 → v1.1: corrected full participation of Q_R15–Q_R23 (indices 13–22)
+//              calculatePartialScore() was initialized with new Array(14),
+//              silently dropping 9 readiness answers from scoring.
+export const SCORING_VERSION = 'v1.1';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // FUNDSCORE WEIGHTS — Aligned with Elon's Rule Logic Spec
