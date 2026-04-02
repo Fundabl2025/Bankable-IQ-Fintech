@@ -8,6 +8,7 @@
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { getMembershipTier, getTierLabel, getTierColor, type MembershipTier } from '../lib/membership';
 import {
   LayoutDashboard,
   DollarSign,
@@ -108,6 +109,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const [hasAssessment, setHasAssessment] = useState(false);
   const [fundScore, setFundScore] = useState(0);
   const [userName, setUserName] = useState('');
+  const [membershipTier, setMembershipTier] = useState<MembershipTier>(() => getMembershipTier());
 
   useEffect(() => {
     const update = () => {
@@ -123,13 +125,16 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           setUserName(data.ownerName || data.firstName || data.businessName || '');
         } catch { /* non-fatal */ }
       }
+      setMembershipTier(getMembershipTier());
     };
     update();
     window.addEventListener('storage', update);
     window.addEventListener('fundscoreUpdated', update);
+    window.addEventListener('membershipUpdated', update);
     return () => {
       window.removeEventListener('storage', update);
       window.removeEventListener('fundscoreUpdated', update);
+      window.removeEventListener('membershipUpdated', update);
     };
   }, [location.pathname]);
 
@@ -342,6 +347,27 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           isActive={location.pathname.startsWith('/app/settings')}
           onClick={close}
         />
+
+        {/* Membership tier badge */}
+        {(() => {
+          const tierColor = getTierColor(membershipTier);
+          const tierLabel = getTierLabel(membershipTier);
+          const isUpgradeable = membershipTier === 'free';
+          return (
+            <div
+              onClick={() => isUpgradeable && navigate('/app/lender-compliance')}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', background: `${tierColor}0e`, border: `1px solid ${tierColor}25`, cursor: isUpgradeable ? 'pointer' : 'default' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: tierColor }} />
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: tierColor }}>{tierLabel}</span>
+              </div>
+              {isUpgradeable && (
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.1)', padding: '1px 6px', borderRadius: '4px' }}>Upgrade →</span>
+              )}
+            </div>
+          );
+        })()}
 
         {/* User profile */}
         <div style={{
