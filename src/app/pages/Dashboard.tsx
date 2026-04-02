@@ -830,25 +830,39 @@ export function Dashboard() {
             {/* ── YOUR CAPITAL ROADMAP — context after user knows their status ── */}
             {(() => {
               const isBankable = bankableScore >= 160;
-              // Goal 01: "funded" means either they have pipeline activity OR pre-qual products ready
-              const hasActiveFunding = pipelineCounts.funded > 0 || pipelineCounts.accepted > 0 || pipelineCounts.offer_received > 0;
-              const goal01Complete = isBankable || hasActiveFunding;
-              // Goal 01 metric — use real product eligibility, not static lookup
-              const goal01Metric = goal01Complete
-                ? (pipelineCounts.funded > 0 ? `${pipelineCounts.funded} funding${pipelineCounts.funded !== 1 ? 's' : ''} received` : 'Completed')
+
+              // ── Goal 01: Pre-Bankable Funding ─────────────────────────────
+              // "Done" = user has ACTUALLY received or accepted funding via pipeline.
+              // SBSS score alone does NOT complete this goal — SBSS measures creditworthiness,
+              // not whether funding was obtained. Showing "Done" based on SBSS while
+              // compliance is 0% creates a direct contradiction in the UI.
+              const goal01Done = pipelineCounts.funded > 0 || pipelineCounts.accepted > 0;
+              const goal01Metric = goal01Done
+                ? `${pipelineCounts.funded + pipelineCounts.accepted} funding${(pipelineCounts.funded + pipelineCounts.accepted) !== 1 ? 's' : ''} received`
                 : capitalDisplay > 0
-                  ? `${formatMoney(capitalDisplay)} available — ${realCapital.count} product${realCapital.count !== 1 ? 's' : ''} ready`
-                  : 'Complete assessment to see available capital';
+                  ? `${formatMoney(capitalDisplay)} available · ${realCapital.count} product${realCapital.count !== 1 ? 's' : ''} ready`
+                  : preQualPrograms.length > 0
+                    ? `${preQualPrograms.length} program${preQualPrograms.length !== 1 ? 's' : ''} pre-qualified — apply now`
+                    : 'Complete compliance modules to unlock products';
+
+              // ── Goal 02: Become Bankable ──────────────────────────────────
+              // "Done" = SBSS 160+ threshold crossed. This is correctly isolated.
+              // SBSS is calculated from assessment answers (credit, revenue, age, entity)
+              // and is independent of compliance module completion.
+
+              // ── Goal 03: Bankable Funding ─────────────────────────────────
+              // "Active" = SBSS >= 160. Correctly gated on bankability, not compliance.
+
               const phases = [
                 {
                   num: '01',
                   title: 'Pre-Bankable Funding',
                   desc: 'Get funded now with non-bank programs — loan packaging included',
-                  status: goal01Complete ? 'complete' : 'active',
+                  status: goal01Done ? 'complete' : 'active',
                   metric: goal01Metric,
                   color: '#10b981',
                   cta: '/app/access-funding',
-                  ctaLabel: goal01Complete ? 'View Programs' : 'See What You Qualify For',
+                  ctaLabel: goal01Done ? 'View Funded' : capitalDisplay > 0 ? 'Apply Now' : 'See What You Qualify For',
                 },
                 {
                   num: '02',
