@@ -180,7 +180,8 @@ export interface ExtendedResultsOutput {
   // Report 2 — Bankable Status
   bankableItems: Array<{
     name: string;
-    status: 'pass' | 'fail';
+    // T-13: 'partial' = minimal viable (e.g. 5k_15k revenue) -- shown with caution icon
+    status: 'pass' | 'partial' | 'fail';
     description: string;
   }>;
 

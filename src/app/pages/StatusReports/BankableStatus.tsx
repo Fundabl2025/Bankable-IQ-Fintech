@@ -3,15 +3,39 @@
 // 20-item compliance status with pass/fail indicators
 // ════════════════════════════════════════════════════════════════════════════════
 
-import { Download, CheckCircle2, XCircle } from 'lucide-react';
+import { Download, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { ExtendedResultsOutput } from '../business-assessment/types';
 import { useEffect, useState } from 'react';
 import { computeExtendedResults } from '../business-assessment/engine';
-import { useNavigate } from 'react-router';
+import { useNavigate, Link } from 'react-router';
 
 interface BankableStatusProps {
   data?: ExtendedResultsOutput;
 }
+
+// T-13: How-to-Fix routes per bankable item. Links shown on fail/partial only.
+const BANKABLE_ITEM_ROUTES: Record<string, string> = {
+  'Available Funding':    '/app/access-funding',
+  'Business FICO (SBSS)': '/app/status-reports/business-fico',
+  "Owner's Credit":       '/app/status-reports/personal-credit',
+  'Bank Rating':          '/app/lender-compliance/business-banking',
+  'Business Credit':      '/app/lender-compliance/agencies-naics',
+  'Reporting Tradelines': '/app/lender-compliance/agencies-naics',
+  'Detailed Reports':     '/app/lender-compliance/agencies-naics',
+  'Business Revenue':     '/app/lender-compliance/business-banking',
+  'Business Type':        '/app/lender-compliance/entity-filings',
+  'Business Name':        '/app/lender-compliance/entity-filings',
+  'Business Location':    '/app/lender-compliance/business-location',
+  'Business Phones':      '/app/lender-compliance/phones-411',
+  'Business Website':     '/app/lender-compliance/website-email',
+  'Business Email':       '/app/lender-compliance/website-email',
+  'Business EIN':         '/app/lender-compliance/ein-licenses',
+  'Business Trademark':   '/app/lender-compliance/entity-filings',
+  'In Good Standing':     '/app/lender-compliance/entity-filings',
+  'Government Filings':   '/app/lender-compliance/ein-licenses',
+  'Web Rating Score':     '/app/lender-compliance/agencies-naics',
+  'NAP Validation':       '/app/lender-compliance/agencies-naics',
+};
 
 export function BankableStatus({ data: propData }: BankableStatusProps) {
   const navigate = useNavigate();
@@ -49,9 +73,13 @@ export function BankableStatus({ data: propData }: BankableStatusProps) {
     window.print();
   };
 
-  const passCount = data.bankableItems.filter(item => item.status === 'pass').length;
-  const totalCount = data.bankableItems.length;
-  const progressPercentage = (passCount / totalCount) * 100;
+  const passCount    = data.bankableItems.filter(item => item.status === 'pass').length;
+  const partialCount = data.bankableItems.filter(item => item.status === 'partial').length;
+  const failCount    = data.bankableItems.filter(item => item.status === 'fail').length;
+  const totalCount   = data.bankableItems.length;
+  // Partials count as half for the progress bar
+  const progressPercentage = ((passCount + partialCount * 0.5) / totalCount) * 100;
+  const scoreColor = passCount >= 16 ? 'var(--primary)' : passCount >= 10 ? 'var(--warning)' : 'var(--destructive)';
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)', padding: '40px 24px' }}>
@@ -135,6 +163,21 @@ export function BankableStatus({ data: propData }: BankableStatusProps) {
           </div>
         </div>
 
+        {/* T-13: Prominent pass count summary card */}
+        <div style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)', borderLeft: `4px solid ${scoreColor}`, borderRadius: '8px', padding: '16px 20px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 800, color: scoreColor }}>{passCount}</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)', marginLeft: '6px' }}>/ {totalCount} bankable items passing</span>
+            {partialCount > 0 && <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--warning)', marginLeft: '10px' }}>({partialCount} partial)</span>}
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{failCount} item{failCount !== 1 ? 's' : ''} need attention</div>
+            <div style={{ width: '160px', height: '6px', background: 'var(--border-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ width: `${progressPercentage}%`, height: '100%', background: scoreColor, borderRadius: '3px', transition: 'width 0.5s ease' }} />
+            </div>
+          </div>
+        </div>
+
         {/* 20-Item Status Table */}
         <div
           style={{
@@ -204,40 +247,27 @@ export function BankableStatus({ data: propData }: BankableStatusProps) {
                 borderBottom: index < data.bankableItems.length - 1 ? '1px solid var(--border-subtle)' : 'none',
               }}
             >
-              <div
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: 'var(--text-primary)',
-                }}
-              >
-                {item.name}
+              {/* T-13: item name -- linked to fix route for fail/partial items */}
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                {item.status !== 'pass' && BANKABLE_ITEM_ROUTES[item.name] ? (
+                  <Link
+                    to={BANKABLE_ITEM_ROUTES[item.name]}
+                    style={{ color: item.status === 'partial' ? 'var(--warning)' : 'var(--destructive)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                    onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+                  >
+                    {item.name}<span style={{ fontSize: '10px', opacity: 0.65 }}> Fix →</span>
+                  </Link>
+                ) : item.name}
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                {item.status === 'pass' ? (
-                  <CheckCircle2
-                    style={{
-                      width: '16px',
-                      height: '16px',
-                      color: 'var(--primary)',
-                    }}
-                  />
-                ) : (
-                  <XCircle
-                    style={{
-                      width: '16px',
-                      height: '16px',
-                      color: '#b04428',
-                    }}
-                  />
-                )}
+              {/* T-13: three-state status icon */}
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                {item.status === 'pass'
+                  ? <CheckCircle2 style={{ width: '16px', height: '16px', color: 'var(--primary)' }} />
+                  : item.status === 'partial'
+                    ? <AlertTriangle style={{ width: '16px', height: '16px', color: 'var(--warning)' }} />
+                    : <XCircle style={{ width: '16px', height: '16px', color: '#b04428' }} />
+                }
               </div>
               <div
                 style={{
@@ -254,38 +284,9 @@ export function BankableStatus({ data: propData }: BankableStatusProps) {
           ))}
         </div>
 
-        {/* Totals Row */}
-        <div style={{ marginBottom: '32px' }}>
-          <div
-            style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: '13px',
-              fontWeight: 500,
-              color: 'var(--text-secondary)',
-              marginBottom: '8px',
-            }}
-          >
-            <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{passCount}</span> of {totalCount} items complete
-          </div>
-          <div
-            style={{
-              width: '100%',
-              height: '4px',
-              background: 'var(--border-subtle)',
-              borderRadius: '2px',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                width: `${progressPercentage}%`,
-                height: '100%',
-                background: 'var(--primary)',
-                borderRadius: '2px',
-                transition: 'width 0.5s ease',
-              }}
-            />
-          </div>
+        {/* T-13: minimal totals line -- detail lives in summary card above table */}
+        <div style={{ marginBottom: '24px', fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', textAlign: 'right' }}>
+          {passCount} passing{partialCount > 0 ? ` · ${partialCount} partial` : ''} · {failCount} need attention
         </div>
 
         {/* Bankable Explanation */}

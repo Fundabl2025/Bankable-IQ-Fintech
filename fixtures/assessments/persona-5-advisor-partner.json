@@ -1,13 +1,19 @@
 {
   "_meta": {
     "persona_name": "Advisor / Channel Partner",
-    "description": "Helping clients, wants structured repeatable system. This fixture represents a high-performing client profile an advisor would input on behalf of their client — used to verify score outputs for advisor-managed accounts.",
-    "expected_score_range": [946, 996],
+    "description": "Helping clients, wants structured repeatable system. This fixture represents a high-performing client profile an advisor would input on behalf of their client \u2014 used to verify score outputs for advisor-managed accounts.",
+    "expected_score_range": [
+      946,
+      996
+    ],
     "expected_band": "Prime",
     "expected_readiness_state": "bankable_or_near",
-    "notes": "Strong across all dimensions: excellent personal credit, established bank account 24+mo, high revenue, no derogs, 80+ biz credit file. Should approach or cross SBSS 160 threshold. v1.1 recalibration: all 10 new readiness answers (Q_R14-Q_R23) score at or near 1.0 — exceptional clean credit profile + $25k+ balance + $100k+/mo revenue. Enters Prime band. Actual v1.1 score: 971.",
+    "notes": "Strong across all dimensions: excellent personal credit, established bank account 24+mo, high revenue, no derogs, 80+ biz credit file. Should approach or cross SBSS 160 threshold. v1.1 recalibration: all 10 new readiness answers (Q_R14-Q_R23) score at or near 1.0 \u2014 exceptional clean credit profile + $25k+ balance + $100k+/mo revenue. Enters Prime band. Actual v1.1 score: 971.",
     "scoring_version_calibrated": "v1.1",
-    "pre_v1_1_expected_range": [780, 900]
+    "pre_v1_1_expected_range": [
+      780,
+      900
+    ]
   },
   "ownerFirstName": "Priya",
   "ownerLastName": "Advisor",
@@ -15,7 +21,10 @@
   "ownerPhone": "555-500-4001",
   "businessName": "Scale Biz Holdings LLC",
   "entityType": "llc_multi",
-  "startDate": { "month": 4, "year": 2021 },
+  "startDate": {
+    "month": 4,
+    "year": 2021
+  },
   "industry": "Technology",
   "hasEIN": true,
   "einNumber": "55-5555555",
@@ -44,7 +53,7 @@
   "hasLatePay": false,
   "hasTaxLiens": "",
   "noDerogItems": "true",
-  "bizCreditFile": "80plus",
+  "bizCreditFile": "paydex_80plus",
   "inquiries30d": "0",
   "businessAddress": "999 Venture Blvd Suite 400",
   "businessCity": "San Francisco",
@@ -52,14 +61,24 @@
   "businessZip": "94105",
   "businessPhone": "555-500-4002",
   "readinessAnswers": [
-    0, 0, 0, 0,
-    0, 0, 0,
     0,
     0,
-    0, 0, 0, 0,
     0,
     0,
-    0, 0, 0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
     0,
     0,
     4,

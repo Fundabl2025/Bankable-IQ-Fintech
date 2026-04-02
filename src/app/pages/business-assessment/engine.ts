@@ -702,7 +702,7 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
     '5plus': { mo3: 4, mo6: 6, mo12: 10 },
     'unknown': { mo3: 0, mo6: 0, mo12: 0 },
   };
-  const inquiryData = inquiryMap[data.inquiries30d || 'unknown'];
+  const inquiryData = inquiryMap[data.inquiries30d || 'unknown'] ?? inquiryMap['unknown']; // T-13: defensive fallback for unrecognized values
 
   const ownerStatus = {
     name: ownerName,
@@ -970,14 +970,19 @@ function computeBankableItems(data: UnifiedAnswers): ExtendedResultsOutput['bank
     { name: 'Available Funding', status: 'pass' as const }, // Always pass
     { name: 'Business FICO (SBSS)', status: (sbssScore >= 160 ? 'pass' : 'fail') as const },
     { name: 'Owner\'s Credit', status: (composite >= 640 ? 'pass' : 'fail') as const },
-    { name: 'Bank Rating', status: (data.avgDailyBalance !== 'near_zero' && data.nsfCount === 'zero' ? 'pass' : 'fail') as const },
-    { name: 'Business Credit', status: (data.bizCreditFile === 'paydex_80plus' ? 'pass' : 'fail') as const },
+    // T-13: Fixed NSF enum ('zero' -> '0'). Added bankAccount check (dedicated required for Low 5+)
+    { name: 'Bank Rating', status: (data.bankAccount === 'dedicated' && data.avgDailyBalance !== 'near_zero' && data.nsfCount === '0' ? 'pass' : 'fail') as const },
+    // T-13: 'pass' = any biz credit file established (not none). Experian/Equifax/D&B reports present.
+    { name: 'Business Credit', status: (data.bizCreditFile && data.bizCreditFile !== 'none' && data.bizCreditFile !== '' ? 'pass' : 'fail') as const },
+    // T-13: 'pass' = Paydex 80+ implies 10-12+ reporting tradelines. Intentionally higher bar than 'Business Credit'.
     { name: 'Reporting Tradelines', status: (data.bizCreditFile === 'paydex_80plus' ? 'pass' : 'fail') as const },
     { name: 'Detailed Reports', status: (data.bizCreditFile !== 'none' ? 'pass' : 'fail') as const },
-    { name: 'Business Revenue', status: ((['15k_40k', '40k_100k', 'over_100k'].includes(data.monthlyRevenue)) ? 'pass' : 'fail') as const },
+    // T-13: '5k_15k' is minimal viable revenue -- 'partial' not 'fail'. Below that = fail.
+    { name: 'Business Revenue', status: (['15k_40k', '40k_100k', 'over_100k'].includes(data.monthlyRevenue) ? 'pass' : data.monthlyRevenue === '5k_15k' ? 'partial' : 'fail') as const },
     { name: 'Business Type', status: (data.entityType !== 'sole_prop' ? 'pass' : 'fail') as const },
     { name: 'Business Name', status: (!!data.businessName ? 'pass' : 'fail') as const },
-    { name: 'Business Location', status: (data.hasEIN ? 'pass' : 'fail') as const },
+    // T-13: Was checking hasEIN (wrong field). Check businessAddress+City+State presence.
+    { name: 'Business Location', status: (!!(data.businessAddress && data.businessCity && data.businessState) ? 'pass' : 'fail') as const },
     { name: 'Business Phones', status: (!!data.ownerPhone ? 'pass' : 'fail') as const },
     { name: 'Business Website', status: (data.hasWebsite ? 'pass' : 'fail') as const },
     { name: 'Business Email', status: (data.ownerEmail && !['gmail', 'yahoo', 'hotmail', 'outlook', 'aol'].some(d => data.ownerEmail.toLowerCase().includes(d)) ? 'pass' : 'fail') as const },

@@ -6,7 +6,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "eval": "vite-node scripts/eval-scoring.ts"
+    "eval": "vite-node scripts/eval-scoring.ts",
+    "eval:bankable": "vite-node scripts/eval-bankable-items.ts"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
