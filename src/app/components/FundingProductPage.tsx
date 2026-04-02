@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, ArrowRight, Lock } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { isProgramPreQualified, getFundingPrograms } from '../utils/fundingEligibility';
 import { getApplyReadiness, LoanRequirement } from '../utils/loanRequirementsMap';
 import { FundingApplicationModal } from './FundingApplicationModal';
