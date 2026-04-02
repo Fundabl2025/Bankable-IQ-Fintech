@@ -2,10 +2,12 @@
   "_meta": {
     "persona_name": "Growth-Oriented Operator",
     "description": "Existing revenue, compliance mostly done, wants progression to lower-cost capital. SBSS approaching bankable threshold.",
-    "expected_score_range": [680, 800],
-    "expected_band": "Approaching",
-    "expected_readiness_state": "momentum_building",
-    "notes": "Strong financials, good compliance progress. bizCreditFile at 80+ is the key differentiator vs persona-1. Stage 2-3 transition."
+    "expected_score_range": [828, 878],
+    "expected_band": "Ready",
+    "expected_readiness_state": "bankable_or_near",
+    "notes": "Strong financials, good compliance progress. bizCreditFile below_80 — differentiated from persona-5 by biz credit tier. Stage 2-3 transition. v1.1 recalibration: clean credit profile across Q_R15-Q_R18 + strong banking (Q_R21=3, Q_R22=0) + revenue (Q_R23=3) all participating. Actual v1.1 score: 853.",
+    "scoring_version_calibrated": "v1.1",
+    "pre_v1_1_expected_range": [680, 800]
   },
   "ownerFirstName": "Alex",
   "ownerLastName": "Demo",

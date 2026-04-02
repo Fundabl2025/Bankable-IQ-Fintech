@@ -2,10 +2,12 @@
   "_meta": {
     "persona_name": "Advisor / Channel Partner",
     "description": "Helping clients, wants structured repeatable system. This fixture represents a high-performing client profile an advisor would input on behalf of their client — used to verify score outputs for advisor-managed accounts.",
-    "expected_score_range": [780, 900],
-    "expected_band": "Ready",
+    "expected_score_range": [946, 996],
+    "expected_band": "Prime",
     "expected_readiness_state": "bankable_or_near",
-    "notes": "Strong across all dimensions: excellent personal credit, established bank account 24+mo, high revenue, no derogs, 80+ biz credit file. Should approach or cross SBSS 160 threshold."
+    "notes": "Strong across all dimensions: excellent personal credit, established bank account 24+mo, high revenue, no derogs, 80+ biz credit file. Should approach or cross SBSS 160 threshold. v1.1 recalibration: all 10 new readiness answers (Q_R14-Q_R23) score at or near 1.0 — exceptional clean credit profile + $25k+ balance + $100k+/mo revenue. Enters Prime band. Actual v1.1 score: 971.",
+    "scoring_version_calibrated": "v1.1",
+    "pre_v1_1_expected_range": [780, 900]
   },
   "ownerFirstName": "Priya",
   "ownerLastName": "Advisor",

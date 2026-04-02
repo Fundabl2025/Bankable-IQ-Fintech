@@ -2,10 +2,12 @@
   "_meta": {
     "persona_name": "Underserved Founder",
     "description": "Limited system familiarity. Business is real but informal structure. Sole prop or new LLC, low/no business credit, personal credit in 'fair' range, limited banking history.",
-    "expected_score_range": [300, 480],
-    "expected_band": "Critical",
-    "expected_readiness_state": "needs_foundation",
-    "notes": "Sole prop or new LLC, no dedicated bank account, no EIN, no website. Highest friction entry point. Platform must build trust and literacy before driving action."
+    "expected_score_range": [427, 477],
+    "expected_band": "Low",
+    "expected_readiness_state": "needs_repair",
+    "notes": "Sole prop or new LLC, no dedicated bank account, no EIN, no website. Highest friction entry point. Platform must build trust and literacy before driving action. v1.1 recalibration: despite max utilization (Q_R14=4, P:0.0), active collections (Q_R17=1, P:0.0), and near-zero balance (Q_R21=1, S:0.25), some revenue ($5-15k/mo, Q_R23=1) and zero inquiries (Q_R20=0, N:1.0) keep score in Low band rather than Critical. Actual v1.1 score: 452.",
+    "scoring_version_calibrated": "v1.1",
+    "pre_v1_1_expected_range": [300, 480]
   },
   "ownerFirstName": "Destiny",
   "ownerLastName": "Start",

@@ -2,10 +2,12 @@
   "_meta": {
     "persona_name": "Denied But Viable Owner",
     "description": "Was rejected before. Has fixable blockers: late pays on personal credit, moderate utilization, no bank tradelines. Business is real and generating revenue.",
-    "expected_score_range": [400, 560],
-    "expected_band": "Low",
-    "expected_readiness_state": "needs_repair",
-    "notes": "hasLatePay=true is the primary blocker. utilization is elevated. Business fundamentals are otherwise solid. Stage 1 recovery journey."
+    "expected_score_range": [650, 698],
+    "expected_band": "Approaching",
+    "expected_readiness_state": "momentum_building",
+    "notes": "hasLatePay=true is the primary blocker. utilization is elevated. Business fundamentals are otherwise solid. Stage 1 recovery journey. v1.1 recalibration: strong revenue ($40-100k/mo, Q_R23=3) and no bankruptcy/collections (Q_R16=0, Q_R17=0) partially offset late pay signals. Actual v1.1 score: 673.",
+    "scoring_version_calibrated": "v1.1",
+    "pre_v1_1_expected_range": [400, 560]
   },
   "ownerFirstName": "Marcus",
   "ownerLastName": "Denied",

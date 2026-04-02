@@ -2,10 +2,12 @@
   "_meta": {
     "persona_name": "First-Time Strategic Applicant",
     "description": "Never applied before. Wants to do it right. LLC formed 18 months ago, moderate revenue, good personal credit, no biz credit file yet.",
-    "expected_score_range": [550, 680],
-    "expected_band": "Developing",
-    "expected_readiness_state": "foundation_building",
-    "notes": "Personal credit strong, business credit file empty (bizCreditFile: below_80). Stage 1 journey."
+    "expected_score_range": [750, 798],
+    "expected_band": "Ready",
+    "expected_readiness_state": "bankable_or_near",
+    "notes": "Personal credit strong, business credit file empty (bizCreditFile: below_80). Stage 1 journey. v1.1 recalibration: clean personal credit (Q_R15-Q_R18 all scoring 1.0) lifts score significantly vs pre-fix estimate. Actual v1.1 score: 773.",
+    "scoring_version_calibrated": "v1.1",
+    "pre_v1_1_expected_range": [550, 680]
   },
   "ownerFirstName": "Jordan",
   "ownerLastName": "First",
