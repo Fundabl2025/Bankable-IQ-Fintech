@@ -1,7 +1,9 @@
 // ════════════════════════════════════════════════════════════════════════════════
 // FUNDREADY™ — Access Funding Pipeline
-// Elon-style: deal pipeline view. Every program has a stage. One click to apply.
-// Pre-qual = prediction. Applied = in lender queue. Offer = real numbers.
+// Elon: deal pipeline view, one clear action per row, zero noise.
+// Chase: pre-qual = identity anchor, micro-commitment before the form,
+//        certainty kills hesitation, future-pacing drives completion.
+// Behavioral: pre-apply intent card captures commitment before 3-step form.
 // ════════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect } from 'react';
@@ -10,10 +12,11 @@ import { useNavigate, Outlet, useLocation } from 'react-router';
 import {
   DollarSign, TrendingUp, ChevronDown, ChevronUp,
   ArrowRight, CheckCircle2, Lock, Info, Zap,
-  Clock, AlertTriangle, X,
+  Clock, AlertTriangle, X, Shield,
 } from 'lucide-react';
 import { getFundingPrograms, getTotalPreQualifiedAmount } from '../utils/fundingEligibility';
 import { RequirementsGapModal } from '../components/RequirementsGapModal';
+import { FundingApplicationModal } from '../components/FundingApplicationModal';
 import {
   applyToProgram,
   withdrawApplication,
@@ -24,6 +27,86 @@ import {
   type PipelineCounts,
   type ApplicationStatus,
 } from '../lib/funding-service';
+
+// ════════════════════════════════════════════════════════════════════════════════
+// PRE-APPLY INTENT CARD
+// Chase: micro-commitment before the form — establish certainty, remove fear.
+// Elon: 3 facts, 1 action, zero friction. Pre-filled count = specificity.
+// Behavioral: identity anchor ("pre-qualified"), future pacing (24–48 hrs),
+//             loss aversion ("no hard inquiry"), completion pull (14/36 filled).
+// ════════════════════════════════════════════════════════════════════════════════
+function PreApplyModal({ program, onStart, onClose }: { program: any; onStart: () => void; onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.93, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        onClick={e => e.stopPropagation()}
+        style={{ background: 'var(--background)', borderRadius: '22px', overflow: 'hidden', width: '100%', maxWidth: '440px', boxShadow: '0 40px 100px rgba(0,0,0,0.35)' }}
+      >
+        {/* Identity bar — green = "you're already approved to apply" */}
+        <div style={{ height: '3px', background: 'linear-gradient(90deg, #10b981, #3b82f6)' }} />
+
+        <div style={{ padding: '28px' }}>
+          {/* Header: Identity anchor */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '99px', marginBottom: '10px' }}>
+                <CheckCircle2 size={11} style={{ color: '#10b981' }} />
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#10b981' }}>Pre-Qualified ✓</span>
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '20px', color: 'var(--foreground)', lineHeight: 1.15 }}>{program.name}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '26px', color: '#10b981', marginTop: '2px' }}>{program.amount}</div>
+            </div>
+            <button onClick={onClose} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--muted-foreground)', flexShrink: 0, marginTop: '4px' }}>
+              <X size={13} />
+            </button>
+          </div>
+
+          {/* Specificity = credibility: pre-fill count */}
+          <div style={{ padding: '12px 14px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '10px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Zap size={14} style={{ color: '#10b981', flexShrink: 0 }} />
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--foreground)', lineHeight: 1.4 }}>
+              <strong>14 of 36 fields already filled</strong> from your FundReady profile. Most applications take under 3 minutes.
+            </span>
+          </div>
+
+          {/* 3 certainty bullets — kill the 3 biggest objections */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+            {[
+              { icon: <Shield size={13} style={{ color: '#10b981', flexShrink: 0, marginTop: '2px' }} />, text: 'Soft pull only — zero impact to your credit score' },
+              { icon: <CheckCircle2 size={13} style={{ color: '#3b82f6', flexShrink: 0, marginTop: '2px' }} />, text: 'No obligation — review the real offer before accepting anything' },
+              { icon: <Clock size={13} style={{ color: '#f59e0b', flexShrink: 0, marginTop: '2px' }} />, text: 'Lenders respond with real offers within 24–48 business hours' },
+            ].map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                {item.icon}
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--foreground)', lineHeight: 1.5 }}>{item.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Primary CTA — action-framed identity language */}
+          <button
+            onClick={onStart}
+            style={{ width: '100%', padding: '15px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', borderRadius: '12px', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 6px 24px rgba(16,185,129,0.35)', marginBottom: '10px' }}
+          >
+            Start My Application <ArrowRight size={16} />
+          </button>
+
+          {/* Friction reducer */}
+          <p style={{ textAlign: 'center', fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', margin: 0 }}>
+            3 steps · ~3 minutes · Soft pull only · No obligation to accept
+          </p>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -52,6 +135,8 @@ export function AccessFunding() {
   const [withdrawing, setWithdrawing] = useState<string | null>(null);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [gapProgram, setGapProgram] = useState<any>(null);
+  const [applyPreview, setApplyPreview] = useState<any>(null);   // pre-apply intent card
+  const [applyModalProgram, setApplyModalProgram] = useState<any>(null); // full form modal
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   const allPrograms = getFundingPrograms();
@@ -499,11 +584,10 @@ export function AccessFunding() {
                       </button>
                     ) : isPreQual ? (
                       <button
-                        onClick={() => handleApply(program)}
-                        disabled={applying === program.id}
-                        style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', padding: '8px 16px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', boxShadow: '0 2px 10px rgba(16,185,129,0.25)', opacity: applying === program.id ? 0.7 : 1 }}
+                        onClick={() => setApplyPreview(program)}
+                        style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', padding: '8px 16px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', boxShadow: '0 2px 10px rgba(16,185,129,0.3)' }}
                       >
-                        {applying === program.id ? 'Applying…' : <><Zap size={12} /> Apply</>}
+                        <Zap size={12} /> Apply Now
                       </button>
                     ) : matchPct >= 50 ? (
                       <button
@@ -621,11 +705,10 @@ export function AccessFunding() {
                         <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                           {!isApplied && isPreQual && (
                             <button
-                              onClick={() => handleApply(program)}
-                              disabled={applying === program.id}
-                              style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '10px 22px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '9px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px', boxShadow: '0 3px 12px rgba(16,185,129,0.25)' }}
+                              onClick={() => setApplyPreview(program)}
+                              style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '10px 22px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', borderRadius: '9px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px', boxShadow: '0 4px 16px rgba(16,185,129,0.3)' }}
                             >
-                              <Zap size={14} /> {applying === program.id ? 'Submitting…' : 'Apply Now — Soft Pull Only'}
+                              <Zap size={14} /> Start My Application
                             </button>
                           )}
                           <button
@@ -656,6 +739,31 @@ export function AccessFunding() {
           isOpen={!!gapProgram}
           onClose={() => setGapProgram(null)}
           program={{ name: gapProgram.name, amount: gapProgram.amount, type: gapProgram.type, gapAnalysis: gapProgram.gapAnalysis }}
+        />
+      )}
+
+      {/* Pre-apply intent card — behavioral commitment bridge */}
+      <AnimatePresence>
+        {applyPreview && (
+          <PreApplyModal
+            program={applyPreview}
+            onClose={() => setApplyPreview(null)}
+            onStart={() => {
+              setApplyModalProgram(applyPreview);
+              setApplyPreview(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Full application modal — 3-step form */}
+      {applyModalProgram && (
+        <FundingApplicationModal
+          isOpen={!!applyModalProgram}
+          onClose={() => setApplyModalProgram(null)}
+          programName={applyModalProgram.name}
+          programAmount={applyModalProgram.amount}
+          programType={applyModalProgram.id}
         />
       )}
     </div>

@@ -247,6 +247,7 @@ const STEP_TRACK = [
 ];
 
 function AssessmentStepTrack({ currentQuestion, totalQuestions }: { currentQuestion: number; totalQuestions: number }) {
+  const navigate = useNavigate();
   const progress = ((currentQuestion + 1) / totalQuestions) * 100;
 
   const getStatus = (start: number, end: number, locked?: boolean) => {
@@ -278,6 +279,24 @@ function AssessmentStepTrack({ currentQuestion, totalQuestions }: { currentQuest
           overflowX: 'auto',
         }}
       >
+        {/* ← Exit breadcrumb — Elon: one clear escape. Chase: "auto-saved" removes fear */}
+        <button
+          onClick={() => navigate('/app/dashboard')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '5px',
+            background: 'none', border: '1px solid var(--border-subtle)',
+            borderRadius: '7px', padding: '5px 10px',
+            fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600,
+            color: 'var(--text-muted)', cursor: 'pointer',
+            flexShrink: 0, whiteSpace: 'nowrap', marginRight: '8px',
+          }}
+        >
+          <ArrowLeft size={13} /> Dashboard
+        </button>
+
+        {/* Divider */}
+        <div style={{ width: '1px', height: '20px', background: 'var(--border-subtle)', flexShrink: 0, marginRight: '8px' }} />
+
         {/* Logo */}
         <div
           style={{
@@ -373,6 +392,20 @@ function AssessmentStepTrack({ currentQuestion, totalQuestions }: { currentQuest
             </div>
           );
         })}
+
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Auto-saved indicator — Chase: removes loss-aversion anxiety */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '5px',
+          flexShrink: 0, marginLeft: '8px',
+        }}>
+          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+            Auto-saved
+          </span>
+        </div>
       </div>
 
       {/* Gradient progress line */}
