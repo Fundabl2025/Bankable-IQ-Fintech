@@ -894,10 +894,33 @@ export function Dashboard() {
               const hasPaidMembership = canAccessGoal2(membershipTier);
 
               // ── Goal 02: Become Bankable ──────────────────────────────────
-              // "Done" = SBSS 160+ threshold crossed. This is correctly isolated.
+               // T-10: "Done" requires BOTH gates: SBSS >= 160 AND >= 10/13 compliance modules.
+              // Previously only checked SBSS >= 160 -- fixed.
+              const GOAL_02_MIN_MODULES = 10;
+              const _g2p = getComplianceProgress();
+              const goal02CompletedModules = complianceModules.filter(m => _g2p[m.id]?.completed).length;
+              const goal02TotalModules = complianceModules.length; // 13
+              const scoreGateMet = bankableScore >= 160;
+              const modulesGateMet = goal02CompletedModules >= GOAL_02_MIN_MODULES;
+              const goal02Done = scoreGateMet && modulesGateMet;
 
-              // ── Goal 03: Bankable Funding ─────────────────────────────────
-              // "Active" = SBSS >= 160 AND paid membership. Else locked.
+              // T-10: Three explicit states -- user sees exactly which gate is missing.
+              const goal02Metric = !hasPaidMembership
+                ? 'Requires Virtual or Live membership'
+                : goal02Done
+                  ? `SBSS ${bankableScore}/300 ✓ · ${goal02CompletedModules}/${goal02TotalModules} modules ✓`
+                  : (() => {
+                      const sbssPart = scoreGateMet
+                        ? `SBSS ${bankableScore}/300 ✓`
+                        : `SBSS ${bankableScore}/300 — need 160+`;
+                      const modPart = modulesGateMet
+                        ? `${goal02CompletedModules}/${goal02TotalModules} modules ✓`
+                        : `${goal02CompletedModules}/${goal02TotalModules} modules — need ${GOAL_02_MIN_MODULES}`;
+                      return `${sbssPart} · ${modPart}`;
+                    })();
+
+              // Goal 03: Bankable Funding
+              // "Active" = Goal 02 Done (both gates) AND paid membership. Else locked..
 
               const phases = [
                 {
@@ -915,19 +938,35 @@ export function Dashboard() {
                   num: '02',
                   title: 'Build Credit & Become Bankable',
                   desc: '13 compliance steps that make you look low risk — required to unlock bank capital',
-                  status: !hasPaidMembership ? 'membership_locked' : isBankable ? 'complete' : 'active',
-                  metric: !hasPaidMembership ? 'Requires Virtual or Live membership' : isBankable ? `SBSS ${bankableScore}/300 ✓ — bankable threshold crossed` : `SBSS ${bankableScore}/300 — ${160 - bankableScore} pts to bankable`,
+                  // T-10: status and metric use dual-gate goal02Done, not isBankable
+                  status: !hasPaidMembership ? 'membership_locked' : goal02Done ? 'complete' : 'active',
+                  metric: goal02Metric,
                   color: '#3b82f6',
-                  cta: !hasPaidMembership ? '/app/lender-compliance' : '/app/lender-compliance',
-                  ctaLabel: !hasPaidMembership ? 'Upgrade to Unlock' : isBankable ? 'View Compliance' : 'Start Compliance',
+                  cta: '/app/lender-compliance',
+                  ctaLabel: !hasPaidMembership
+                    ? 'Upgrade to Unlock'
+                    : goal02Done
+                      ? 'View Compliance'
+                      : !scoreGateMet && !modulesGateMet
+                        ? 'Start Compliance'
+                        : !scoreGateMet
+                          ? 'Build Your SBSS Score'
+                          : 'Complete Your Modules',
                   membershipRequired: true,
                 },
                 {
                   num: '03',
                   title: 'Access Bank & SBA Capital',
                   desc: 'Up to $5M · 9–12% APR · up to 25-year terms — the full capital stack',
-                  status: !hasPaidMembership ? 'membership_locked' : isBankable ? 'active' : 'locked',
-                  metric: !hasPaidMembership ? 'Requires Virtual or Live membership' : isBankable ? `Full bank access unlocked · 9–12% APR` : `Requires SBSS 160+ (${160 - bankableScore} pts away)`,
+                  // T-10: Goal 03 unlocks only when Goal 02 is fully Done (both gates)
+                  status: !hasPaidMembership ? 'membership_locked' : goal02Done ? 'active' : 'locked',
+                  metric: !hasPaidMembership
+                    ? 'Requires Virtual or Live membership'
+                    : goal02Done
+                      ? `Full bank access unlocked · 9–12% APR`
+                      : scoreGateMet && !modulesGateMet
+                        ? `Complete ${GOAL_02_MIN_MODULES - goal02CompletedModules} more module${(GOAL_02_MIN_MODULES - goal02CompletedModules) !== 1 ? 's' : ''} to unlock`
+                        : `SBSS ${bankableScore}/300 — need 160+ and ${GOAL_02_MIN_MODULES} modules`,
                   color: '#f59e0b',
                   cta: !hasPaidMembership ? '/app/lender-compliance' : '/app/access-funding',
                   ctaLabel: !hasPaidMembership ? 'Upgrade to Unlock' : 'Access Bank Products',
