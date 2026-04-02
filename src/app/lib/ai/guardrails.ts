@@ -3,27 +3,14 @@
 // Never blocks output — only logs warnings and strips banned phrases.
 // If a banned phrase appears, it means a prompt template changed and should be reviewed.
 //
+// Phrase list source: GLOBAL_FORBIDDEN_CLAIMS in ../forge/metadata.ts
+// To add or remove a banned phrase, edit that list — do not add phrases here.
+//
 // Usage:
 //   import { checkForgeOutput } from '../lib/ai/guardrails';
 //   const safeText = checkForgeOutput(responseText, 'chat-response');
 
-const BANNED_PHRASES = [
-  'guaranteed approval',
-  'guaranteed funding',
-  'guaranteed loan',
-  'lender will approve',
-  'ensures funding',
-  'ensures approval',
-  'instant funding success',
-  'everyone gets approved',
-  'secret lender hack',
-  'beat the bank',
-  'get money fast no matter what',
-  'this changes everything forever',
-  'no credit check required',
-  'no questions asked',
-  '100% approval rate',
-];
+import { GLOBAL_FORBIDDEN_CLAIMS } from '../forge/metadata';
 
 /**
  * Check FORGE output for banned phrases.
@@ -36,7 +23,7 @@ export function checkForgeOutput(text: string, context?: string): string {
   let cleaned = text;
   let flagged = false;
 
-  for (const phrase of BANNED_PHRASES) {
+  for (const phrase of GLOBAL_FORBIDDEN_CLAIMS) {
     if (cleaned.toLowerCase().includes(phrase.toLowerCase())) {
       console.warn(`[FORGE guardrail] Banned phrase detected: "${phrase}"`, { context });
       cleaned = cleaned.replace(new RegExp(phrase, 'gi'), '[removed]');

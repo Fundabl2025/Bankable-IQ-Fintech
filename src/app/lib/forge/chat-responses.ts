@@ -4,13 +4,8 @@
 
 export const PROMPT_KEY = 'forge-chat-responses';
 export const PROMPT_VERSION = 'v1.0';
-export const FORBIDDEN_CLAIMS = [
-  'guaranteed approval',
-  'guaranteed funding',
-  'lender will approve',
-  'ensures funding',
-  '100% approval rate',
-];
+// Forbidden claims are enforced at runtime by guardrails.ts via GLOBAL_FORBIDDEN_CLAIMS
+// in src/app/lib/forge/metadata.ts — do not redeclare here.
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
 
