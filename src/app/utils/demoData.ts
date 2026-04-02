@@ -119,6 +119,10 @@ export function seedDemoData(): void {
     // Set demo mode flag to bypass auth protection
     localStorage.setItem('fundready_demo_mode', 'true');
     console.log('[v0] Set demo mode flag');
+
+    // Unlock all features for demo — set to live tier
+    localStorage.setItem('fundready_membership_tier', 'live');
+    console.log('[v0] Set membership tier: live');
     
     // Save unified assessment data
     const assessmentJSON = JSON.stringify(DEMO_ASSESSMENT_DATA);
@@ -152,6 +156,7 @@ export function seedDemoData(): void {
 
     // Dispatch events to notify components
     window.dispatchEvent(new Event('fundscoreUpdated'));
+    window.dispatchEvent(new Event('membershipUpdated'));
     window.dispatchEvent(new Event('storage'));
     console.log('[v0] Dispatched update events');
     
@@ -170,7 +175,9 @@ export function clearDemoData(): void {
   localStorage.removeItem('fundready_business_profile');
   localStorage.removeItem('auditItems');
   localStorage.removeItem('fundready_demo_mode');
+  localStorage.removeItem('fundready_membership_tier');
   window.dispatchEvent(new Event('fundscoreUpdated'));
+  window.dispatchEvent(new Event('membershipUpdated'));
   window.dispatchEvent(new Event('storage'));
 }
 

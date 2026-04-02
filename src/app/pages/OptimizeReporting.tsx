@@ -10,10 +10,12 @@ import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   BarChart3, ChevronDown, ChevronRight, CheckCircle2,
-  Lock, AlertTriangle, Target, Zap, Shield,
+  Lock, AlertTriangle, Target, Zap, Shield, ArrowRight, X,
 } from 'lucide-react';
-import { getMembershipTier, canAccessGoal2 } from '../lib/membership';
-import { getAllAuditItems } from '../utils/businessData';
+import { getMembershipTier, canAccessGoal2, type MembershipTier, TIER_FEATURES } from '../lib/membership';
+import { getMembershipPricing, getMembershipPricingSync } from '../lib/platform-config';
+import { getComplianceProgress } from '../utils/lenderComplianceModules';
+import { logEvent } from '../lib/analytics/events';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -59,60 +61,110 @@ function getFicoSBSS(fico: number, ageMonths: number, modulesCount: number): num
   return Math.min(base, 280);
 }
 
-// ── Upgrade Gate ──────────────────────────────────────────────────────────────
+// ── Upgrade Modal ─────────────────────────────────────────────────────────────
 
-function UpgradeGate() {
-  const navigate = useNavigate();
+function UpgradeModal({ onClose }: { onClose: () => void }) {
+  const [pricing, setPricing] = useState(getMembershipPricingSync());
+  useEffect(() => { getMembershipPricing().then(setPricing); }, []);
+
+  const TIERS = [
+    {
+      tier: 'virtual',
+      label: 'Virtual Coached',
+      price: `${pricing.virtual.monthlyDisplay}/month`,
+      icon: '🎓',
+      color: '#10b981',
+      cta: 'Start Virtual Coaching',
+      highlight: false,
+      features: TIER_FEATURES.virtual,
+      note: 'Goal #2 + AI Coaching — built to make you bankable in 60–90 days.',
+    },
+    {
+      tier: 'live',
+      label: 'Live Coached',
+      price: `${pricing.live.monthlyDisplay}/month`,
+      icon: '⭐',
+      color: '#f59e0b',
+      cta: 'Get a Live Coach',
+      highlight: true,
+      features: TIER_FEATURES.live,
+      note: 'Done-For-You + Live Coach — a real human coach handles compliance for 12 months.',
+    },
+  ];
+
   return (
-    <div className="flex-1 min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
-      <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ marginBottom: '28px' }}>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
-            Goal #2 — Become Bankable
-          </p>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(26px,3.5vw,36px)', color: 'var(--foreground)', lineHeight: 1.1, letterSpacing: '-0.02em', margin: 0 }}>
-            Optimize Reporting
-          </h1>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', marginTop: '6px' }}>
-            Bureau-by-bureau roadmap to build business credit and optimize your owner's FICO
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.93, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        onClick={e => e.stopPropagation()}
+        style={{ background: 'var(--background)', borderRadius: '22px', overflow: 'hidden', width: '100%', maxWidth: '560px', boxShadow: '0 40px 100px rgba(0,0,0,0.3)' }}
+      >
+        {/* Header */}
+        <div style={{ background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)', padding: '28px 28px 24px', position: 'relative' }}>
+          <button onClick={onClose} style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '8px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+            <X size={14} />
+          </button>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>
+            GOAL #2 — BECOME BANKABLE
+          </div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '22px', color: 'white', lineHeight: 1.2, marginBottom: '8px' }}>
+            Unlock Bureau Reporting & Credit Optimization
+          </h2>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.5, margin: 0 }}>
+            Most owners don't know what lenders see when they pull their business credit. These bureaus and FICO strategies are how you control exactly what lenders find — before you apply.
           </p>
         </div>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-          style={{ background: 'linear-gradient(135deg,rgba(99,102,241,.08),rgba(139,92,246,.08))', border: '1px solid rgba(99,102,241,.3)', borderRadius: '18px', padding: '32px', maxWidth: '600px' }}
-        >
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(99,102,241,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-            <Lock size={22} style={{ color: '#6366f1' }} />
-          </div>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--foreground)', marginBottom: '8px' }}>
-            Virtual or Live Membership Required
-          </h2>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', lineHeight: 1.6, marginBottom: '20px' }}>
-            Most business owners have no idea what's in their credit file — or what lenders actually see when they pull it. This section gives you the roadmap and the single next action to fix every gap.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-            {[
-              'D&B PAYDEX, Experian, Equifax, CreditSafe & FICO SBSS — real status, real steps',
-              'Personal FICO vs. every funding program — see your gap at a glance',
-              'Debt utilization rules lenders actually use (45% hard wall / 19% optimal)',
-              'Inquiry management — max 4 in 6 months, no shot-gunning, third-party freeze',
-              'Credit partner strategy — authorized users, co-signers, secured cards',
-            ].map((item, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <CheckCircle2 size={15} style={{ color: '#10b981', flexShrink: 0, marginTop: '1px' }} />
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--foreground)', lineHeight: 1.5 }}>{item}</span>
+
+        {/* Tier cards */}
+        <div style={{ padding: '20px 24px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          {TIERS.map(tier => (
+            <div
+              key={tier.tier}
+              style={{ background: tier.highlight ? `${tier.color}08` : 'var(--card)', border: `${tier.highlight ? '2px' : '1px'} solid ${tier.highlight ? tier.color + '50' : 'var(--border)'}`, borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative' }}
+            >
+              {tier.highlight && (
+                <div style={{ position: 'absolute', top: '-1px', left: '50%', transform: 'translateX(-50%)', background: tier.color, borderRadius: '0 0 8px 8px', padding: '2px 12px', fontFamily: 'var(--font-body)', fontSize: '9px', fontWeight: 800, color: 'white', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>
+                  Most Popular
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', paddingTop: tier.highlight ? '10px' : '0' }}>
+                <span style={{ fontSize: '22px' }}>{tier.icon}</span>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--foreground)' }}>{tier.label}</div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: tier.color, fontWeight: 600 }}>{tier.price}</div>
+                </div>
               </div>
-            ))}
-          </div>
-          <button
-            onClick={() => navigate('/app/lender-compliance')}
-            style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', padding: '12px 24px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', boxShadow: '0 4px 14px rgba(99,102,241,.3)' }}
-          >
-            Upgrade to Unlock →
-          </button>
-        </motion.div>
-      </div>
-    </div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>{tier.note}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                {tier.features.slice(1).map((f, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                    <span style={{ fontSize: '10px', color: tier.color, fontWeight: 800, marginTop: '2px' }}>✓</span>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--foreground)', lineHeight: 1.4 }}>{f}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                style={{ padding: '10px', background: tier.highlight ? `linear-gradient(135deg, ${tier.color}, ${tier.color}cc)` : tier.color + '15', border: tier.highlight ? 'none' : `1px solid ${tier.color}40`, borderRadius: '10px', color: tier.highlight ? 'white' : tier.color, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', boxShadow: tier.highlight ? `0 4px 14px ${tier.color}40` : 'none' }}
+              >
+                {tier.cta}
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ padding: '0 24px 20px', textAlign: 'center' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
+            Goal #1 (current access): initial funding products still available · No credit card required to continue with free access
+          </p>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -314,9 +366,10 @@ function StatusBadge({ status }: { status: 'established' | 'building' | 'not-sta
   );
 }
 
-function BureauRow({ bureau, completedModules, expandedId, onToggle, navigate }: {
+function BureauRow({ bureau, completedModules, expandedId, onToggle, navigate, locked, onLockedClick }: {
   bureau: Bureau; completedModules: string[]; expandedId: string | null;
   onToggle: (id: string) => void; navigate: (p: string) => void;
+  locked?: boolean; onLockedClick?: () => void;
 }) {
   const isExpanded = expandedId === bureau.id;
   const stepsCompleted = bureau.steps.filter(s => s.moduleId && completedModules.includes(s.moduleId)).length;
@@ -326,12 +379,16 @@ function BureauRow({ bureau, completedModules, expandedId, onToggle, navigate }:
   const isComplete = status === 'established';
 
   return (
-    <div style={{ border: `1px solid ${isComplete ? 'rgba(16,185,129,.25)' : 'var(--border)'}`, borderRadius: '14px', overflow: 'hidden', background: isComplete ? 'rgba(16,185,129,.03)' : 'var(--card)' }}>
-      <div onClick={() => onToggle(bureau.id)} style={{ padding: '16px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px' }}
+    <div style={{ border: `1px solid ${locked ? 'var(--border)' : isComplete ? 'rgba(16,185,129,.25)' : 'var(--border)'}`, borderRadius: '14px', overflow: 'hidden', background: locked ? 'var(--card)' : isComplete ? 'rgba(16,185,129,.03)' : 'var(--card)', position: 'relative', opacity: locked ? 0.75 : 1 }}>
+      {/* Lock strip for free-tier — identical to ModuleCard */}
+      {locked && (
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '3px', background: 'linear-gradient(180deg, #6366f1, #8b5cf6)' }} />
+      )}
+      <div onClick={() => locked ? onLockedClick?.() : onToggle(bureau.id)} style={{ padding: '16px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px' }}
         onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,.02)'}
         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
       >
-        <div style={{ width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0, background: isComplete ? 'rgba(16,185,129,.1)' : 'var(--background)', border: `1px solid ${isComplete ? 'rgba(16,185,129,.2)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+        <div style={{ width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0, background: locked ? 'rgba(99,102,241,0.06)' : isComplete ? 'rgba(16,185,129,.1)' : 'var(--background)', border: `1px solid ${locked ? 'rgba(99,102,241,0.2)' : isComplete ? 'rgba(16,185,129,.2)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', filter: locked ? 'grayscale(0.4)' : 'none' }}>
           {bureau.icon}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -344,13 +401,24 @@ function BureauRow({ bureau, completedModules, expandedId, onToggle, navigate }:
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
-          <StatusBadge status={status} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>{stepsCompleted}/{bureau.steps.length} steps</span>
-            <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.18 }}>
-              <ChevronDown size={14} style={{ color: 'var(--muted-foreground)' }} />
-            </motion.div>
-          </div>
+          {locked ? (
+            <>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '5px', padding: '2px 7px' }}>
+                Locked
+              </span>
+              <Lock size={14} style={{ color: '#6366f1' }} />
+            </>
+          ) : (
+            <>
+              <StatusBadge status={status} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>{stepsCompleted}/{bureau.steps.length} steps</span>
+                <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.18 }}>
+                  <ChevronDown size={14} style={{ color: 'var(--muted-foreground)' }} />
+                </motion.div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -518,8 +586,14 @@ export function OptimizeReporting() {
   const [creditScore, setCreditScore] = useState(0);
   const [ageMonths, setAgeMonths] = useState(0);
   const [expandedBureau, setExpandedBureau] = useState<string | null>(null);
-  const [tier, setTier] = useState(() => getMembershipTier());
-  const hasAccess = canAccessGoal2(tier);
+  const [tier, setTier] = useState<MembershipTier>(() => getMembershipTier());
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const isLocked = !canAccessGoal2(tier);
+
+  const openUpgrade = () => {
+    logEvent({ event_name: 'upgrade_started', payload: { source: 'optimize_reporting' } });
+    openUpgrade();
+  };
 
   useEffect(() => {
     const updateTier = () => setTier(getMembershipTier());
@@ -527,10 +601,14 @@ export function OptimizeReporting() {
     window.addEventListener('businessDataUpdated', loadData);
     window.addEventListener('scanDataUpdated', loadData);
     window.addEventListener('membershipUpdated', updateTier);
+    window.addEventListener('auditItemUpdated', loadData);
+    window.addEventListener('complianceProgressUpdated', loadData);
     return () => {
       window.removeEventListener('businessDataUpdated', loadData);
       window.removeEventListener('scanDataUpdated', loadData);
       window.removeEventListener('membershipUpdated', updateTier);
+      window.removeEventListener('auditItemUpdated', loadData);
+      window.removeEventListener('complianceProgressUpdated', loadData);
     };
   }, []);
 
@@ -543,13 +621,13 @@ export function OptimizeReporting() {
       setAgeMonths(getAgeMonths(data));
     } catch { /* no data */ }
     try {
-      const items = getAllAuditItems();
-      const done = items.filter((i: any) => i.status === 'complete').map((i: any) => i.id);
+      const progress = getComplianceProgress();
+      const done = Object.entries(progress)
+        .filter(([, val]) => val.completed)
+        .map(([id]) => id);
       setCompletedModules(done);
     } catch { /* no compliance data */ }
   }
-
-  if (!hasAccess) return <UpgradeGate />;
 
   // Derived state
   const bureausEstablished = BUREAUS.filter(b => b.requiredModules.every(m => completedModules.includes(m))).length;
@@ -561,21 +639,81 @@ export function OptimizeReporting() {
   const sbssColor = ficoSBSS >= 160 ? '#10b981' : ficoSBSS >= 120 ? '#f59e0b' : '#ef4444';
   const ficoLabel = creditScore >= 750 ? 'Excellent' : creditScore >= 700 ? 'Good' : creditScore >= 650 ? 'Fair' : creditScore >= 580 ? 'Below Average' : creditScore > 0 ? 'Poor' : '';
 
+  // Smart next-step CTA — mirrors LenderCompliance "Continue" button
+  const nextBureau = BUREAUS.find(b => !b.requiredModules.every(m => completedModules.includes(m)));
+  const nextStep = nextBureau?.steps.find(s => !s.moduleId || !completedModules.includes(s.moduleId));
+
+  // Wrap navigate to always pass origin state for module breadcrumbs
+  const navigateFrom = (path: string) => {
+    if (path.startsWith('http')) {
+      window.open(path, '_blank');
+      return;
+    }
+    navigate(path, { state: { fromPath: '/app/optimize-reporting', fromLabel: 'Optimize Reporting' } });
+  };
+
   return (
-    <div className="flex-1 min-h-screen overflow-auto" style={{ backgroundColor: 'var(--background)' }}>
+    <>
+      <AnimatePresence>{showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}</AnimatePresence>
+      <div className="flex-1 min-h-screen overflow-auto" style={{ backgroundColor: 'var(--background)' }}>
       <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
 
+        {/* FREE-TIER UPGRADE BANNER — matches LenderCompliance exactly */}
+        {isLocked && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08))', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '14px', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}
+          >
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(99,102,241,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Lock size={18} style={{ color: '#6366f1' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '15px', color: 'var(--foreground)', marginBottom: '3px' }}>
+                Goal #2 — Become Bankable — requires Full Access
+              </div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+                Most owners don't know what lenders see when they pull their business credit file. This section shows you every bureau gap, every FICO gap, and the exact actions that fix them — with a coach at every step.
+              </div>
+            </div>
+            <button
+              onClick={() => openUpgrade()}
+              style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '10px 20px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', flexShrink: 0, boxShadow: '0 4px 14px rgba(99,102,241,0.3)', whiteSpace: 'nowrap' }}
+            >
+              Upgrade to Unlock →
+            </button>
+          </motion.div>
+        )}
+
         {/* HEADER */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '28px' }}>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} style={{ marginBottom: '28px' }}>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
             Goal #2 — Become Bankable
           </p>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(26px,3.5vw,36px)', color: 'var(--foreground)', lineHeight: 1.1, letterSpacing: '-0.02em', margin: 0 }}>
-            Optimize Reporting
-          </h1>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', marginTop: '6px' }}>
-            Bureau-by-bureau roadmap to build business credit and optimize your owner's FICO — so lenders see exactly what you need them to see
-          </p>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+            <div>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(26px,3.5vw,36px)', color: 'var(--foreground)', lineHeight: 1.1, letterSpacing: '-0.02em', margin: 0 }}>
+                Optimize Reporting
+              </h1>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', marginTop: '6px' }}>
+                Bureau-by-bureau roadmap to build business credit and optimize your owner's FICO — so lenders see exactly what you need them to see
+              </p>
+            </div>
+            {isLocked ? (
+              <button
+                onClick={() => openUpgrade()}
+                style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '10px 20px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(99,102,241,0.25)', flexShrink: 0 }}
+              >
+                <Lock size={13} /> Unlock Full Access
+              </button>
+            ) : nextStep ? (
+              <button
+                onClick={() => navigateFrom(nextStep.path)}
+                style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '10px 20px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(16,185,129,0.25)', flexShrink: 0 }}
+              >
+                {bureausEstablished === 0 ? 'Start First Bureau' : 'Continue'} <ArrowRight size={14} />
+              </button>
+            ) : null}
+          </div>
         </motion.div>
 
         {/* PROGRESS HERO */}
@@ -645,7 +783,8 @@ export function OptimizeReporting() {
               {BUREAUS.map((bureau, i) => (
                 <motion.div key={bureau.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                   <BureauRow bureau={bureau} completedModules={completedModules} expandedId={expandedBureau}
-                    onToggle={id => setExpandedBureau(expandedBureau === id ? null : id)} navigate={navigate} />
+                    onToggle={id => setExpandedBureau(expandedBureau === id ? null : id)} navigate={navigateFrom}
+                    locked={isLocked} onLockedClick={() => openUpgrade()} />
                 </motion.div>
               ))}
             </div>
@@ -693,7 +832,7 @@ export function OptimizeReporting() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {PROGRAM_FICO.map((p, i) => (
                   <motion.div key={p.name} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                    <ProgramRow {...p} userFico={creditScore} navigate={navigate} />
+                    <ProgramRow {...p} userFico={creditScore} navigate={navigateFrom} />
                   </motion.div>
                 ))}
               </div>
@@ -706,7 +845,7 @@ export function OptimizeReporting() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {DEBT_STRATEGIES.map((s, i) => (
                   <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                    <StrategyRow {...s} navigate={navigate} />
+                    <StrategyRow {...s} navigate={navigateFrom} />
                   </motion.div>
                 ))}
               </div>
@@ -732,7 +871,7 @@ export function OptimizeReporting() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {QUICK_WINS.map((w, i) => (
                   <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                    <QuickWinRow {...w} navigate={navigate} />
+                    <QuickWinRow {...w} navigate={navigateFrom} />
                   </motion.div>
                 ))}
               </div>
@@ -742,5 +881,6 @@ export function OptimizeReporting() {
         )}
       </div>
     </div>
+    </>
   );
 }

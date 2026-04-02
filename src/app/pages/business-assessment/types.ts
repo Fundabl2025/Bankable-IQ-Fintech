@@ -128,6 +128,8 @@ export interface ScoreResult {
   dimAvg: Record<'P' | 'B' | 'F' | 'C' | 'S' | 'N', number>;
   bankableScore: number; // SBSS score 0-300, 160 = bankable threshold
   napScore: number;
+  scoringVersion: string;   // e.g. 'v1.0' — increment when weights/bands change
+  generatedAt: string;      // ISO 8601 timestamp of score computation
 }
 
 // Extended results for dynamic reports

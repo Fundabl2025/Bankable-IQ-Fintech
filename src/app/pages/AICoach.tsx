@@ -21,6 +21,13 @@ import { evaluateProducts } from './business-assessment/productEligibility';
 import { getAllAuditItems } from '../utils/businessData';
 import { complianceModules, getComplianceProgress } from '../utils/lenderComplianceModules';
 import { getPreQualifiedPrograms } from '../utils/fundingEligibility';
+import { checkForgeOutput } from '../lib/ai/guardrails';
+import { greetingTemplate } from '../lib/forge/chat-greeting';
+import {
+  nextStepResponse, sbaResponse, scoreExplainResponse, sbssResponse,
+  timelineResponse, aprResponse, preQualResponse, whatIsForgeResponse,
+  modulesResponse, blockersResponse, revenueResponse, defaultResponse,
+} from '../lib/forge/chat-responses';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -85,12 +92,6 @@ interface RoadmapStage {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function fmt(n: number): string {
-  if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000) return `$${Math.round(n / 1000)}K`;
-  return `$${n}`;
-}
 
 const DIM_LABELS: Record<string, string> = {
   P: 'Personal Credit', B: 'Business Profile', F: 'Financials',
@@ -356,87 +357,46 @@ function buildDynamicRoadmap(ctx: CoachContext, progress: ReturnType<typeof getC
 }
 
 // ─── FORGE™ Response Engine ───────────────────────────────────────────────────
+// Intent routing — delegates to versioned templates in /prompts/forge/chat-responses.ts
 
 function getForgeResponse(input: string, ctx: CoachContext): string {
   const q = input.toLowerCase().trim();
-  const n = ctx.name ? ctx.name : 'your business';
 
-  // Next step
   if (/next step|what (should|do) i|where (do|should) i start|what now|priority/i.test(q)) {
-    if (ctx.stage === 1 && ctx.topIncompleteModule) {
-      return `The single highest-impact action right now is completing your **${ctx.topIncompleteModule}** module. Here's why it matters: your FundScore is ${ctx.fundScore} and your weakest dimension is ${ctx.weakestDim} at ${ctx.weakestDimScore}%. Fixing the compliance foundation addresses that directly. Each module you complete adds 20-40 points. Go to: [${ctx.topIncompleteModulePath}]`;
-    }
-    if (ctx.stage === 2 && ctx.preQualCount > 0) {
-      return `${n} has ${ctx.preQualCount} funding product${ctx.preQualCount !== 1 ? 's' : ''} pre-qualified right now. The next step is applying — specifically to start building a repayment track record. Even a small first draw creates a live credit event that starts reporting to D&B and Experian Business. That reporting is what moves your SBSS score from ${ctx.bankableScore} toward the 160 bankability threshold. [Go to Access Funding →]`;
-    }
-    return `You're in Stage ${ctx.stage}: ${ctx.stageLabel}. The most impactful next move: complete the remaining ${ctx.totalModules - ctx.completedModules} compliance modules — especially the ones in the "Getting Approved" category. Each one is worth 15-40 SBSS points. You're ${ctx.pointsToBank > 0 ? `${ctx.pointsToBank} points from the 160 bankability threshold` : 'past the bankability threshold — apply for SBA now'}.`;
+    return nextStepResponse(ctx) ?? defaultResponse(ctx);
   }
-
-  // SBA / bank loans
   if (/sba|bank loan|traditional|institutional|7a|504/i.test(q)) {
-    return `SBA loans require a SBSS score of 160+. ${n === 'your business' ? 'Your' : `${ctx.name}'s`} current SBSS is **${ctx.bankableScore}/300** — ${ctx.pointsToBank > 0 ? `${ctx.pointsToBank} points away from eligibility` : '**above the threshold ✓**'}. \n\nThe SBSS is weighted: Personal Credit (35%), Business Financials (30%), Business Profile (20%), Business Credit Reports (15%). Your personal credit dimension is at ${Math.round((ctx.dimAvg['P'] || 0) * 100)}%. The fastest path to 160: complete comparable credit module (builds the 15% business credit component) and ensure all 13 compliance modules are done. Timeline from your current position: ${ctx.bankableScore >= 130 ? '60-90 days' : ctx.bankableScore >= 100 ? '90-150 days' : '150-240 days'}.`;
+    return sbaResponse(ctx);
   }
-
-  // Score explanation
   if (/why is my score|explain my score|what (affects|impacts|drives) my score|fundscore/i.test(q)) {
-    const dims = Object.entries(DIM_LABELS).map(([k, label]) => {
-      const pct = Math.round((ctx.dimAvg[k] || 0) * 100);
-      const emoji = pct >= 70 ? '✓' : pct >= 40 ? '⚠' : '✗';
-      return `${emoji} ${label}: ${pct}%`;
-    }).join('\n');
-    return `Your FundScore of **${ctx.fundScore}/1000** breaks down across 6 dimensions:\n\n${dims}\n\nYour lowest dimension is **${ctx.weakestDim} at ${ctx.weakestDimScore}%**. That's the highest-leverage area — improving it from ${ctx.weakestDimScore}% to 70%+ would add approximately ${Math.round((70 - ctx.weakestDimScore) * 2)} points to your total FundScore.`;
+    return scoreExplainResponse(ctx);
   }
-
-  // Bankable score / SBSS
   if (/sbss|bankable score|bank readiness|160|300 scale/i.test(q)) {
-    return `The SBSS (Small Business Scoring Service) is the 0-300 scale lenders and the SBA use internally to score businesses. **160 is the threshold** — below it, you're in automatic review or decline territory for SBA and most bank products.\n\n${n === 'your business' ? 'You\'re' : `${ctx.name} is`} at **${ctx.bankableScore}/300**. It's weighted: Personal Credit (35%), Business Financials (30%), Business Profile (20%), Business Credit Reports (15%). The fastest moves to raise it: establish business tradelines (the 15% component is often 0 for new businesses) and complete your compliance modules. You need ${ctx.pointsToBank} more points.`;
+    return sbssResponse(ctx);
   }
-
-  // Timeline / how long
   if (/how long|timeline|when can i|how many days|how many months/i.test(q)) {
-    const stage1Days = ctx.completedModules >= 4 ? 7 : 30;
-    return `Based on ${n === 'your business' ? 'your' : `${ctx.name}'s`} current profile (FundScore ${ctx.fundScore}, SBSS ${ctx.bankableScore}, ${ctx.completedModules}/${ctx.totalModules} modules done):\n\n**Alternative capital (MCA, Working Capital):** Available now — ${ctx.preQualCount > 0 ? `${ctx.preQualCount} products pre-qualified` : 'complete 2-3 compliance modules first'}\n\n**Traditional lending (Business Term Loans, Credit Unions):** ~${stage1Days + 60} days from today — requires consistent bank deposits and business credit profile forming\n\n**SBA / Bank Loans:** ~${ctx.bankableScore >= 130 ? '90 days' : ctx.bankableScore >= 100 ? '150 days' : '240 days'} — SBSS 160+ threshold needs to be crossed (${ctx.pointsToBank} points away)\n\nThe timeline compresses fast once you complete compliance modules and get first funding reporting.`;
+    return timelineResponse(ctx);
   }
-
-  // APR / cost of capital
   if (/apr|interest rate|cost|expensive|cheap|rate/i.test(q)) {
-    return `Right now, ${n === 'your business' ? 'your' : `${ctx.name}'s`} tier is **${ctx.tier}** — which means the available capital costs **${ctx.tier === 'Bankable' ? '8-15%' : ctx.tier === 'Approaching Bankable' ? '15-25%' : '35-50%+'} APR**.\n\nHere's what that means in real dollars: on a $250K loan, the difference between 35% and 10% APR is **$62,500/year in interest**. That's money that goes to lenders instead of back into ${ctx.businessName || 'the business'}.\n\nThe path to bank-rate capital is SBSS 160+ — ${ctx.pointsToBank > 0 ? `you need ${ctx.pointsToBank} more points` : 'you\'ve already crossed it'}. Every compliance module you complete moves you closer.`;
+    return aprResponse(ctx);
   }
-
-  // Pre-qualified programs
   if (/pre.?qualif|qualify|eligible|which (products|programs|loans)/i.test(q)) {
-    if (ctx.preQualCount === 0) {
-      return `${n === 'your business' ? 'You don\'t' : `${ctx.name} doesn't`} have any pre-qualified programs yet. The fastest path to first qualification: complete the Entity & Filings, EIN & Licenses, and Business Banking compliance modules. Once those are done, Working Capital Loans and MCA products typically unlock. Complete your Business Success Scan too — the more data in the system, the more products can be evaluated.`;
-    }
-    return `Based on ${n === 'your business' ? 'your' : `${ctx.name}'s`} profile, **${ctx.preQualCount} funding product${ctx.preQualCount !== 1 ? 's' : ''}** are pre-qualified right now. You can view and apply at [Access Funding →].\n\nThese are alternative capital products (${ctx.actualMaxFunding > 0 ? `up to ${fmt(ctx.actualMaxFunding)}` : ''}). As you complete more compliance modules, the pre-qualified list expands into traditional and bank products.`;
+    return preQualResponse(ctx);
   }
-
-  // What is FORGE
   if (/what (is|are) (forge|you|this)|how (does|do) (forge|you|this) work/i.test(q)) {
-    return `FORGE™ is your capital transformation engine — an always-on AI coach that reads every data point in your FundReady profile and tells you exactly what to do next to move from expensive alternative capital to institutional bank capital.\n\nI know your FundScore (${ctx.fundScore}), your SBSS score (${ctx.bankableScore}/300), which compliance modules are done (${ctx.completedModules}/${ctx.totalModules}), and which funding products you qualify for (${ctx.preQualCount} right now). Every answer I give uses your actual data — not generic advice.\n\nAsk me anything about your capital path, your scores, timelines, or specific products.`;
+    return whatIsForgeResponse(ctx);
   }
-
-  // Compliance modules
   if (/compliance|module|lender compliance/i.test(q)) {
-    const pct = Math.round((ctx.completedModules / ctx.totalModules) * 100);
-    return `${n === 'your business' ? 'You\'ve' : `${ctx.name} has`} completed **${ctx.completedModules} of ${ctx.totalModules} compliance modules** (${pct}%). ${ctx.topIncompleteModule ? `The next one to complete is **${ctx.topIncompleteModule}**.` : ''}\n\nCompliance is your FundScore's "C" dimension — currently at ${Math.round((ctx.dimAvg['C'] || 0) * 100)}%. Every module adds 15-40 FundScore points and directly affects your SBSS. The full suite is required for SBA approval. Go to [Lender Compliance →] to continue.`;
+    return modulesResponse(ctx);
   }
-
-  // Blockers
   if (/block|prevent|stop|holding (me|us) back|what's wrong|issue|problem/i.test(q)) {
-    if (ctx.criticalBlockers.length > 0) {
-      return `I'm seeing **${ctx.criticalBlockers.length} critical item${ctx.criticalBlockers.length !== 1 ? 's' : ''}** flagged in your profile:\n\n${ctx.criticalBlockers.map((b, i) => `${i + 1}. ${b}`).join('\n')}\n\nThese aren't suggestions — they're automatic decline triggers at most lenders. Fix these first before anything else. The Denial Diagnosis tool ([here →](/app/denial-diagnosis)) breaks them down in detail.`;
-    }
-    return `No critical blockers detected in ${n === 'your business' ? 'your' : `${ctx.name}'s`} profile. The main limiting factor right now is your SBSS score (${ctx.bankableScore}/300) — it's not a blocker per se, but it's what separates your current alternative capital options from institutional bank capital. Complete compliance modules and establish business tradelines to close the gap.`;
+    return blockersResponse(ctx);
   }
-
-  // Revenue / cash flow
   if (/revenue|cash flow|monthly|income|sales/i.test(q)) {
-    return `${n === 'your business' ? 'Your' : `${ctx.name}'s`} reported revenue is **${ctx.monthlyRevenue || 'not yet specified in your profile'}**. This feeds directly into your Financial Health dimension (currently ${Math.round((ctx.dimAvg['F'] || 0) * 100)}% — weighted at 25% of your FundScore).\n\nFor revenue-based products (Working Capital, MCA, Revenue-Based Loans), lenders typically want to see 3+ months of consistent bank deposits matching what you've reported. If there's a gap between reported and deposited revenue, that creates a verification flag. Update your assessment if revenue has changed — it affects which products you qualify for.`;
+    return revenueResponse(ctx);
   }
 
-  // Default — catch-all with context
-  return `Good question. Based on ${n === 'your business' ? 'your' : `${ctx.name}'s`} current profile — FundScore ${ctx.fundScore}, SBSS ${ctx.bankableScore}/300, ${ctx.completedModules}/${ctx.totalModules} compliance modules, ${ctx.preQualCount} pre-qualified products — here's what I'd focus on:\n\n${ctx.stage === 1 ? `Stage 1 Foundation: Complete ${ctx.topIncompleteModule || 'remaining compliance modules'} to unlock your first funding products.` : ctx.stage === 2 ? `Stage 2 Momentum: You have ${ctx.preQualCount} products ready. Apply now to start your repayment history and push your SBSS toward 160.` : `Stage 3 Bankable: You're ${ctx.pointsToBank} points from the institutional capital threshold. Focus on comparable credit and the CD loan strategy.`}\n\nAsk me anything more specific — timeline, specific products, what's blocking you, or how a particular score works.`;
+  return defaultResponse(ctx);
 }
 
 // ─── Build Animation Steps ────────────────────────────────────────────────────
@@ -521,8 +481,8 @@ export function AICoach() {
 
     // Opening message from FORGE™
     if (ctx) {
-      const greeting = `${ctx.name ? `${ctx.name}, ` : ''}I've analyzed your complete FundReady profile. Here's where you stand:\n\n**FundScore: ${ctx.fundScore}/1000** (${ctx.tier})\n**SBSS: ${ctx.bankableScore}/300** — ${ctx.pointsToBank > 0 ? `${ctx.pointsToBank} points to institutional capital` : '✓ Bankable threshold crossed'}\n**Compliance: ${ctx.completedModules}/${ctx.totalModules} modules** complete\n**Pre-qualified: ${ctx.preQualCount} funding product${ctx.preQualCount !== 1 ? 's' : ''}** ready to apply\n\n**Your Capital Progression:**\n→ Stage 1 (Fundable): $10K–$150K at 35%+ APR — alternative capital, available now\n→ Stage 2 (Momentum): $50K–$500K at 15–25% APR — traditional products, ~30–120 days\n→ Stage 3 (Bankable): $250K–$5M+ at 8–15% APR — institutional capital, SBSS 160+ required\n\nYou're currently in **Stage ${ctx.stage}**. ${ctx.pointsToBank > 0 ? `Getting to Stage 3 saves ~$62K/year on a $250K loan.` : `You've reached the institutional capital tier.`} Your personalized roadmap is below — ask me anything.`;
-      setMessages([{ role: 'forge', text: greeting, timestamp: Date.now() }]);
+      const greeting = greetingTemplate(ctx);
+      setMessages([{ role: 'forge', text: checkForgeOutput(greeting, 'greeting'), timestamp: Date.now() }]);
     }
   }, [ctx]);
 
@@ -533,7 +493,7 @@ export function AICoach() {
     setInputValue('');
     setIsTyping(true);
     await new Promise(r => setTimeout(r, 600 + Math.random() * 600));
-    const response = getForgeResponse(text, ctx);
+    const response = checkForgeOutput(getForgeResponse(text, ctx), `chat:${text.slice(0, 40)}`);
     setIsTyping(false);
     setMessages(prev => [...prev, { role: 'forge', text: response, timestamp: Date.now() }]);
   }, [ctx]);

@@ -6,6 +6,9 @@
 import { UnifiedAnswers, ScoreResult, ExtendedResultsOutput } from './types';
 import { READINESS_QUESTIONS } from './questions';
 
+// ── Scoring version — increment when weights, thresholds, or bands change ──────
+export const SCORING_VERSION = 'v1.0';
+
 // ════════════════════════════════════════════════════════════════════════════════
 // FUNDSCORE WEIGHTS — Aligned with Elon's Rule Logic Spec
 // Personal (P): 20% — FICO, utilization, derog, payment history
@@ -322,6 +325,8 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
     dimAvg: dimAvg as Record<'P' | 'B' | 'F' | 'C' | 'S' | 'N', number>,
     bankableScore,
     napScore,
+    scoringVersion: SCORING_VERSION,
+    generatedAt: new Date().toISOString(),
   };
 }
 

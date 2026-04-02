@@ -21,14 +21,41 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // ── Demo credential shortcut ────────────────────────────────────────────────
+  // These credentials bypass Supabase and seed full live-tier demo data.
+  // Share with stakeholders for testing — no Supabase account needed.
+  const DEMO_EMAIL = 'demo@fundreadyai.com';
+  const DEMO_PASSWORD = 'FundReady2025!';
+
+  // Demo login bypasses auth and seeds pre-filled assessment data
+  // Defined BEFORE handleSubmit so the credential intercept can call it safely
+  const handleDemoLogin = () => {
+    console.log('[v0] Demo mode: starting...');
+    try {
+      seedDemoData(); // sets fundready_demo_mode=true + fundready_membership_tier=live
+      console.log('[v0] Demo mode: data seeded, navigating...');
+      window.location.href = '/app';
+    } catch (err) {
+      console.error('[v0] Demo mode error:', err);
+      alert('Demo mode error: ' + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Intercept demo credentials — route through demo flow, skip Supabase
+    if (email.trim().toLowerCase() === DEMO_EMAIL && password === DEMO_PASSWORD) {
+      handleDemoLogin();
+      return;
+    }
+
     setLoading(true);
 
     try {
       await signIn(email, password);
-      
+
       // Attempt to migrate any localStorage data to Supabase
       try {
         console.log('[v0] Login: Migrating localStorage data to Supabase...');
@@ -38,31 +65,12 @@ export function LoginPage() {
         console.warn('[v0] Login: Data migration failed, but login succeeded:', migrationError);
         // Don't block navigation - sign-in was successful
       }
-      
+
       navigate('/app/dashboard');
     } catch (err: any) {
       setError(err.message || 'Failed to sign in. Please try again.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Demo login bypasses auth and seeds pre-filled assessment data
-  const handleDemoLogin = () => {
-    console.log('[v0] Demo mode button clicked!');
-    
-    try {
-      // Step 1: Seed data
-      console.log('[v0] Step 1: Calling seedDemoData...');
-      seedDemoData();
-      console.log('[v0] Step 2: seedDemoData completed');
-      
-      // Step 2: Navigate using window.location as fallback
-      console.log('[v0] Step 3: About to navigate...');
-      window.location.href = '/app';
-    } catch (error) {
-      console.error('[v0] Demo mode error:', error);
-      alert('Demo mode error: ' + (error instanceof Error ? error.message : String(error)));
     }
   };
 
@@ -400,6 +408,22 @@ export function LoginPage() {
             }}>
               Skip auth and load pre-filled assessment data for "Acme Consulting LLC" (FundScore ~700, SBSS ~160)
             </p>
+            <div style={{
+              marginTop: '12px',
+              padding: '10px 12px',
+              background: 'var(--surface-3)',
+              border: '1px solid var(--border)',
+              borderRadius: '0',
+              fontFamily: 'var(--font-mono, monospace)',
+              fontSize: '11px',
+              lineHeight: 1.8,
+              color: 'var(--muted-foreground)',
+            }}>
+              <span style={{ color: 'var(--foreground)', fontWeight: 600 }}>Email:</span>{' '}
+              demo@fundreadyai.com<br />
+              <span style={{ color: 'var(--foreground)', fontWeight: 600 }}>Password:</span>{' '}
+              FundReady2025!
+            </div>
           </div>
         </motion.div>
       </div>

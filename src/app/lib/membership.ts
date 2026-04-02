@@ -18,6 +18,10 @@ export function getMembershipTier(): MembershipTier {
   return 'free';
 }
 
+// ── Payment gate flag ─────────────────────────────────────────────────────────
+// Set to true to re-enable membership gating when billing is wired up.
+const PAYMENT_GATES_ENABLED = false;
+
 export function setMembershipTier(tier: MembershipTier): void {
   try {
     localStorage.setItem(STORAGE_KEY, tier);
@@ -27,6 +31,7 @@ export function setMembershipTier(tier: MembershipTier): void {
 
 /** Can the user access the 13 compliance modules (Goal #2)? */
 export function canAccessGoal2(tier: MembershipTier = getMembershipTier()): boolean {
+  if (!PAYMENT_GATES_ENABLED) return true;
   return tier === 'virtual' || tier === 'live';
 }
 

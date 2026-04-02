@@ -18,6 +18,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // Check for demo mode flag in localStorage
   const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('fundready_demo_mode') === 'true';
 
+  // Self-heal: if demo mode is active but membership tier was never set (stale session),
+  // ensure live tier is applied so no upgrade gates appear
+  if (isDemoMode && typeof window !== 'undefined') {
+    const tier = localStorage.getItem('fundready_membership_tier');
+    if (tier !== 'live' && tier !== 'virtual') {
+      localStorage.setItem('fundready_membership_tier', 'live');
+    }
+  }
+
   // Show loading while checking auth
   if (loading) {
     return (

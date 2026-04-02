@@ -12,6 +12,7 @@ import {
 import { getMembershipTier, canAccessGoal2, type MembershipTier, TIER_FEATURES } from '../lib/membership';
 import { getMembershipPricing, getMembershipPricingSync } from '../lib/platform-config';
 import { getLoansUnlockedByModule } from '../utils/loanRequirementsMap';
+import { logEvent } from '../lib/analytics/events';
 
 // ── Module metadata ───────────────────────────────────────────────────────────
 const MODULE_TIME: Record<string, string> = {
@@ -277,6 +278,11 @@ export function LenderCompliance() {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const isLocked = !canAccessGoal2(tier);
 
+  const openUpgrade = () => {
+    logEvent({ event_name: 'upgrade_started', payload: { source: 'lender_compliance' } });
+    openUpgrade();
+  };
+
   useEffect(() => {
     const handle = () => setRefreshKey(k => k + 1);
     const handleMembership = () => setTier(getMembershipTier());
@@ -326,7 +332,7 @@ export function LenderCompliance() {
               </div>
             </div>
             <button
-              onClick={() => setShowUpgrade(true)}
+              onClick={() => openUpgrade()}
               style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '10px 20px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', flexShrink: 0, boxShadow: '0 4px 14px rgba(99,102,241,0.3)', whiteSpace: 'nowrap' }}
             >
               Upgrade to Unlock →
@@ -350,7 +356,7 @@ export function LenderCompliance() {
             </div>
             {isLocked ? (
               <button
-                onClick={() => setShowUpgrade(true)}
+                onClick={() => openUpgrade()}
                 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '10px 20px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(99,102,241,0.25)', flexShrink: 0 }}
               >
                 <Lock size={13} /> Unlock Full Access
@@ -440,7 +446,7 @@ export function LenderCompliance() {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {completeModules.map((m, i) => (
-              <ModuleCard key={m.id} module={m} isComplete={!!progress[m.id]?.completed} index={i} locked={isLocked} onLockedClick={() => setShowUpgrade(true)} />
+              <ModuleCard key={m.id} module={m} isComplete={!!progress[m.id]?.completed} index={i} locked={isLocked} onLockedClick={() => openUpgrade()} />
             ))}
           </div>
         </motion.div>
@@ -461,7 +467,7 @@ export function LenderCompliance() {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {approvedModules.map((m, i) => (
-              <ModuleCard key={m.id} module={m} isComplete={!!progress[m.id]?.completed} index={i} locked={isLocked} onLockedClick={() => setShowUpgrade(true)} />
+              <ModuleCard key={m.id} module={m} isComplete={!!progress[m.id]?.completed} index={i} locked={isLocked} onLockedClick={() => openUpgrade()} />
             ))}
           </div>
         </motion.div>

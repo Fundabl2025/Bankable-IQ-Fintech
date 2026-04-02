@@ -14,9 +14,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { applyToProgram } from '../lib/funding-service';
 
 // ── Bolt API config ────────────────────────────────────────────────────────────
-const BOLT_BROKER_TOKEN =
-  (import.meta as any).env?.VITE_BOLT_BROKER_TOKEN ?? 'WlSUyZcpEZ6cnPh5YgNyJg==';
-const BOLT_API_BASE = 'https://api.fundedbybolt.com/api/v1';
+// Token is server-side only. Client calls /api/bolt-proxy which injects it.
+// See: /api/bolt-proxy.ts and BOLT_BROKER_TOKEN env var in Vercel.
+const BOLT_PROXY_URL = '/api/bolt-proxy';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface FundingApplicationModalProps {
@@ -223,13 +223,12 @@ export function FundingApplicationModal({
 
     const payload = {
       ...form,
-      brokerToken: BOLT_BROKER_TOKEN,
       loanProduct: programType,
       requestedAmount: form.loanAmount || programAmount,
     };
 
     try {
-      const res = await fetch(`${BOLT_API_BASE}/applications`, {
+      const res = await fetch(`${BOLT_PROXY_URL}?path=/applications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

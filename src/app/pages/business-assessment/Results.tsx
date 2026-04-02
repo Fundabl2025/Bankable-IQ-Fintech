@@ -13,6 +13,7 @@ import { getAllAuditItems, AuditItem } from '../../utils/businessData';
 import { EstimatedFunding } from '../StatusReports/EstimatedFunding';
 import { useAuth } from '../../contexts/AuthContext';
 import { ArrowRight, Check, AlertCircle } from 'lucide-react';
+import { logEvent } from '../../lib/analytics/events';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // Helper Functions for Dynamic Data Mapping
@@ -157,6 +158,16 @@ export function Results() {
       // Calculate final score
       const scoreResult = computeScore(assessmentData);
       setResult(scoreResult);
+
+      // Event: assessment completed
+      logEvent({
+        event_name: 'assessment_completed',
+        payload: {
+          scoring_version: scoreResult.scoringVersion,
+          fund_score: scoreResult.score,
+          bankable_score: scoreResult.bankableScore,
+        },
+      });
 
       // Record baseline score for Score Climber badge (only saves once — never overwritten)
       if (!localStorage.getItem('fundready_initial_score')) {

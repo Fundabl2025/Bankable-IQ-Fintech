@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft,
@@ -30,6 +30,7 @@ import {
 import { getAuditItemById, updateAuditItem } from '../utils/businessData';
 import { checkAndAwardBadges, getInitialScore } from '../lib/badges';
 import { computeScore } from '../pages/business-assessment/engine';
+import { logEvent } from '../lib/analytics/events';
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -289,6 +290,10 @@ function TaskCard({
 
 export function ComplianceModulePage({ moduleId, icon, tasks }: ComplianceModuleConfig) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromPath: string = (location.state as any)?.fromPath ?? '/app/lender-compliance';
+  const fromLabel: string = (location.state as any)?.fromLabel ?? 'Lender Compliance';
+  const fromState = { fromPath, fromLabel };
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Get module metadata from the module registry
@@ -340,6 +345,7 @@ export function ComplianceModulePage({ moduleId, icon, tasks }: ComplianceModule
       const progress = getComplianceProgress();
       progress[moduleId] = { completed: true, completedDate: new Date().toISOString(), lastViewed: new Date().toISOString() };
       setComplianceProgress(progress);
+      logEvent({ event_name: 'module_completed', payload: { module_id: moduleId } });
       confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#10b981', '#3b82f6', '#f59e0b'] });
 
       // ── Badge check on module completion ────────────────────────────
@@ -388,6 +394,7 @@ export function ComplianceModulePage({ moduleId, icon, tasks }: ComplianceModule
     }
 
     window.dispatchEvent(new Event('auditItemUpdated'));
+    window.dispatchEvent(new Event('complianceProgressUpdated'));
     setRefreshKey(k => k + 1);
   };
 
@@ -408,10 +415,10 @@ export function ComplianceModulePage({ moduleId, icon, tasks }: ComplianceModule
         {/* ── BREADCRUMB NAV ─────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
           <button
-            onClick={() => navigate('/app/lender-compliance')}
+            onClick={() => navigate(fromPath)}
             style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '7px 14px', cursor: 'pointer' }}
           >
-            <ArrowLeft size={14} /> Lender Compliance
+            <ArrowLeft size={14} /> {fromLabel}
           </button>
           <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)' }}>/</span>
           <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--foreground)' }}>{module.title}</span>
@@ -507,39 +514,39 @@ export function ComplianceModulePage({ moduleId, icon, tasks }: ComplianceModule
           {/* Previous */}
           {prevModule ? (
             <button
-              onClick={() => navigate(`/app${prevModule.route}`)}
+              onClick={() => navigate(`/app${prevModule.route}`, { state: fromState })}
               style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 16px', cursor: 'pointer' }}
             >
               <ArrowLeft size={14} /> {prevModule.title}
             </button>
           ) : (
             <button
-              onClick={() => navigate('/app/lender-compliance')}
+              onClick={() => navigate(fromPath)}
               style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 16px', cursor: 'pointer' }}
             >
-              <ArrowLeft size={14} /> All Modules
+              <ArrowLeft size={14} /> {fromLabel}
             </button>
           )}
 
           {/* Center: back to hub */}
           <button
-            onClick={() => navigate('/app/lender-compliance')}
+            onClick={() => navigate(fromPath)}
             style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer' }}
           >
-            View All Modules
+            Back to {fromLabel}
           </button>
 
           {/* Next */}
           {nextModule ? (
             <button
-              onClick={() => navigate(`/app${nextModule.route}`)}
+              onClick={() => navigate(`/app${nextModule.route}`, { state: fromState })}
               style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: 'white', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', padding: '10px 18px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.25)' }}
             >
               Next: {nextModule.title} <ArrowRight size={14} />
             </button>
           ) : (
             <button
-              onClick={() => navigate('/app/lender-compliance')}
+              onClick={() => navigate(fromPath)}
               style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: 'white', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', padding: '10px 18px', cursor: 'pointer' }}
             >
               All Modules Complete! <Star size={14} />

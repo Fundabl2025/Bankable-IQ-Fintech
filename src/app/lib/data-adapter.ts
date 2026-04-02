@@ -4,6 +4,8 @@
  */
 
 import { isSupabaseConfigured, supabase } from './supabase/client'
+import { SCORING_VERSION } from '../pages/business-assessment/engine'
+import { logEvent } from './analytics/events'
 
 /**
  * Get current user from Supabase Auth
@@ -43,6 +45,14 @@ export async function setDataItem(key: string, value: string): Promise<void> {
   localStorage.setItem(key, value)
   window.dispatchEvent(new StorageEvent('storage', { key, newValue: value }))
 
+  // Event: fundscore_generated — fires whenever assessment data is saved
+  if (key === 'unified_assessment') {
+    const { fund_score } = parseScoresFromAssessment(value)
+    if (fund_score > 0) {
+      logEvent({ event_name: 'fundscore_generated', payload: { fund_score, scoring_version: SCORING_VERSION } })
+    }
+  }
+
   if (!isSupabaseConfigured) return
 
   try {
@@ -51,10 +61,19 @@ export async function setDataItem(key: string, value: string): Promise<void> {
 
     if (key === 'unified_assessment') {
       const { fund_score, bankable_score } = parseScoresFromAssessment(value)
+      const now = new Date().toISOString()
       await supabase
         .from('business_profiles')
         .upsert(
-          { user_id: user.id, assessment_data: value, fund_score, bankable_score, updated_at: new Date().toISOString() },
+          {
+            user_id: user.id,
+            assessment_data: value,
+            fund_score,
+            bankable_score,
+            scoring_version: SCORING_VERSION,
+            score_generated_at: now,
+            updated_at: now,
+          },
           { onConflict: 'user_id' }
         )
     } else if (key === 'fundready_badges') {
@@ -137,7 +156,8 @@ export async function migrateLocalDataToSupabase(): Promise<void> {
     // Save assessment data to business_profiles.assessment_data with scores
     if (assessmentData) {
       const { fund_score, bankable_score } = parseScoresFromAssessment(assessmentData)
-      
+      const now = new Date().toISOString()
+
       await supabase
         .from('business_profiles')
         .upsert(
@@ -146,7 +166,9 @@ export async function migrateLocalDataToSupabase(): Promise<void> {
             assessment_data: assessmentData,
             fund_score,
             bankable_score,
-            updated_at: new Date().toISOString(),
+            scoring_version: SCORING_VERSION,
+            score_generated_at: now,
+            updated_at: now,
           },
           { onConflict: 'user_id' }
         )
