@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════════════════════════
 // UNIFIED ASSESSMENT DATA MODEL
-// Single source of truth — 24 questions, zero duplicates
+// Single source of truth — 36 questions (13 foundation + 23 readiness), zero duplicates
 // ════════════════════════════════════════════════════════════════════════════════
 
 export interface UnifiedAnswers {

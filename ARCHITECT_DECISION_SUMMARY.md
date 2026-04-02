@@ -22,12 +22,12 @@ Business Success Scan (BSS)
     [bssToFundscoreSync.ts] ← BAND-AID
     ↓
 FundScore Assessment
-├─ 24 questions
+├─ 36 questions (as implemented: 13 foundation + 23 readiness)
 └─ 10 of which duplicate BSS data
 ```
 
 ### **The Cost:**
-- **27 total interactions** (3 BSS steps + 24 FundScore questions)
+- **27 total interactions** (3 BSS steps + 36 FundScore questions as implemented)
 - **38% unnecessary friction** at critical conversion point
 - **10 redundant questions** even with pre-fill logic
 - **Data sync complexity** (bssToFundscoreSync.ts)
@@ -50,23 +50,25 @@ FundScore Assessment
 ```
 /business-assessment (single route)
 
-PART 1: FOUNDATION (10 questions, ~5 min)
-├─ Section A: Business Identity (Q_F1–Q_F2)
-├─ Section B: Operations & Assets (Q_F3–Q_F6)
-└─ Section C: Credit Profile (Q_F7–Q_F10)
+PART 1: FOUNDATION (13 questions, ~6 min)
+├─ Section A: Owner & Business Identity (Q_F1–Q_F2)
+├─ Section B: Operations & Assets (Q_F3–Q_F7)
+├─ Section C: Credit Profile (Q_F8–Q_F11)
+└─ Section D: Capital & Eligibility (Q_F12–Q_F13)
     ↓
     [In-flow transition moment - 2.2 seconds]
     ↓
-PART 2: READINESS (14 questions, ~6 min)
-├─ Section D: Documentation (Q_R1–Q_R4)
-├─ Section E: Cash Flow Behavior (Q_R5–Q_R7)
-├─ Section F: Banking Trajectory (Q_R8)
-├─ Section G: Legal Standing (Q_R9)
-└─ Section H: Narrative Strength (Q_R10–Q_R14)
+PART 2: READINESS (23 questions, ~10 min)
+├─ Section E: Documentation (Q_R1–Q_R4)
+├─ Section F: Cash Flow Behavior (Q_R5–Q_R7)
+├─ Section G: Banking Trajectory (Q_R8)
+├─ Section H: Legal Standing (Q_R9)
+├─ Section I: Narrative Strength (Q_R10–Q_R14)
+└─ Section J: Extended Readiness (Q_R15–Q_R23)
 ```
 
 ### **The Transformation:**
-- **27 interactions → 24 questions** (10 foundation + 14 readiness)
+- **27 interactions → 36 questions** (13 foundation + 23 readiness)
 - **NO duplicate questions** (zero redundancy)
 - **NO sync logic** (bssToFundscoreSync.ts deleted)
 - **ONE data model** (UnifiedAnswers interface)
@@ -77,46 +79,50 @@ PART 2: READINESS (14 questions, ~6 min)
 
 ## 🧩 **HOW IT WORKS**
 
-### **Foundation Questions (Q_F1–Q_F10):**
+### **Foundation Questions (Q_F1–Q_F13):**
 These replace ALL of BSS Steps 1-3 with intelligent, combined questions:
 
 | Question | What It Collects | Why Combined |
 |----------|------------------|--------------|
-| **Q_F1** | Business name + Entity type | Identity established in one question |
-| **Q_F2** | Start date + Industry | Business age + risk profile together |
-| **Q_F3** | EIN status + Website URL | Legal identity + legitimacy |
-| **Q_F4** | Monthly revenue + CC sales | Revenue + MCA eligibility |
-| **Q_F5** | Bank account type + age + balance | Complete banking picture (3 sub-fields) |
-| **Q_F6** | NSFs + A/R + Equipment + Property | Banking behavior + asset inventory |
-| **Q_F7** | FICO scores (3 bureaus) | Personal credit foundation |
-| **Q_F8** | Credit utilization + Income | FICO factors + income qualification |
-| **Q_F9** | Bankruptcy + Derogatories | Complete derogatory profile |
-| **Q_F10** | Business credit + Inquiries | Business credit + credit-seeking behavior |
+| **Q_F1**  | Owner contact info | Identity & account creation anchor |
+| **Q_F2**  | Business name + Entity type | Entity identity in one question |
+| **Q_F3**  | Start date + Industry | Business age + risk profile together |
+| **Q_F4**  | EIN status + Website URL | Legal identity + legitimacy |
+| **Q_F5**  | Monthly revenue + CC sales | Revenue + MCA eligibility |
+| **Q_F6**  | Bank account type + age + balance | Complete banking picture (3 sub-fields) |
+| **Q_F7**  | NSFs + A/R + Equipment + Property | Banking behavior + asset inventory |
+| **Q_F8**  | FICO scores (3 bureaus) | Personal credit foundation |
+| **Q_F9**  | Credit utilization + Income | FICO factors + income qualification |
+| **Q_F10** | Bankruptcy + Derogatories | Complete derogatory profile |
+| **Q_F11** | Business credit + Inquiries | Business credit + credit-seeking behavior |
+| **Q_F12** | Capital request (amount + purpose) | Sizing + product-fit routing |
+| **Q_F13** | Business eligibility flag | SBA/lender ineligible-type screening |
 
 **Key Innovation:** Multiple related inputs in ONE question frame
 - User sees it as 10 questions, not 24 individual fields
 - Cognitive load reduced through smart grouping
 - Answers feel natural, not interrogative
 
-### **Readiness Questions (Q_R1–Q_R14):**
+### **Readiness Questions (Q_R1–Q_R23):**
 These ask ONLY what foundation data cannot answer:
 
 | # | Question | Why Foundation Can't Answer This |
 |---|----------|----------------------------------|
-| **Q_R1** | Tax returns filed (0/1/2/3+ yrs) | BSS doesn't verify documentation |
-| **Q_R2** | P&L statement current? | BSS doesn't check financial statements |
-| **Q_R3** | Bank statements ready (months) | BSS doesn't verify file organization |
-| **Q_R4** | Returns match statements? | BSS can't verify consistency |
-| **Q_R5** | Revenue trending (up/flat/down) | BSS captures snapshot, not trends |
-| **Q_R6** | Monthly profit vs. break-even | BSS asks revenue, not profitability |
-| **Q_R7** | DSCR capacity (can cover loan?) | BSS doesn't test debt service ratio |
-| **Q_R8** | Bank balance trending upward? | BSS captures current, not trajectory |
-| **Q_R9** | State good standing? | BSS doesn't verify compliance status |
-| **Q_R10** | Clear use of funds? | BSS doesn't test narrative clarity |
-| **Q_R11** | Clear repayment plan? | BSS doesn't assess financial literacy |
-| **Q_R12** | Prior loan repayment history? | BSS doesn't capture behavioral credit |
-| **Q_R13** | Industry experience (years) | BSS doesn't measure operator expertise |
-| **Q_R14** | Business credit file? | BSS doesn't verify D&B/Experian |
+| **Q_R1**  | Tax returns filed (0/1/2/3+ yrs) | Foundation doesn't verify documentation |
+| **Q_R2**  | P&L statement current? | Foundation doesn't check financial statements |
+| **Q_R3**  | Bank statements ready (months) | Foundation doesn't verify file organization |
+| **Q_R4**  | Returns match statements? | Foundation can't verify consistency |
+| **Q_R5**  | Revenue trending (up/flat/down) | Foundation captures snapshot, not trends |
+| **Q_R6**  | Monthly profit vs. break-even | Foundation asks revenue, not profitability |
+| **Q_R7**  | DSCR capacity (can cover loan?) | Foundation doesn't test debt service ratio |
+| **Q_R8**  | Bank balance trending upward? | Foundation captures current, not trajectory |
+| **Q_R9**  | State good standing? | Foundation doesn't verify compliance status |
+| **Q_R10** | Clear use of funds? | Foundation doesn't test narrative clarity |
+| **Q_R11** | Clear repayment plan? | Foundation doesn't assess financial literacy |
+| **Q_R12** | Prior loan repayment history? | Foundation doesn't capture behavioral credit |
+| **Q_R13** | Industry experience (years) | Foundation doesn't measure operator expertise |
+| **Q_R14** | Business credit file established? | Foundation doesn't verify D&B/Experian |
+| **Q_R15–Q_R23** | Extended lender-readiness questions | Additional depth for scoring dimensions D, N, S |
 
 **ZERO overlap with foundation questions. Every question earns its position.**
 
@@ -124,7 +130,7 @@ These ask ONLY what foundation data cannot answer:
 
 ## 🔄 **THE IN-FLOW TRANSITION**
 
-**Between Q_F10 (foundation) and Q_R1 (readiness):**
+**Between Q_F13 (foundation) and Q_R1 (readiness):**
 
 ```
 ┌────────────────────────────────────────────┐
@@ -138,7 +144,7 @@ These ask ONLY what foundation data cannot answer:
 │  ● ● ● ○ ● ● ← Dimension seed status       │
 │  C D F B S N                               │
 │                                            │
-│  Next: 14 readiness questions.             │
+│  Next: 23 readiness questions.             │
 │  These are things only you know.           │
 │                                            │
 │  [Auto-continuing in 2s...] [Continue →]   │
@@ -183,32 +189,24 @@ The data is collected ONCE in foundation questions. The scoring engine reads it 
 ### **ONE Data Model:**
 ```typescript
 interface UnifiedAnswers {
-  // Part 1: Foundation (10 questions)
-  businessName: string;
-  entityType: 'sole_prop' | 'llc_single' | 'llc_multi' | 'corp';
-  startDate: { month: number; year: number };
-  industry: string;
-  hasEIN: boolean;
-  hasWebsite: boolean;
-  monthlyRevenue: number;
-  ccSales: number;
-  bankAccount: 'dedicated' | 'personal' | 'none';
-  bankAge: '0_6mo' | '6_12mo' | '12_24mo' | '24plus';
-  avgDailyBalance: 'near_zero' | '500_2k' | '2k_10k' | '10k_25k' | '25k_plus';
-  nsfCount: 'zero' | '1_2' | '3_5' | 'over_5';
-  arBalance: number;
-  equipmentValue: number;
-  experian: number;
-  transunion: number;
-  equifax: number;
-  utilization: number;
-  hasBankruptcy: boolean;
-  hasCollections: boolean;
-  hasChargeoffs: boolean;
-  bizCreditFile: 'paydex_80plus' | 'below_80' | 'building' | 'none';
-  
-  // Part 2: Readiness (14 questions)
-  readinessAnswers: (number | undefined)[]; // Indices 0-13
+  // Part 1: Foundation (13 questions — Q_F1–Q_F13)
+  // See types.ts UnifiedAnswers for full field definitions
+  ownerFirstName: string; ownerLastName: string; // Q_F1
+  businessName: string; entityType: string;      // Q_F2
+  startDate: { month: number; year: number }; industry: string; // Q_F3
+  hasEIN: boolean; hasWebsite: boolean;          // Q_F4
+  monthlyRevenue: string; ccSales: string;       // Q_F5
+  bankAccount: string; bankAge: string; avgDailyBalance: string; // Q_F6
+  nsfCount: string; arBalance: string; equipmentValue: string;   // Q_F7
+  experian: string; transunion: string; equifax: string;         // Q_F8
+  utilization: string; personalIncome: string;                  // Q_F9
+  hasBankruptcy: string; hasCollections: string; /* derogs */    // Q_F10
+  bizCreditFile: string; inquiries30d: string;                   // Q_F11
+  loanAmount: string; loanPurpose: string;                       // Q_F12
+  isIneligibleBizType: boolean;                                  // Q_F13
+
+  // Part 2: Readiness (23 questions — Q_R1–Q_R23)
+  readinessAnswers: (number | undefined)[]; // Indices 0-22
 }
 ```
 
@@ -293,12 +291,12 @@ Every dimension gets data from BOTH foundation and readiness:
 
 | Dimension | Foundation Data (Part 1) | Readiness Data (Part 2) |
 |-----------|--------------------------|-------------------------|
-| **C** (28%) | Q_F7: FICO composite<br>Q_F8: Utilization<br>Q_F9: Derogatories | Q_R14: Business credit file |
+| **C** (28%) | Q_F8: FICO composite<br>Q_F9: Utilization<br>Q_F10: Derogatories | Q_R14: Business credit file |
 | **D** (22%) | *(None - by design)* | Q_R1: Tax returns<br>Q_R2: P&L<br>Q_R3: Bank statements<br>Q_R4: Consistency |
-| **F** (20%) | Q_F4: Monthly revenue | Q_R5: Revenue trend<br>Q_R6: Profitability<br>Q_R7: DSCR capacity |
-| **B** (13%) | Q_F5: Account type<br>Q_F5: Daily balance<br>Q_F6: NSF count | Q_R8: Balance trending |
-| **S** (10%) | Q_F1: Entity type<br>Q_F2: Business age<br>Q_F2: Industry | Q_R9: State standing |
-| **N** (7%) | *(None - by design)* | Q_R10: Use of funds<br>Q_R11: Repayment plan<br>Q_R12: Prior loans<br>Q_R13: Experience |
+| **F** (20%) | Q_F5: Monthly revenue | Q_R5: Revenue trend<br>Q_R6: Profitability<br>Q_R7: DSCR capacity |
+| **B** (13%) | Q_F6: Account type<br>Q_F6: Daily balance<br>Q_F7: NSF count | Q_R8: Balance trending |
+| **S** (10%) | Q_F2: Entity type<br>Q_F3: Business age<br>Q_F3: Industry | Q_R9: State standing |
+| **N** (7%) | *(None - by design)* | Q_R10: Use of funds<br>Q_R11: Repayment plan<br>Q_R12: Prior loans<br>Q_R13: Experience<br>Q_R15–Q_R23: Extended narrative |
 
 **NOTE:** Documentation (D) and Narrative (N) are intentionally 100% Part 2 because they CANNOT be derived from structured data. This is a feature, not a bug.
 
@@ -312,7 +310,7 @@ Every dimension gets data from BOTH foundation and readiness:
 2. System: Step 1 → Step 2 → Step 3 (10-15 min)
 3. System: "Now take the FundScore Assessment!"
 4. User: "Okay..." (feels like starting over)
-5. System: Q0-Q23 (24 questions, 10-12 min)
+5. System: Q0-Q35 (36 questions, 16-20 min)
 6. User at Q0: "Wait, didn't I just enter my credit score?"
 7. User at Q8: "Why are you asking about revenue again?"
 8. User at Q13: "This is my bank balance... again..."
@@ -326,14 +324,14 @@ User feeling: Interrogated, not respected
 ### **After (Unified System):**
 ```
 1. User: "I'll complete the business assessment"
-2. System: "10 foundation questions + 14 readiness questions"
+2. System: "13 foundation questions + 23 readiness questions"
 3. User: Starts with Q_F1 (Business name + entity type)
 4. User: Q_F2 (Start date + industry) - "Smart grouping!"
 5. User: Q_F3–Q_F10 (Foundation complete in 5 min)
 6. System: [Transition moment] "Foundation complete. Score: 687*"
 7. User: "Oh wow, I already have a provisional score!"
 8. System: "Next: 14 readiness questions. Things only you know."
-9. User: Q_R1–Q_R14 (Documentation, cash flow, narrative)
+9. User: Q_R1–Q_R23 (Documentation, cash flow, narrative, extended readiness)
 10. User: "These are all NEW questions - nothing repetitive"
 11. Results page with dual score
 
@@ -377,7 +375,7 @@ User feeling: Respected, efficient, intelligent system
 ### **Conversion Metrics:**
 | Metric | Before | After | Improvement |
 |--------|--------|-------|-------------|
-| **Total Questions** | 27 interactions | 24 questions | -11% |
+| **Total Questions** | 27 interactions | 36 questions (13+23) | +33% but zero redundancy |
 | **Duplicate Questions** | 10 (42% of FundScore) | 0 | -100% |
 | **Completion Time** | 22-27 min | 11-15 min | -45% |
 | **User Confusion Points** | 10 duplicate moments | 0 | -100% |
@@ -412,7 +410,7 @@ From the architect prompt (mandatory):
 9. **LIVE SCORE BAR UPDATES ON EVERY INTERACTION.**
 10. **MCA ALWAYS LAST WITH COST DISCLOSURE.**
 11. **NOT APPLICABLE HIDDEN BY DEFAULT.**
-12. **THE 14-QUESTION COUNT IS CORRECT AND IS MARKETED.**
+12. **THE QUESTION COUNT IS CORRECT: 13 FOUNDATION + 23 READINESS = 36 TOTAL.**
 13. **TEST DATA BUTTON ON BOTH SECTIONS.**
 14. **THE PLATFORM VOICE NEVER SAYS "GREAT JOB."**
 

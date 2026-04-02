@@ -21,6 +21,7 @@ import {
   Shield,
   FileText,
   Lock,
+  Info,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router';
 import { useState, useEffect } from 'react';
@@ -140,9 +141,24 @@ function computeRealCapital(assessment: UnifiedAnswers | null, score: number): {
     return Math.min(raw, annualRev * multiplier);
   };
 
+  // T-11: Asset guard — exclude asset-based products from the headline pool when the
+  // user explicitly reported 'none' for the underlying asset. Equipment Financing at
+  // $5M is a misleading ceiling for a business with no equipment.
+  const hasRelevantAsset = (p: { id: string }) => {
+    const a = assessment;
+    if (p.id === 'equipment'    && (a as any).equipmentValue === 'none') return false;
+    if (p.id === 'factoring'    && (a as any).arBalance      === 'none') return false;
+    if (p.id === 'po_financing' && (a as any).poBalance      === 'none') return false;
+    if (p.id === 'cre'          && (a as any).ownsProperty   !== 'yes')  return false;
+    return true;
+  };
+  // headlineEligible = products that (a) qualify and (b) have backing assets
+  const headlineEligible = eligible.filter(hasRelevantAsset);
+  const headlineBase = headlineEligible.length > 0 ? headlineEligible : eligible;
+
   // Prefer High confidence products for the headline dollar amount
-  const highConf = eligible.filter(p => p.confidence === 'High');
-  const medConf  = eligible.filter(p => p.confidence === 'Medium');
+  const highConf = headlineBase.filter(p => p.confidence === 'High');
+  const medConf  = headlineBase.filter(p => p.confidence === 'Medium');
   const headlinePool = highConf.length > 0 ? highConf : medConf;
   const isHighConfidence = highConf.length > 0;
 
@@ -370,6 +386,7 @@ export function Dashboard() {
   const [napScore, setNapScore] = useState(0);
   const [membershipTier, setMembershipTier] = useState<MembershipTier>(() => getMembershipTier());
   const [storedAssessment, setStoredAssessment] = useState<UnifiedAnswers | null>(null);
+  const [capitalTooltipVisible, setCapitalTooltipVisible] = useState(false);
 
   const dismissWelcome = () => {
     localStorage.setItem('fundready_welcomed', '1');
@@ -618,8 +635,41 @@ export function Dashboard() {
                         $0
                       </div>
                     )}
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '4px', fontWeight: 500 }}>
-                      {realCapital.count > 0 ? `Best pre-qualified: ${realCapital.productLabel}` : 'Estimated Capital Potential'}
+                    {/* T-11: "Estimated capital ceiling" label + ⓘ tooltip */}
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '4px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+                      <span>
+                        {realCapital.count > 0
+                          ? `Estimated capital ceiling · ${realCapital.productLabel}`
+                          : 'Estimated Capital Potential'}
+                      </span>
+                      <button
+                        onMouseEnter={() => setCapitalTooltipVisible(true)}
+                        onMouseLeave={() => setCapitalTooltipVisible(false)}
+                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', color: 'var(--muted-foreground)', opacity: 0.55, flexShrink: 0 }}
+                        aria-label="How this estimate is calculated"
+                      >
+                        <Info style={{ width: '11px', height: '11px' }} />
+                      </button>
+                      {capitalTooltipVisible && (
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '20px',
+                          left: 0,
+                          zIndex: 50,
+                          background: 'var(--card)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '8px',
+                          padding: '10px 12px',
+                          width: '240px',
+                          fontSize: '11px',
+                          lineHeight: 1.6,
+                          color: 'var(--muted-foreground)',
+                          boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+                          fontWeight: 400,
+                        }}>
+                          Revenue-capped ceiling based on your highest qualifying product. Actual loan offers depend on lender underwriting, documentation, and full credit review.
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 </div>
