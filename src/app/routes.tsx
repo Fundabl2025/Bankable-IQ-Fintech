@@ -18,6 +18,7 @@ const BankableStatus = lazy(() => import('./pages/StatusReports/BankableStatus')
 const BusinessFICO = lazy(() => import('./pages/StatusReports/BusinessFICO').then(m => ({ default: m.BusinessFICO })));
 const EstimatedFunding = lazy(() => import('./pages/StatusReports/EstimatedFunding').then(m => ({ default: m.EstimatedFunding })));
 const OwnersCredit = lazy(() => import('./pages/StatusReports/OwnersCredit').then(m => ({ default: m.OwnersCredit })));
+const PersonalCreditReport = lazy(() => import('./pages/StatusReports/PersonalCreditReport').then(m => ({ default: m.PersonalCreditReport })));
 const AccessFundingPage = lazy(() => import('./pages/AccessFundingMain').then(m => ({ default: m.AccessFunding })));
 const BusinessCreditCards = lazy(() => import('./pages/AccessFunding/BusinessCreditCards').then(m => ({ default: m.BusinessCreditCards })));
 const BusinessCreditLine = lazy(() => import('./pages/AccessFunding/BusinessCreditLine').then(m => ({ default: m.BusinessCreditLine })));
@@ -152,8 +153,12 @@ export const router = createBrowserRouter([
         element: <LazyComponent Component={EstimatedFunding} />,
       },
       {
+        path: 'status-reports/personal-credit',
+        element: <LazyComponent Component={PersonalCreditReport} />,
+      },
+      {
         path: 'status-reports/owners-credit',
-        element: <LazyComponent Component={OwnersCredit} />,
+        element: <Navigate to="/app/status-reports/personal-credit" replace />,
       },
       {
         path: 'access-funding',
