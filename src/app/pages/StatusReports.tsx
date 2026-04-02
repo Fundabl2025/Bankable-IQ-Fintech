@@ -136,7 +136,7 @@ export function StatusReports() {
             {
               label: 'Estimated Funding',
               sub: 'Capital ceiling',
-              value: extended.fundingRange.businessOnlyMin >= 1000000 ? '$' + (extended.fundingRange.businessOnlyMin / 1000000).toFixed(1) + 'M' : '$' + Math.round(extended.fundingRange.businessOnlyMin / 1000) + 'K',
+              value: extended.fundingRange.businessOnlyMax >= 1000000 ? '$' + (extended.fundingRange.businessOnlyMax / 1000000).toFixed(1) + 'M' : '$' + Math.round(extended.fundingRange.businessOnlyMax / 1000) + 'K',
               valueColor: '#3b82f6',
               accent: 'rgba(59,130,246,0.06)',
               border: 'rgba(59,130,246,0.2)',

@@ -5,6 +5,7 @@
 
 import { UnifiedAnswers, ScoreResult, ExtendedResultsOutput } from './types';
 import { READINESS_QUESTIONS } from './questions';
+import { evaluateProducts } from './productEligibility';
 
 // ── Scoring version — increment when weights, thresholds, or bands change ──────
 // v1.0 → v1.1: corrected full participation of Q_R15–Q_R23 (indices 13–22)
@@ -680,8 +681,23 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
   expiryDate.setDate(expiryDate.getDate() + 14);
   const estimateExpiry = expiryDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-  // Funding Range computation
-  const fundingRange = getFundingRange(baseResult.score);
+  // Funding Range -- product-based + revenue-capped (single source of truth)
+  const fundingRange: ExtendedResultsOutput['fundingRange'] = (() => {
+    const sb = getFundingRange(baseResult.score);
+    const allProds = evaluateProducts(data, baseResult.score);
+    const elig = allProds.filter(p => p.qualifies);
+    const revMap: Record<string, number> = { under_5k: 2500, '5k_15k': 10000, '15k_40k': 27500, '40k_100k': 70000, over_100k: 150000 };
+    const mRev = revMap[(data as any).monthlyRevenue] || 0;
+    const aRev = mRev * 12;
+    const parseAmt = (s: string): number => { const c = s.replace(/[$,+]/g, ''); if (c.includes('M')) return parseFloat(c)*1e6; if (c.includes('K')) return parseFloat(c)*1e3; return parseInt(c)||0; };
+    const cap = (p: { maxAmount: string; category: string }): number => { const r = parseAmt(p.maxAmount); if (!aRev) return r; return Math.min(r, aRev * (p.category === 'Asset-Based' ? 4 : 2)); };
+    const ok  = (p: { id: string }): boolean => { if (p.id==='equipment' && (data as any).equipmentValue==='none') return false; if (p.id==='factoring' && (data as any).arBalance==='none') return false; if (p.id==='po_financing' && (data as any).poBalance==='none') return false; if (p.id==='cre' && (data as any).ownsProperty!=='yes') return false; return true; };
+    const pool = (elig.filter(ok).length > 0 ? elig.filter(ok) : elig);
+    if (!pool.length) return { ...sb, businessOnlyMin:0, businessOnlyMax:0, personalAndBusinessMin:0, personalAndBusinessMax:0 };
+    const bizMax = Math.max(...pool.map(p => cap(p)));
+    const bizMin = Math.round(bizMax * 0.35);
+    return { currentBand: sb.currentBand, scoreRangeLabel: sb.scoreRangeLabel, businessOnlyMin: bizMin, businessOnlyMax: bizMax, personalAndBusinessMin: Math.round(bizMin*1.2), personalAndBusinessMax: Math.round(bizMax*1.25) };
+  })();
 
   // Owner Status
   const personalIncomeMap: Record<string, string> = {
