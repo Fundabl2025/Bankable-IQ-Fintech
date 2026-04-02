@@ -694,7 +694,11 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
     const ok  = (p: { id: string }): boolean => { if (p.id==='equipment' && (data as any).equipmentValue==='none') return false; if (p.id==='factoring' && (data as any).arBalance==='none') return false; if (p.id==='po_financing' && (data as any).poBalance==='none') return false; if (p.id==='cre' && (data as any).ownsProperty!=='yes') return false; return true; };
     const pool = (elig.filter(ok).length > 0 ? elig.filter(ok) : elig);
     if (!pool.length) return { ...sb, businessOnlyMin:0, businessOnlyMax:0, personalAndBusinessMin:0, personalAndBusinessMax:0 };
-    const bizMax = Math.max(...pool.map(p => cap(p)));
+    const sortedAmts = pool.map(p => cap(p)).sort((a, b) => a - b);
+    const mid = Math.floor(sortedAmts.length / 2);
+    const bizMax = sortedAmts.length % 2 === 0
+      ? Math.round((sortedAmts[mid - 1] + sortedAmts[mid]) / 2)
+      : sortedAmts[mid];
     const bizMin = Math.round(bizMax * 0.35);
     return { currentBand: sb.currentBand, scoreRangeLabel: sb.scoreRangeLabel, businessOnlyMin: bizMin, businessOnlyMax: bizMax, personalAndBusinessMin: Math.round(bizMin*1.2), personalAndBusinessMax: Math.round(bizMax*1.25) };
   })();

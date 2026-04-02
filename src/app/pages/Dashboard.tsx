@@ -162,13 +162,16 @@ function computeRealCapital(assessment: UnifiedAnswers | null, score: number): {
   const headlinePool = highConf.length > 0 ? highConf : medConf;
   const isHighConfidence = highConf.length > 0;
 
-  // Find top capped amount inside the headline pool
-  let topProduct = headlinePool[0];
-  let highestCapped = 0;
-  for (const p of headlinePool) {
-    const capped = cappedAmt(p);
-    if (capped > highestCapped) { highestCapped = capped; topProduct = p; }
-  }
+  // Median capped amount across headline pool (same calc as engine.ts fundingRange)
+  const poolAmts = headlinePool.map(p => cappedAmt(p)).sort((a, b) => a - b);
+  const mid = Math.floor(poolAmts.length / 2);
+  const medianCapped = poolAmts.length === 0 ? 0
+    : poolAmts.length % 2 === 0 ? Math.round((poolAmts[mid - 1] + poolAmts[mid]) / 2)
+    : poolAmts[mid];
+  // Label: product closest to the median amount
+  const topProduct = headlinePool.reduce((best, p) =>
+    Math.abs(cappedAmt(p) - medianCapped) < Math.abs(cappedAmt(best) - medianCapped) ? p : best,
+    headlinePool[0]);
 
   const confidenceLabel = isHighConfidence
     ? `${highConf.length} high-confidence product${highConf.length !== 1 ? 's' : ''}`
@@ -176,7 +179,7 @@ function computeRealCapital(assessment: UnifiedAnswers | null, score: number): {
 
   return {
     total: eligible.map(p => parseMaxAmount(p.maxAmount)).reduce((a, b) => a + b, 0),
-    highest: highestCapped,
+    highest: medianCapped,
     count: eligible.length,
     productLabel: topProduct?.name || '',
     confidenceLabel,
