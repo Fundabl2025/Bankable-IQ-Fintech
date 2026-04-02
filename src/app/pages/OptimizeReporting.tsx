@@ -142,16 +142,19 @@ export function OptimizeReporting() {
   const [creditScore, setCreditScore] = useState(0);
   const [ageMonths, setAgeMonths] = useState(0);
 
-  const tier = getMembershipTier();
+  const [tier, setTier] = useState(() => getMembershipTier());
   const hasAccess = canAccessGoal2(tier);
 
   useEffect(() => {
+    const updateTier = () => setTier(getMembershipTier());
     loadData();
     window.addEventListener('businessDataUpdated', loadData);
     window.addEventListener('scanDataUpdated', loadData);
+    window.addEventListener('membershipUpdated', updateTier);
     return () => {
       window.removeEventListener('businessDataUpdated', loadData);
       window.removeEventListener('scanDataUpdated', loadData);
+      window.removeEventListener('membershipUpdated', updateTier);
     };
   }, []);
 
