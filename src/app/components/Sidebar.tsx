@@ -26,12 +26,14 @@ import {
   X,
   Zap,
   Brain,
+  Compass,
 } from 'lucide-react';
 import { getPreQualifiedPrograms } from '../utils/fundingEligibility';
 import { computeScore } from '../pages/business-assessment/engine';
 
 // ── Primary nav — flat, one tap deep ─────────────────────────────────────────
 const PRIMARY_NAV = [
+  { path: '/app/getting-started', label: 'Getting Started',       icon: Compass, isGuide: true },
   { path: '/business-assessment', label: 'Business Success Scan', icon: ClipboardCheck, isAssessment: true },
   { path: '/app/dashboard',       label: 'Dashboard',             icon: LayoutDashboard },
   { path: '/app/access-funding',  label: 'Access Funding',        icon: DollarSign, showFunding: true },
@@ -232,6 +234,18 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
                 : location.pathname === item.path;
 
             let badge: React.ReactNode = null;
+            if ((item as any).isGuide) {
+              badge = (
+                <span style={{
+                  fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '5px',
+                  background: 'rgba(99,102,241,0.1)', color: '#6366f1',
+                  border: '1px solid rgba(99,102,241,0.25)',
+                  textTransform: 'uppercase' as const, letterSpacing: '0.06em',
+                }}>
+                  Guide
+                </span>
+              );
+            }
             if (item.isAssessment) {
               badge = (
                 <span style={{

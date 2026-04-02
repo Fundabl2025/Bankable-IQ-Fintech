@@ -112,22 +112,57 @@ function parseMaxAmount(str: string): number {
 }
 
 // Compute real capital potential from actual qualifying products.
-// Returns: { total (sum of all eligible maxAmounts), highest (single largest), count }
-function computeRealCapital(assessment: UnifiedAnswers | null, score: number): { total: number; highest: number; count: number; productLabel: string } {
-  if (!assessment) return { total: 0, highest: 0, count: 0, productLabel: '' };
+// Returns: { highest (top high-confidence product, revenue-capped), count, productLabel, confidenceLabel, isHighConfidence }
+function computeRealCapital(assessment: UnifiedAnswers | null, score: number): {
+  total: number; highest: number; count: number;
+  productLabel: string; confidenceLabel: string; isHighConfidence: boolean;
+} {
+  if (!assessment) return { total: 0, highest: 0, count: 0, productLabel: '', confidenceLabel: '', isHighConfidence: false };
   const products = evaluateProducts(assessment, score);
   const eligible = products.filter(p => p.qualifies);
-  if (eligible.length === 0) return { total: 0, highest: 0, count: 0, productLabel: '' };
-  const amounts = eligible.map(p => parseMaxAmount(p.maxAmount));
-  const highest = Math.max(...amounts);
-  // Sum is misleading — show the highest single product as primary potential
-  // because lenders don't stack all products simultaneously
-  const topProduct = eligible.find(p => parseMaxAmount(p.maxAmount) === highest);
+  if (eligible.length === 0) return { total: 0, highest: 0, count: 0, productLabel: '', confidenceLabel: '', isHighConfidence: false };
+
+  // Revenue-based cap — prevents $5M Equipment Financing from appearing as
+  // the headline number for a user doing $5K–$10K/month in revenue.
+  const revenueMap: Record<string, number> = {
+    under_5k: 2500, '5k_15k': 10000, '15k_40k': 27500, '40k_100k': 70000, over_100k: 125000,
+  };
+  const monthlyRev = revenueMap[(assessment as any).monthlyRevenue] || 0;
+  const annualRev = monthlyRev * 12;
+
+  const cappedAmt = (p: { maxAmount: string; category: string }) => {
+    const raw = parseMaxAmount(p.maxAmount);
+    if (annualRev === 0) return raw;
+    // Asset-based products (equipment, PO, AR) can exceed annual revenue; working capital capped tighter
+    const multiplier = p.category === 'Asset-Based' ? 4 : 2;
+    return Math.min(raw, annualRev * multiplier);
+  };
+
+  // Prefer High confidence products for the headline dollar amount
+  const highConf = eligible.filter(p => p.confidence === 'High');
+  const medConf  = eligible.filter(p => p.confidence === 'Medium');
+  const headlinePool = highConf.length > 0 ? highConf : medConf;
+  const isHighConfidence = highConf.length > 0;
+
+  // Find top capped amount inside the headline pool
+  let topProduct = headlinePool[0];
+  let highestCapped = 0;
+  for (const p of headlinePool) {
+    const capped = cappedAmt(p);
+    if (capped > highestCapped) { highestCapped = capped; topProduct = p; }
+  }
+
+  const confidenceLabel = isHighConfidence
+    ? `${highConf.length} high-confidence product${highConf.length !== 1 ? 's' : ''}`
+    : `${medConf.length} product${medConf.length !== 1 ? 's' : ''} estimated`;
+
   return {
-    total: amounts.reduce((a, b) => a + b, 0),
-    highest,
+    total: eligible.map(p => parseMaxAmount(p.maxAmount)).reduce((a, b) => a + b, 0),
+    highest: highestCapped,
     count: eligible.length,
     productLabel: topProduct?.name || '',
+    confidenceLabel,
+    isHighConfidence,
   };
 }
 
@@ -565,7 +600,9 @@ export function Dashboard() {
                         </div>
                         {realCapital.count > 0 && (
                           <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', marginTop: '2px' }}>
-                            based on <span style={{ fontWeight: 700, color: gaugeColor }}>{realCapital.count} pre-qualified product{realCapital.count !== 1 ? 's' : ''}</span>
+                            <span style={{ fontWeight: 700, color: realCapital.isHighConfidence ? gaugeColor : '#f59e0b' }}>
+                              {realCapital.confidenceLabel}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -575,7 +612,7 @@ export function Dashboard() {
                       </div>
                     )}
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '4px', fontWeight: 500 }}>
-                      {realCapital.count > 0 ? `Largest single product: ${realCapital.productLabel}` : 'Estimated Capital Potential'}
+                      {realCapital.count > 0 ? `Best pre-qualified: ${realCapital.productLabel}` : 'Estimated Capital Potential'}
                     </div>
                   </motion.div>
                 </div>
@@ -1269,195 +1306,209 @@ export function Dashboard() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
-// WELCOME MODAL — First-login onboarding with gradient header
+// WELCOME MODAL — FORGE™ 3-Step Onboarding
+// Step 1: Goal selection (identity anchor)
+// Step 2: 3 quick profile questions (credit · age · revenue)
+// Step 3: Estimated starting position + single CTA
 // ════════════════════════════════════════════════════════════════════════════════
 
+function estimateStartingTier(creditRange: string, bizAge: string, revenue: string) {
+  let pts = 0;
+  if (creditRange === '740+') pts += 3; else if (creditRange === '670–739') pts += 2; else if (creditRange === '580–669') pts += 1;
+  if (bizAge === '2+ years') pts += 3; else if (bizAge === '1–2 years') pts += 2; else pts += 1;
+  if (revenue === '$40K+/mo') pts += 3; else if (revenue === '$10K–$40K/mo') pts += 2; else pts += 1;
+  if (pts >= 7) return { tier: 'Bankable', range: '$250K – $1.5M+', color: '#10b981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.25)', note: 'You may already qualify for SBA and bank products — take the full scan to confirm.', cta: '/business-assessment' };
+  if (pts >= 5) return { tier: 'Approaching', range: '$50K – $500K', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)', note: 'Alternative capital is likely available now. The scan will pinpoint your #1 blocker.', cta: '/business-assessment' };
+  return { tier: 'Building', range: '$0 – $100K', color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)', note: 'Foundation work needed first. The scan builds your exact 90-day roadmap.', cta: '/business-assessment' };
+}
+
 function WelcomeModal({ name, onDismiss, onNavigate }: { name: string; onDismiss: () => void; onNavigate: (path: string) => void }) {
-  const steps = [
-    {
-      emoji: '🎯',
-      title: 'Take Your Assessment',
-      description: 'Answer 33 questions to get your FundScore and capital readiness rating.',
-      color: '#10b981',
-      bg: 'rgba(16,185,129,0.08)',
-      border: 'rgba(16,185,129,0.25)',
-      action: () => { onDismiss(); onNavigate('/business-assessment'); },
-      cta: 'Start Now',
-    },
-    {
-      emoji: '📊',
-      title: 'Review Your FundScore',
-      description: 'Understand your 0–1000 score across 6 capital readiness dimensions.',
-      color: '#3b82f6',
-      bg: 'rgba(59,130,246,0.08)',
-      border: 'rgba(59,130,246,0.25)',
-    },
-    {
-      emoji: '🔑',
-      title: 'Address Capital Gaps',
-      description: 'Tackle your top blockers to unlock more capital products.',
-      color: '#f59e0b',
-      bg: 'rgba(245,158,11,0.08)',
-      border: 'rgba(245,158,11,0.25)',
-    },
-    {
-      emoji: '📈',
-      title: 'Track Your Path',
-      description: 'Watch your score improve as you complete each recommended action.',
-      color: '#9333ea',
-      bg: 'rgba(147,51,234,0.08)',
-      border: 'rgba(147,51,234,0.25)',
-    },
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [goal, setGoal] = useState('');
+  const [creditRange, setCreditRange] = useState('');
+  const [bizAge, setBizAge] = useState('');
+  const [revenue, setRevenue] = useState('');
+
+  const goals = [
+    { id: 'fast', label: 'Get funded fast', sub: 'I need capital in the next 30–90 days', icon: '🚀', color: '#10b981' },
+    { id: 'credit', label: 'Build credit & qualify for more', sub: 'I want better rates and bigger amounts', icon: '📈', color: '#3b82f6' },
+    { id: 'sba', label: 'Qualify for SBA / bank loans', sub: 'I want traditional capital at bank rates', icon: '🏛️', color: '#8b5cf6' },
+    { id: 'understand', label: 'Understand exactly where I stand', sub: 'Show me the full picture first', icon: '🎯', color: '#f59e0b' },
   ];
+
+  const creditOptions = ['Under 580', '580–669', '670–739', '740+'];
+  const ageOptions = ['Under 1 year', '1–2 years', '2+ years'];
+  const revenueOptions = ['Under $10K/mo', '$10K–$40K/mo', '$40K+/mo'];
+
+  const canAdvance2 = creditRange && bizAge && revenue;
+  const tier = (step === 3 && canAdvance2) ? estimateStartingTier(creditRange, bizAge, revenue) : null;
+
+  const TOTAL_STEPS = 3;
+  const progressPct = ((step - 1) / TOTAL_STEPS) * 100;
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.55)',
-        backdropFilter: 'blur(4px)',
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-      }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
       onClick={onDismiss}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.94, y: 24 }}
+        initial={{ opacity: 0, scale: 0.93, y: 28 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
         onClick={e => e.stopPropagation()}
-        style={{
-          background: 'var(--background)',
-          borderRadius: '20px',
-          overflow: 'hidden',
-          width: '100%',
-          maxWidth: '540px',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.25)',
-        }}
+        style={{ background: 'var(--background)', borderRadius: '22px', overflow: 'hidden', width: '100%', maxWidth: '500px', boxShadow: '0 40px 100px rgba(0,0,0,0.3)' }}
       >
-        {/* Gradient header */}
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
-            padding: '32px 28px 28px',
-          }}
-        >
-          <div style={{ fontSize: '28px', marginBottom: '12px' }}>👋</div>
-          <h2
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 800,
-              fontSize: '26px',
-              color: 'white',
-              lineHeight: 1.2,
-              marginBottom: '8px',
-            }}
-          >
-            Welcome, {name}!
-          </h2>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.5 }}>
-            FundReady™ maps your business to real capital. Here's how to get the most out of the platform.
-          </p>
+        {/* Progress bar */}
+        <div style={{ height: '3px', background: 'var(--border)' }}>
+          <motion.div animate={{ width: `${progressPct}%` }} transition={{ duration: 0.4 }} style={{ height: '100%', background: 'linear-gradient(90deg, #10b981, #3b82f6)', borderRadius: '99px' }} />
         </div>
 
-        {/* Step cards */}
-        <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {steps.map((step, i) => (
-            <div
-              key={i}
-              onClick={step.action}
-              style={{
-                background: step.bg,
-                border: `1px solid ${step.border}`,
-                borderRadius: '12px',
-                padding: '14px 16px',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px',
-                cursor: step.action ? 'pointer' : 'default',
-                transition: 'transform 0.15s',
-              }}
-              onMouseEnter={e => step.action && ((e.currentTarget as HTMLElement).style.transform = 'scale(1.01)')}
-              onMouseLeave={e => step.action && ((e.currentTarget as HTMLElement).style.transform = 'scale(1)')}
-            >
-              <div
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: step.color,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '15px',
-                  flexShrink: 0,
-                }}
-              >
-                {step.emoji}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--foreground)' }}>
-                    {step.title}
-                  </span>
-                  {step.cta && (
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: step.color, whiteSpace: 'nowrap' }}>
-                      {step.cta} →
-                    </span>
-                  )}
-                </div>
-                <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '3px', lineHeight: 1.4 }}>
-                  {step.description}
-                </p>
-              </div>
+        {/* ── STEP 1: Goal selection ───────────────────────────────────────── */}
+        {step === 1 && (
+          <>
+            <div style={{ background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)', padding: '28px 28px 24px' }}>
+              <div style={{ fontSize: '24px', marginBottom: '10px' }}>👋</div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'white', lineHeight: 1.2, marginBottom: '6px' }}>
+                Welcome{name ? `, ${name}` : ' to FundReady™'}!
+              </h2>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.5, margin: 0 }}>
+                What's your #1 goal right now?
+              </p>
             </div>
-          ))}
-        </div>
+            <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {goals.map(g => (
+                <div
+                  key={g.id}
+                  onClick={() => { setGoal(g.id); setStep(2); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px',
+                    borderRadius: '12px', cursor: 'pointer',
+                    background: goal === g.id ? `${g.color}10` : 'var(--card)',
+                    border: `1px solid ${goal === g.id ? g.color + '40' : 'var(--border)'}`,
+                    transition: 'all 0.12s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = g.color + '60'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = goal === g.id ? g.color + '40' : 'var(--border)'}
+                >
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: g.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
+                    {g.icon}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--foreground)' }}>{g.label}</div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '2px' }}>{g.sub}</div>
+                  </div>
+                  <ChevronRight size={14} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                </div>
+              ))}
+              <button onClick={onDismiss} style={{ marginTop: '4px', fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '6px' }}>
+                Skip for now →
+              </button>
+            </div>
+          </>
+        )}
 
-        {/* Footer */}
-        <div style={{ padding: '0 28px 24px', display: 'flex', gap: '10px' }}>
-          <button
-            onClick={() => { onDismiss(); onNavigate('/business-assessment'); }}
-            style={{
-              flex: 1,
-              padding: '13px',
-              background: 'linear-gradient(135deg, #10b981, #3b82f6)',
-              border: 'none',
-              borderRadius: '12px',
-              color: 'white',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-              fontSize: '14px',
-              cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(16,185,129,0.3)',
-            }}
-          >
-            Take My Assessment
-          </button>
-          <button
-            onClick={onDismiss}
-            style={{
-              padding: '13px 18px',
-              background: 'var(--secondary)',
-              border: '1px solid var(--border)',
-              borderRadius: '12px',
-              color: 'var(--muted-foreground)',
-              fontFamily: 'var(--font-body)',
-              fontWeight: 500,
-              fontSize: '13px',
-              cursor: 'pointer',
-            }}
-          >
-            Skip
-          </button>
-        </div>
+        {/* ── STEP 2: 3 quick profile questions ──────────────────────────── */}
+        {step === 2 && (
+          <>
+            <div style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', padding: '24px 28px 20px' }}>
+              <button onClick={() => setStep(1)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '6px', color: 'white', fontSize: '11px', fontWeight: 600, padding: '4px 10px', cursor: 'pointer', marginBottom: '12px' }}>← Back</button>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'white', lineHeight: 1.2, marginBottom: '6px' }}>Quick profile — 3 questions</h2>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,0.85)', margin: 0 }}>Takes 30 seconds · Gets you a real starting estimate</p>
+            </div>
+            <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Q1: Credit range */}
+              <div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)', marginBottom: '8px' }}>1. Your personal credit score range?</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  {creditOptions.map(opt => (
+                    <button key={opt} onClick={() => setCreditRange(opt)} style={{ padding: '9px 12px', borderRadius: '9px', fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: creditRange === opt ? 'rgba(59,130,246,0.12)' : 'var(--card)', border: `1px solid ${creditRange === opt ? '#3b82f6' : 'var(--border)'}`, color: creditRange === opt ? '#3b82f6' : 'var(--foreground)', transition: 'all 0.12s' }}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Q2: Business age */}
+              <div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)', marginBottom: '8px' }}>2. How long has your business been operating?</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                  {ageOptions.map(opt => (
+                    <button key={opt} onClick={() => setBizAge(opt)} style={{ padding: '9px 8px', borderRadius: '9px', fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: bizAge === opt ? 'rgba(139,92,246,0.12)' : 'var(--card)', border: `1px solid ${bizAge === opt ? '#8b5cf6' : 'var(--border)'}`, color: bizAge === opt ? '#8b5cf6' : 'var(--foreground)', transition: 'all 0.12s', lineHeight: 1.3 }}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Q3: Monthly revenue */}
+              <div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)', marginBottom: '8px' }}>3. Average monthly revenue?</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                  {revenueOptions.map(opt => (
+                    <button key={opt} onClick={() => setRevenue(opt)} style={{ padding: '9px 8px', borderRadius: '9px', fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: revenue === opt ? 'rgba(16,185,129,0.12)' : 'var(--card)', border: `1px solid ${revenue === opt ? '#10b981' : 'var(--border)'}`, color: revenue === opt ? '#10b981' : 'var(--foreground)', transition: 'all 0.12s', lineHeight: 1.3 }}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => canAdvance2 && setStep(3)}
+                disabled={!canAdvance2}
+                style={{ padding: '13px', background: canAdvance2 ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : 'var(--border)', border: 'none', borderRadius: '12px', color: canAdvance2 ? 'white' : 'var(--muted-foreground)', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', cursor: canAdvance2 ? 'pointer' : 'not-allowed', transition: 'all 0.15s' }}
+              >
+                See My Starting Position →
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── STEP 3: Position reveal + CTA ────────────────────────────────── */}
+        {step === 3 && tier && (
+          <>
+            <div style={{ background: `linear-gradient(135deg, ${tier.color}cc 0%, ${tier.color}88 100%)`, padding: '24px 28px 20px' }}>
+              <button onClick={() => setStep(2)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '6px', color: 'white', fontSize: '11px', fontWeight: 600, padding: '4px 10px', cursor: 'pointer', marginBottom: '12px' }}>← Back</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 800, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>YOUR STARTING POSITION</span>
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '32px', color: 'white', lineHeight: 1, letterSpacing: '-0.02em' }}>{tier.tier}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '20px', color: 'rgba(255,255,255,0.9)', marginTop: '4px' }}>{tier.range}</div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '8px', lineHeight: 1.5 }}>estimated capital range based on your profile</div>
+            </div>
+            <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* What this means */}
+              <div style={{ background: tier.bg, border: `1px solid ${tier.border}`, borderRadius: '12px', padding: '14px 16px' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: tier.color, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Your Next Move</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--foreground)', lineHeight: 1.5 }}>{tier.note}</div>
+              </div>
+
+              {/* What the full scan adds */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {[
+                  'Your exact FundScore across 6 capital dimensions',
+                  'Which products you qualify for right now',
+                  'Your 3 highest-impact blockers to fix first',
+                  'A 90-day roadmap to your target capital stage',
+                ].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+                      <span style={{ fontSize: '9px', color: '#10b981', fontWeight: 800 }}>✓</span>
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', lineHeight: 1.4 }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => { onDismiss(); onNavigate(tier.cta); }}
+                style={{ padding: '14px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '12px', color: 'white', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', cursor: 'pointer', boxShadow: '0 6px 20px rgba(16,185,129,0.35)' }}
+              >
+                Start Business Success Scan (8 min) →
+              </button>
+              <button onClick={onDismiss} style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+                Explore platform first
+              </button>
+            </div>
+          </>
+        )}
       </motion.div>
     </motion.div>
   );
