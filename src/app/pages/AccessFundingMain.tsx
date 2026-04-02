@@ -357,7 +357,7 @@ export function AccessFunding() {
         </div>
 
         {/* ── PIPELINE SUMMARY STRIP ───────────────────────────────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+        <div className="funding-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
           {[
             { label: 'Pre-Qualified', value: preQualCount, sub: 'Estimated eligible', color: '#10b981', icon: <Zap size={16} />, isPreQual: true },
             { label: 'Applied', value: pipeline.applied, sub: 'In lender queue', color: '#3b82f6', icon: <ArrowRight size={16} />, isPreQual: false },
@@ -422,7 +422,7 @@ export function AccessFunding() {
         )}
 
         {/* ── FILTER TABS ──────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div className="funding-filter-tabs" style={{ display: 'flex', gap: '6px', marginBottom: '20px', flexWrap: 'wrap' }}>
           {stageTabs.map(tab => (
             <button
               key={tab.key}

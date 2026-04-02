@@ -457,7 +457,7 @@ export function LandingPage() {
           />
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <a href="#how-it-works" style={{
+          <a href="#how-it-works" className="landing-nav-links" style={{
             padding: '8px 16px',
             fontFamily: 'var(--font-body)', fontSize: '13px',
             color: 'var(--muted-foreground)', textDecoration: 'none',
@@ -465,7 +465,7 @@ export function LandingPage() {
           }}>
             How It Works
           </a>
-          <a href="#pricing" style={{
+          <a href="#pricing" className="landing-nav-links" style={{
             padding: '8px 16px',
             fontFamily: 'var(--font-body)', fontSize: '13px',
             color: 'var(--muted-foreground)', textDecoration: 'none',
@@ -473,7 +473,7 @@ export function LandingPage() {
           }}>
             Pricing
           </a>
-          <Link to="/login" style={{
+          <Link to="/login" className="landing-nav-links" style={{
             padding: '8px 16px',
             fontFamily: 'var(--font-body)', fontSize: '13px',
             color: 'var(--muted-foreground)', textDecoration: 'none',
@@ -500,13 +500,13 @@ export function LandingPage() {
       {/* Chase: Lead with IDENTITY. They are a builder. Not a failure.           */}
       {/* Wedge: Separate them from the enemy (the hidden system, not themselves) */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      <section style={{
+      <section className="landing-hero-padding" style={{
         minHeight: '100vh',
         display: 'flex', alignItems: 'center',
         padding: '120px 40px 80px',
         maxWidth: '1400px', margin: '0 auto',
       }}>
-        <div style={{
+        <div className="landing-hero-grid" style={{
           display: 'grid', gridTemplateColumns: '1fr 1fr',
           gap: '60px', alignItems: 'center', width: '100%',
         }}>
@@ -687,7 +687,7 @@ export function LandingPage() {
             </div>
           </FadeIn>
 
-          <div style={{
+          <div className="landing-stats-grid" style={{
             display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
             gap: '1px', background: 'var(--border)',
             border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden',
@@ -1207,7 +1207,7 @@ export function LandingPage() {
             </div>
           </FadeIn>
 
-          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div className="landing-pricing-grid" style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
             <PricingCard
               tier="Free Member"
               price="Free"

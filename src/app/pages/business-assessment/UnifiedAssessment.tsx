@@ -378,6 +378,7 @@ function AssessmentStepTrack({ currentQuestion, totalQuestions }: { currentQuest
                   )}
                 </div>
                 <span
+                  className="assessment-category-label"
                   style={{
                     fontSize: '9px',
                     fontWeight: isActive ? 700 : 400,
@@ -594,6 +595,7 @@ function ReadinessQuestion({ index, data, updateData, onNext, onBack, currentQue
         {question.options?.map((option, optIndex) => (
           <motion.div
             key={optIndex}
+            className="assessment-answer-card"
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             onClick={() => handleSelectOption(optIndex)}

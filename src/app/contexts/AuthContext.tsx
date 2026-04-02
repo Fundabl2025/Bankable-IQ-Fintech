@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true)
     try {
       const { supabase } = await import('../lib/supabase/client')
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -83,6 +83,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       })
       if (error) throw error
+
+      // Create a user profile row in the profiles table
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            email: data.user.email,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            membership_tier: 'free',
+          }, { onConflict: 'id' })
+        // Non-fatal: log but don't throw — user account was already created
+        if (profileError) {
+          console.warn('[FundReady] Could not create user profile:', profileError.message)
+        }
+      }
     } finally {
       setLoading(false)
     }

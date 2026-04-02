@@ -154,6 +154,12 @@
   --score-ready:       #10b981;   /* 750–899 */
   --score-prime:       #059669;   /* 900–1000 */
 
+  /* Status Colors — CapitalAccessMap */
+  --status-approaching:    #f59e0b;           /* amber — almost-there state */
+  --status-locked:         #ef4444;           /* red — locked/blocked state */
+  --foreground-secondary:  var(--muted-foreground); /* secondary text alias */
+  --primary-dark:          #059669;           /* darker green gradient start */
+
   /* Legacy Aliases */
   --bg-base:           var(--background);
   --bg-surface-1:      var(--surface-1);
@@ -423,6 +429,167 @@ h6 {
   font-family: var(--font-serif);
   font-style: italic;
   font-weight: 300;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/* MOBILE RESPONSIVE — Global breakpoint < 768px                           */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  /* ── Sidebar: hide desktop sidebar, show mobile bottom nav ── */
+  .sidebar-desktop {
+    display: none !important;
+  }
+
+  /* ── LandingPage: hero, pricing, stats layout ── */
+  .landing-hero-grid {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+  .landing-score-card {
+    max-width: 100% !important;
+    margin: 0 auto !important;
+  }
+  .landing-pricing-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .landing-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .landing-section-padding {
+    padding-top: 40px !important;
+    padding-bottom: 40px !important;
+  }
+  .landing-nav-links {
+    display: none !important;
+  }
+  .landing-hero-padding {
+    padding: 60px 16px 40px !important;
+  }
+
+  /* ── Dashboard: stacking cards and stats ── */
+  .dashboard-goals-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .dashboard-hero-metric {
+    font-size: 48px !important;
+  }
+  .dashboard-main-padding {
+    padding: 16px !important;
+  }
+
+  /* ── AccessFunding: filter tabs + cards ── */
+  .funding-filter-tabs {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .funding-filter-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .funding-program-card {
+    width: 100% !important;
+  }
+  .funding-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* ── LenderCompliance: full-width cards ── */
+  .compliance-modules-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .compliance-upgrade-modal {
+    border-radius: 0 !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+    overflow-y: auto;
+  }
+
+  /* ── FundingProductPage: facts + CTA ── */
+  .product-facts-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .product-cta-buttons {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  /* ── UnifiedAssessment: step track + answer cards ── */
+  .assessment-category-label {
+    display: none !important;
+  }
+  .assessment-answer-card {
+    width: 100% !important;
+  }
+  .assessment-padding {
+    padding: 16px !important;
+  }
+
+  /* ── Generic responsive helpers ── */
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+  .mobile-full-width {
+    width: 100% !important;
+  }
+  .mobile-padding {
+    padding: 16px !important;
+  }
+  .mobile-hide {
+    display: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/* MOBILE BOTTOM NAV — Shown only on < 768px                               */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    z-index: 900;
+    align-items: stretch;
+  }
+  .mobile-bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    text-decoration: none;
+    color: var(--muted-foreground);
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 500;
+    transition: color 0.15s;
+    padding: 4px 0;
+    cursor: pointer;
+    border: none;
+    background: none;
+  }
+  .mobile-bottom-nav-item.active {
+    color: #10b981;
+  }
+  /* Add bottom padding to page content so it's not obscured by the nav */
+  .app-layout-main {
+    padding-bottom: 60px !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════ */

@@ -188,7 +188,7 @@ export function FundingProductPage({ config }: { config: ProductPageConfig }) {
         {config.facts.length > 0 && (
           <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', marginBottom: '16px' }}>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '14px' }}>Quick Facts</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+            <div className="product-facts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
               {config.facts.map((f, i) => (
                 <div key={i} style={{ padding: '10px 14px', borderRadius: '10px', background: 'var(--background)', border: '1px solid var(--border)' }}>
                   <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{f.label}</div>
@@ -283,7 +283,7 @@ export function FundingProductPage({ config }: { config: ProductPageConfig }) {
         )}
 
         {/* CTA */}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div className="product-cta-buttons" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           {/* Apply Now button — state-driven */}
           <button
             onClick={() => setIsModalOpen(true)}

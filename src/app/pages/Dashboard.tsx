@@ -544,7 +544,7 @@ export function Dashboard() {
           <button onClick={() => navigate('/app/settings')} style={{ fontSize: '12px', fontWeight: 700, color: '#92400e', background: 'rgba(146,64,14,0.12)', border: '1px solid rgba(146,64,14,0.25)', borderRadius: '6px', padding: '5px 14px', cursor: 'pointer' }}>Verify Now →</button>
         </div>
       )}
-      <div style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
+      <div className="dashboard-main-padding" style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
         
         {/* ── HEADER ─────────────────────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
@@ -934,7 +934,7 @@ export function Dashboard() {
                 },
               ];
               return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+                <div className="dashboard-goals-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
                   {phases.map((phase, i) => {
                     const isComplete = phase.status === 'complete';
                     const isActive = phase.status === 'active';
@@ -1266,7 +1266,7 @@ export function Dashboard() {
             </div>
 
             {/* ROW 3: READINESS + TOOLS */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+            <div className="dashboard-stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
               <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--foreground)', margin: 0 }}>Readiness Breakdown</h3>

@@ -49,6 +49,7 @@ function UpgradeModal({ onClose }: { onClose: () => void }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         onClick={e => e.stopPropagation()}
+        className="compliance-upgrade-modal"
         style={{ background: 'var(--background)', borderRadius: '22px', overflow: 'hidden', width: '100%', maxWidth: '560px', boxShadow: '0 40px 100px rgba(0,0,0,0.3)' }}
       >
         {/* Header */}

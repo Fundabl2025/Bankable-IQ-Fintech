@@ -28,6 +28,7 @@ import {
   Zap,
   Brain,
   Compass,
+  User,
 } from 'lucide-react';
 import { getPreQualifiedPrograms } from '../utils/fundingEligibility';
 import { computeScore } from '../pages/business-assessment/engine';
@@ -91,6 +92,37 @@ function NavItem({
       </span>
       {badge}
     </Link>
+  );
+}
+
+// ── Mobile Bottom Navigation Bar ─────────────────────────────────────────────
+const MOBILE_NAV = [
+  { path: '/app/dashboard',      label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/app/access-funding', label: 'Funding',   icon: DollarSign },
+  { path: '/app/ai-coach',       label: 'FORGE',     icon: Brain },
+  { path: '/app/lender-compliance', label: 'Comply', icon: Shield },
+  { path: '/app/settings',       label: 'Profile',   icon: User },
+];
+
+function MobileBottomNav() {
+  const location = useLocation();
+  return (
+    <nav className="mobile-bottom-nav">
+      {MOBILE_NAV.map(item => {
+        const isActive = location.pathname.startsWith(item.path);
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`mobile-bottom-nav-item${isActive ? ' active' : ''}`}
+          >
+            <Icon size={20} />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -433,6 +465,9 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           </>
         )}
       </AnimatePresence>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
 
       {/* Responsive CSS */}
       <style>{`
