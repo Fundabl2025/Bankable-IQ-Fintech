@@ -46,13 +46,14 @@ const PRIMARY_NAV = [
 
 // ── Tools section — direct links, no accordion needed ────────────────────────
 const TOOLS_NAV = [
-  { path: '/app/lender-compliance',   label: 'Lender Compliance', icon: Shield },
-  { path: '/app/document-collection', label: 'Document Portal',   icon: FolderOpen },
-  { path: '/app/capital-access-map',  label: 'Capital Access Map',icon: Map },
-  { path: '/app/denial-diagnosis',    label: 'Denial Diagnosis',  icon: AlertCircle },
-  { path: '/app/integrate-reports',   label: 'Integrate Reports', icon: Zap },
-  { path: '/app/capital-glossary',    label: 'Capital Glossary',  icon: BookOpen },
-  { path: '/app/templates-resources', label: 'Templates',         icon: FileText },
+  { path: '/app/lender-compliance',   label: 'Lender Compliance',    icon: Shield },
+  { path: '/app/optimize-reporting',  label: 'Optimize Reporting',   icon: BarChart3 },
+  { path: '/app/document-collection', label: 'Document Portal',      icon: FolderOpen },
+  { path: '/app/capital-access-map',  label: 'Capital Access Map',   icon: Map },
+  { path: '/app/denial-diagnosis',    label: 'Denial Diagnosis',     icon: AlertCircle },
+  { path: '/app/integrate-reports',   label: 'Integrate Reports',    icon: Zap },
+  { path: '/app/capital-glossary',    label: 'Capital Glossary',     icon: BookOpen },
+  { path: '/app/templates-resources', label: 'Templates',            icon: FileText },
 ];
 
 function NavItem({
