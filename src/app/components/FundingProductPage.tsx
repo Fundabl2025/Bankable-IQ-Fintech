@@ -91,15 +91,16 @@ export function FundingProductPage({ config }: { config: ProductPageConfig }) {
     }
     return {
       flex: 1, minWidth: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-      padding: '14px 24px', borderRadius: '12px', cursor: 'not-allowed', border: 'none',
-      background: 'var(--border)',
-      color: 'var(--muted-foreground)',
+      padding: '14px 24px', borderRadius: '12px', cursor: 'pointer', border: 'none',
+      background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+      color: 'white',
       fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px',
+      boxShadow: '0 4px 16px rgba(99,102,241,0.3)',
     };
   };
 
-  // Determine if apply button is clickable
-  const applyClickable = canApply || requiredScore >= 60;
+  // Apply button is always clickable — modal handles warnings when requirements not met
+  const applyClickable = true;
 
   // Render a single requirement row
   function RequirementRow({ req, isMissing, isRequired }: { req: LoanRequirement; isMissing: boolean; isRequired: boolean }) {
@@ -285,18 +286,15 @@ export function FundingProductPage({ config }: { config: ProductPageConfig }) {
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           {/* Apply Now button — state-driven */}
           <button
-            onClick={() => { if (applyClickable) setIsModalOpen(true); }}
-            disabled={!applyClickable}
+            onClick={() => setIsModalOpen(true)}
             style={applyButtonStyle()}
           >
-            {!canApply && requiredScore < 60 && <Lock size={15} />}
             {canApply
-              ? 'Apply Now'
+              ? <>Apply Now <ArrowRight size={16} /></>
               : requiredScore >= 60
                 ? <>Apply Now <span style={{ fontSize: '11px', fontWeight: 600, background: 'rgba(0,0,0,0.2)', borderRadius: '5px', padding: '2px 7px' }}>{missingRequired.length} needed</span></>
-                : `Unlock Apply (${missingRequired.length} required)`
+                : <>Apply Now <span style={{ fontSize: '11px', fontWeight: 600, background: 'rgba(0,0,0,0.2)', borderRadius: '5px', padding: '2px 7px' }}>{missingRequired.length} req missing</span></>
             }
-            {canApply && <ArrowRight size={16} />}
           </button>
 
           {/* Next step hint when locked */}
