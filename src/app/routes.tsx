@@ -2,7 +2,6 @@ import { createBrowserRouter, Navigate } from 'react-router';
 import { lazy, Suspense } from 'react';
 import { RootLayout } from './layout/RootLayout';
 import { AdminRoute } from './components/AdminRoute';
-import { Shield, TrendingUp, Building, HelpCircle, User, DollarSign, GraduationCap } from 'lucide-react';
 
 // Lazy load all page components
 const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -46,7 +45,6 @@ const BuildingCredit = lazy(() => import('./pages/BuildingCredit').then(m => ({ 
 const OptimizeReporting = lazy(() => import('./pages/OptimizeReporting').then(m => ({ default: m.OptimizeReporting })));
 const OnlineAnalysis = lazy(() => import('./pages/OnlineAnalysis').then(m => ({ default: m.OnlineAnalysis })));
 const OrganizeFinancials = lazy(() => import('./pages/OrganizeFinancials').then(m => ({ default: m.OrganizeFinancials })));
-const GenericPage = lazy(() => import('./pages/GenericPage').then(m => ({ default: m.GenericPage })));
 const UnifiedAssessment = lazy(() => import('./pages/business-assessment/UnifiedAssessment'));
 const UnifiedResults = lazy(() => import('./pages/business-assessment/Results').then(m => ({ default: m.Results })));
 const MyBusinessProfile = lazy(() => import('./pages/MyBusinessProfile').then(m => ({ default: m.MyBusinessProfile })));
@@ -272,15 +270,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'become-bankable',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <GenericPage
-              title="Become Bankable"
-              description="Goal is to ensure larger loans at lower rates and longer terms."
-              icon={Building}
-            />
-          </Suspense>
-        ),
+        element: <Navigate to="/app/lender-compliance" replace />,
       },
       {
         path: 'bankable-roadmap',
@@ -288,27 +278,11 @@ export const router = createBrowserRouter([
       },
       {
         path: 'business-education',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <GenericPage
-              title="Business Education"
-              description="Learn essential business finance concepts and best practices."
-              icon={GraduationCap}
-            />
-          </Suspense>
-        ),
+        element: <Navigate to="/app/getting-started" replace />,
       },
       {
         path: 'help-desk',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <GenericPage
-              title="Help Desk"
-              description="Get support and answers to your questions about the system."
-              icon={HelpCircle}
-            />
-          </Suspense>
-        ),
+        element: <Navigate to="/app/getting-started" replace />,
       },
       {
         path: 'my-progress',
@@ -348,75 +322,27 @@ export const router = createBrowserRouter([
       },
       {
         path: 'foundation-first/financial-profile',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <GenericPage
-              title="Financial Profile"
-              description="Manage your personal financial information and track your progress."
-              icon={User}
-            />
-          </Suspense>
-        ),
+        element: <Navigate to="/app/foundation-first/dashboard" replace />,
       },
       {
         path: 'foundation-first/income-savings',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <GenericPage
-              title="Income & Savings"
-              description="Track your income sources and savings goals."
-              icon={DollarSign}
-            />
-          </Suspense>
-        ),
+        element: <Navigate to="/app/foundation-first/dashboard" replace />,
       },
       {
         path: 'foundation-first/assets-debt',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <GenericPage
-              title="Assets & Debt"
-              description="Manage your assets and liabilities for a complete financial picture."
-              icon={Building}
-            />
-          </Suspense>
-        ),
+        element: <Navigate to="/app/foundation-first/dashboard" replace />,
       },
       {
         path: 'foundation-first/risk-management',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <GenericPage
-              title="Risk Management"
-              description="Protect your financial future with proper insurance and estate planning."
-              icon={Shield}
-            />
-          </Suspense>
-        ),
+        element: <Navigate to="/app/foundation-first/dashboard" replace />,
       },
       {
         path: 'foundation-first/retirement-planning',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <GenericPage
-              title="Retirement Planning"
-              description="Plan for a secure retirement with personalized strategies."
-              icon={TrendingUp}
-            />
-          </Suspense>
-        ),
+        element: <Navigate to="/app/foundation-first/dashboard" replace />,
       },
       {
         path: 'foundation-first/settings',
-        element: (
-          <Suspense fallback={<Loading />}>
-            <GenericPage
-              title="Settings"
-              description="Manage your account settings and preferences."
-              icon={HelpCircle}
-            />
-          </Suspense>
-        ),
+        element: <Navigate to="/app/foundation-first/dashboard" replace />,
       },
     ],
   },
