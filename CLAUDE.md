@@ -1,6 +1,8 @@
 # CLAUDE.md — FundReady AI Operating Manual
 # Read this before every task. This is the standing brief for every session.
-# Also read: PROJECT_PREFLIGHT.md · PROJECT_GOVERNANCE.md · PRODUCT.md · COPY.md
+
+@PROJECT_PREFLIGHT.md
+@PROJECT_GOVERNANCE.md
 
 ---
 
