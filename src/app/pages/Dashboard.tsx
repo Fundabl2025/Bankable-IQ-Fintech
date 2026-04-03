@@ -24,7 +24,8 @@ import {
   Info,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { logEvent } from '../lib/analytics/events';
 import { 
   getBusinessProfile, 
   getAllAuditItems,
@@ -413,11 +414,11 @@ function DashboardHeader({ timeOfDay, firstName, hasAssessment, criticalBlockers
         </p>
       </div>
       <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
-        <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer' }}>
+        <button onClick={() => { logEvent({ event_name: 'my_progress_clicked', payload: { source: 'header' } }); navigate('/app/my-progress'); }} style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer' }}>
           My Progress
         </button>
         {hasAssessment && (
-          <button onClick={() => navigate('/business-assessment/results')} style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: 'var(--primary)', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer' }}>
+          <button onClick={() => { logEvent({ event_name: 'full_report_clicked', payload: {} }); navigate('/business-assessment/results'); }} style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: 'var(--primary)', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer' }}>
             Full Report →
           </button>
         )}
@@ -623,7 +624,7 @@ function ReadinessSnapshotCard({
             <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
               <span style={{ fontWeight: 700, color: '#f59e0b' }}>{criticalBlockers.length} blocker{criticalBlockers.length !== 1 ? 's' : ''}</span> limiting your potential
             </span>
-            <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', whiteSpace: 'nowrap' }}>
+            <button onClick={() => { logEvent({ event_name: 'my_progress_clicked', payload: { source: 'readiness_card' } }); navigate('/app/my-progress'); }} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', whiteSpace: 'nowrap' }}>
               See all →
             </button>
           </>
@@ -657,6 +658,11 @@ function FollowOnBlockersCard({
   preQualPrograms, pipelineCounts, fundScore, realCapital, capitalPath, navigate,
 }: FollowOnBlockersCardProps) {
   const [trajectoryOpen, setTrajectoryOpen] = useState(false);
+
+  // View event — fires once per mount when Capital Access section renders
+  useEffect(() => {
+    logEvent({ event_name: 'capital_access_viewed', payload: { pre_qual_count: preQualPrograms.length, pipeline_total: pipelineCounts.total } });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Now / Next / Later grouping
   const nowBlockers = hardBlockers.slice(0, 3);         // hard blockers = act immediately
@@ -738,7 +744,7 @@ function FollowOnBlockersCard({
             const threshold = thresholds[prog.path] || 500;
             const ptsNeeded = Math.max(0, threshold - fundScore);
             return (
-              <div key={prog.path} onClick={() => navigate(prog.path)} style={{ padding: '16px 20px', borderRight: i < 2 ? '1px solid var(--border)' : 'none', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--background)')} onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}>
+              <div key={prog.path} onClick={() => { logEvent({ event_name: 'featured_program_clicked', payload: { program_path: prog.path, is_pre_qual: isPreQual } }); navigate(prog.path); }} style={{ padding: '16px 20px', borderRight: i < 2 ? '1px solid var(--border)' : 'none', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--background)')} onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                   <span style={{ fontSize: '20px', flexShrink: 0 }}>{prog.icon}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -765,7 +771,7 @@ function FollowOnBlockersCard({
         <div style={{ padding: '4px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Active Blockers</span>
-            <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>Full detail →</button>
+            <button onClick={() => { logEvent({ event_name: 'my_progress_clicked', payload: { source: 'blockers_section' } }); navigate('/app/my-progress'); }} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>Full detail →</button>
           </div>
 
           {/* NOW */}
@@ -824,7 +830,7 @@ function FollowOnBlockersCard({
               <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted-foreground)', marginBottom: '6px' }}>
                 Later — {laterBlockers.length} more blocker{laterBlockers.length !== 1 ? 's' : ''}
               </div>
-              <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+              <button onClick={() => { logEvent({ event_name: 'my_progress_clicked', payload: { source: 'blockers_section' } }); navigate('/app/my-progress'); }} style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
                 View all blockers →
               </button>
             </div>
@@ -836,7 +842,7 @@ function FollowOnBlockersCard({
       <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--foreground)', margin: 0 }}>Readiness Breakdown</h3>
-          <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>Full detail →</button>
+          <button onClick={() => { logEvent({ event_name: 'my_progress_clicked', payload: { source: 'breakdown_card' } }); navigate('/app/my-progress'); }} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>Full detail →</button>
         </div>
         <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {DIM_ORDER.map((key, idx) => {
@@ -865,7 +871,7 @@ function FollowOnBlockersCard({
       {capitalPath.some(m => m.amount > capitalPath[0].amount) && (
         <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
           <button
-            onClick={() => setTrajectoryOpen(v => !v)}
+            onClick={() => { if (!trajectoryOpen) logEvent({ event_name: 'trajectory_accordion_opened', payload: {} }); setTrajectoryOpen(v => !v); }}
             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -943,6 +949,11 @@ function ProgressMarkerCard({
   // Stage 2 is active if Stage 1 done and membership available
   // Stage 3 is active when goal02Done
   const activeStage = goal02Done ? 3 : (goal01Done && hasPaidMembership) ? 2 : 1;
+
+  // View event — fires once per mount with current active stage
+  useEffect(() => {
+    logEvent({ event_name: 'progress_stage_viewed', payload: { active_stage: activeStage } });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stage1Metric = goal01Done
     ? `${pipelineCounts.funded + pipelineCounts.accepted} funding${(pipelineCounts.funded + pipelineCounts.accepted) !== 1 ? 's' : ''} received`
@@ -1119,7 +1130,7 @@ function ProgressMarkerCard({
 
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <button
-                      onClick={() => navigate(stage.ctaPath)}
+                      onClick={() => { logEvent({ event_name: 'progress_stage_cta_clicked', payload: { stage: stage.num, cta_label: stage.ctaLabel, membership_locked: !!isMembershipLocked } }); navigate(stage.ctaPath); }}
                       style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', padding: '8px 16px', background: isMembershipLocked ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : stage.color, border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                     >
                       {isMembershipLocked && <Lock size={11} />}
@@ -1154,6 +1165,13 @@ interface NextBestMoveCardProps {
 }
 
 function NextBestMoveCard({ criticalBlockers, topBlocker, fundScore, capitalDisplay, lockedCapital, navigate }: NextBestMoveCardProps) {
+  // View event — fires once per mount when a blocker is present
+  useEffect(() => {
+    if (topBlocker) {
+      logEvent({ event_name: 'next_best_move_viewed', payload: { blocker_title: topBlocker.title, blocker_severity: topBlocker.severity, fico_impact: topBlocker.ficoImpact ?? 0 } });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '0' }}>
 
@@ -1197,7 +1215,7 @@ function NextBestMoveCard({ criticalBlockers, topBlocker, fundScore, capitalDisp
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#3b82f6' }}>~15 min to fix</span>
               </div>
             </div>
-            <button onClick={() => navigate(getBlockerRoute(topBlocker.category))} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '11px 22px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 16px rgba(16,185,129,0.25)' }}>
+            <button onClick={() => { logEvent({ event_name: 'top_blocker_cta_clicked', payload: { blocker_title: topBlocker.title, blocker_category: topBlocker.category, fico_impact: topBlocker.ficoImpact ?? 0 } }); navigate(getBlockerRoute(topBlocker.category)); }} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '11px 22px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 16px rgba(16,185,129,0.25)' }}>
               Fix This Now <ArrowRight size={14} />
             </button>
           </div>
@@ -1233,7 +1251,7 @@ function NextBestMoveCard({ criticalBlockers, topBlocker, fundScore, capitalDisp
                 {criticalBlockers.slice(1, 4).map((blocker, idx) => (
                   <div
                     key={idx}
-                    onClick={() => navigate(getBlockerRoute(blocker.category))}
+                    onClick={() => { logEvent({ event_name: 'next_after_that_clicked', payload: { blocker_title: blocker.title, blocker_category: blocker.category, position: idx + 1 } }); navigate(getBlockerRoute(blocker.category)); }}
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '10px', background: 'var(--background)', border: '1px solid var(--border)', cursor: 'pointer', gap: '10px' }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
@@ -1293,6 +1311,8 @@ export function Dashboard() {
   const [napScore, setNapScore] = useState(0);
   const [membershipTier, setMembershipTier] = useState<MembershipTier>(() => getMembershipTier());
   const [storedAssessment, setStoredAssessment] = useState<UnifiedAnswers | null>(null);
+  // Ref-guard: fire dashboard_viewed once per component mount, not on every storage refresh
+  const dashboardViewedFiredRef = useRef(false);
   const dismissWelcome = () => {
     localStorage.setItem('fundready_welcomed', '1');
     setShowWelcome(false);
@@ -1367,12 +1387,28 @@ export function Dashboard() {
             initialScore: getInitialScore(),
           });
           if (newly.length > 0) setNewBadgeIds(newly);
+
+          // dashboard_viewed — fires once per page mount (ref-guarded against storage re-fires)
+          if (!dashboardViewedFiredRef.current) {
+            dashboardViewedFiredRef.current = true;
+            const allAuditSnap = getAllAuditItems();
+            const hardBlockerCountSnap = allAuditSnap.filter(i => i.status !== 'complete' && (i as any).severity === 'hard_blocker').length;
+            const goal01DoneSnap = pipeSnap.funded > 0 || pipeSnap.accepted > 0;
+            const goal02DoneSnap = bs >= 160 && completedModuleCount >= 10;
+            const hasPaidSnap = canAccessGoal2(getMembershipTier());
+            const activeStageSnap = goal02DoneSnap ? 3 : (goal01DoneSnap && hasPaidSnap) ? 2 : 1;
+            logEvent({ event_name: 'dashboard_viewed', payload: { has_assessment: true, fund_score: scoreResult.score, active_stage: activeStageSnap, blocker_count: hardBlockerCountSnap } });
+          }
+        } else if (!dashboardViewedFiredRef.current) {
+          // No assessment — still record the visit
+          dashboardViewedFiredRef.current = true;
+          logEvent({ event_name: 'dashboard_viewed', payload: { has_assessment: false, fund_score: 0, active_stage: 1, blocker_count: 0 } });
         }
       } catch (error) {
         console.error('Error loading scores:', error);
       }
     };
-    
+
     loadScores();
 
     // Listen for updates
