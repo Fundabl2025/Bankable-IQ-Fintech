@@ -427,13 +427,10 @@ function DashboardHeader({ timeOfDay, firstName, hasAssessment, criticalBlockers
   );
 }
 
-// ── ReadinessSnapshotCard ─────────────────────────────────────────────────────
+// ── CapitalSnapshotCard ───────────────────────────────────────────────────────
 
-interface ReadinessSnapshotCardProps {
+interface CapitalSnapshotCardProps {
   fundScore: number;
-  bankableScore: number;
-  bankablePassPct: number;
-  bankablePassCount: number;
   capitalDisplay: number;
   realCapital: ReturnType<typeof computeRealCapital>;
   criticalBlockers: any[];
@@ -444,11 +441,10 @@ interface ReadinessSnapshotCardProps {
   navigate: (path: string) => void;
 }
 
-function ReadinessSnapshotCard({
-  fundScore, bankableScore, bankablePassPct, bankablePassCount,
-  capitalDisplay, realCapital, criticalBlockers, statusInfo,
+function CapitalSnapshotCard({
+  fundScore, capitalDisplay, realCapital, criticalBlockers, statusInfo,
   nextMilestone, gaugeColor, topBlocker, navigate,
-}: ReadinessSnapshotCardProps) {
+}: CapitalSnapshotCardProps) {
   const [tooltipVisible, setTooltipVisible] = useState(false);
 
   // Closest Unlock — only show if delta is positive and non-trivial
@@ -461,29 +457,13 @@ function ReadinessSnapshotCard({
     return { delta, label: topBlocker.title };
   })();
 
-  // SBSS block internals (same logic as before, moved from IIFE)
-  const scoreTier = bankableScore >= 210 ? { label: 'Excellent', color: '#10b981' }
-    : bankableScore >= 190 ? { label: 'Good', color: '#22c55e' }
-    : bankableScore >= 160 ? { label: 'Fair', color: '#f59e0b' }
-    :                        { label: 'Poor', color: '#ef4444' };
-  const isCompliant   = bankablePassPct >= 85;
-  const isApproaching = bankablePassPct >= 60;
-  const approxFail    = Math.max(1, Math.round(((100 - bankablePassPct) / 100) * 20));
-  const sbssMsg = bankableScore < 160
-    ? `${160 - bankableScore} points from bank approval threshold`
-    : isCompliant && bankableScore >= 210
-    ? 'Score and compliance clear — bank & SBA products accessible'
-    : isCompliant
-    ? 'Score qualifies — verify compliance items to apply'
-    : isApproaching
-    ? `Score clears threshold · ${approxFail} compliance item${approxFail !== 1 ? 's' : ''} still needed`
-    : `Score clears threshold · Significant compliance work needed before applying`;
-  const sbssTier = { ...scoreTier, msg: sbssMsg };
-  const sbssPct = Math.min((bankableScore / 300) * 100, 100);
-  const thresholdPct = (160 / 300) * 100;
-
   return (
     <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '20px', padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: '18px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+
+      {/* Card label */}
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>
+        Capital Snapshot
+      </p>
 
       {/* Hero dollar */}
       <div>
@@ -553,39 +533,6 @@ function ReadinessSnapshotCard({
         </div>
       </div>
 
-      {/* Bank Readiness Score (SBSS) */}
-      <div style={{ padding: '12px', borderRadius: '10px', background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <Target size={11} style={{ color: '#3b82f6' }} />
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Bank Readiness Score</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px', color: sbssTier.color }}>{bankableScore}</span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>/300</span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: 'white', background: sbssTier.color, borderRadius: '4px', padding: '1px 6px', marginLeft: '2px' }}>{sbssTier.label}</span>
-          </div>
-        </div>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: sbssTier.color, fontWeight: 600, marginBottom: '8px' }}>{sbssTier.msg}</div>
-        <div style={{ position: 'relative', height: '7px', background: 'var(--border)', borderRadius: '99px', overflow: 'visible' }}>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: sbssPct + '%' }}
-            transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 }}
-            style={{ height: '100%', background: `linear-gradient(90deg, ${sbssTier.color}99, ${sbssTier.color})`, borderRadius: '99px', position: 'absolute', top: 0, left: 0 }}
-          />
-          <div style={{ position: 'absolute', top: '-3px', left: `${thresholdPct}%`, width: '2px', height: '13px', background: '#3b82f6', borderRadius: '2px', transform: 'translateX(-50%)' }} />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '5px' }}>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'var(--muted-foreground)' }}>Poor (0–159)</span>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: '#3b82f6', fontWeight: 700 }}>↑ 160 = Bank Approval</span>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'var(--muted-foreground)' }}>Excellent (300)</span>
-        </div>
-        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(59,130,246,0.15)', fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
-          Banks use this 0–300 scale to approve business loans. Scores below 160 are typically declined by banks and the SBA.
-        </div>
-      </div>
-
       {/* Status tier + next milestone */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '8px', background: gaugeColor + '15', border: '1px solid ' + gaugeColor + '40' }}>
@@ -634,6 +581,94 @@ function ReadinessSnapshotCard({
           </span>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── BankReadinessCard ─────────────────────────────────────────────────────────
+
+interface BankReadinessCardProps {
+  bankableScore: number;
+  bankablePassPct: number;
+  bankablePassCount: number;
+}
+
+function BankReadinessCard({ bankableScore, bankablePassPct, bankablePassCount }: BankReadinessCardProps) {
+  const scoreTier = bankableScore >= 210 ? { label: 'Excellent', color: '#10b981' }
+    : bankableScore >= 190 ? { label: 'Good', color: '#22c55e' }
+    : bankableScore >= 160 ? { label: 'Fair', color: '#f59e0b' }
+    :                        { label: 'Poor', color: '#ef4444' };
+  const isCompliant   = bankablePassPct >= 85;
+  const isApproaching = bankablePassPct >= 60;
+  const approxFail    = Math.max(1, Math.round(((100 - bankablePassPct) / 100) * 20));
+  const sbssMsg = bankableScore < 160
+    ? `${160 - bankableScore} points from bank approval threshold`
+    : isCompliant && bankableScore >= 210
+    ? 'Score and compliance clear — bank & SBA products accessible'
+    : isCompliant
+    ? 'Score qualifies — verify compliance items to apply'
+    : isApproaching
+    ? `Score clears threshold · ${approxFail} compliance item${approxFail !== 1 ? 's' : ''} still needed`
+    : 'Score clears threshold · Significant compliance work needed before applying';
+  const sbssTier = { ...scoreTier, msg: sbssMsg };
+  const sbssPct = Math.min((bankableScore / 300) * 100, 100);
+  const thresholdPct = (160 / 300) * 100;
+  const sbssNextMilestone = bankableScore < 160
+    ? { pts: 160 - bankableScore, label: 'Bank Approval Threshold' }
+    : bankableScore < 190
+    ? { pts: 190 - bankableScore, label: 'Good Standing' }
+    : bankableScore < 210
+    ? { pts: 210 - bankableScore, label: 'Elite Standing' }
+    : null;
+
+  return (
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '20px', padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+
+      {/* Card label */}
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>
+        Bank Readiness
+      </p>
+
+      {/* Score hero */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(34px, 5vw, 44px)', color: sbssTier.color, lineHeight: 1, letterSpacing: '-0.03em' }}>{bankableScore}</span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', fontWeight: 500 }}>/300</span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'white', background: sbssTier.color, borderRadius: '5px', padding: '2px 8px', marginLeft: '4px' }}>{sbssTier.label}</span>
+        </div>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: sbssTier.color, fontWeight: 600, margin: '4px 0 0' }}>{sbssTier.msg}</p>
+      </div>
+
+      {/* Threshold bar */}
+      <div>
+        <div style={{ position: 'relative', height: '7px', background: 'var(--border)', borderRadius: '99px', overflow: 'visible' }}>
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: sbssPct + '%' }}
+            transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 }}
+            style={{ height: '100%', background: `linear-gradient(90deg, ${sbssTier.color}99, ${sbssTier.color})`, borderRadius: '99px', position: 'absolute', top: 0, left: 0 }}
+          />
+          <div style={{ position: 'absolute', top: '-3px', left: `${thresholdPct}%`, width: '2px', height: '13px', background: '#3b82f6', borderRadius: '2px', transform: 'translateX(-50%)' }} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '5px' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'var(--muted-foreground)' }}>Poor (0–159)</span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: '#3b82f6', fontWeight: 700 }}>↑ 160 = Bank Approval</span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'var(--muted-foreground)' }}>Excellent (300)</span>
+        </div>
+      </div>
+
+      {/* Explanation */}
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', lineHeight: 1.6, margin: 0, paddingTop: '4px', borderTop: '1px solid var(--border)' }}>
+        Banks use this 0–300 scale to approve business loans. Scores below 160 are typically declined by banks and the SBA.
+      </p>
+
+      {/* Next milestone chip */}
+      {sbssNextMilestone && (
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 10px', borderRadius: '8px', background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', alignSelf: 'flex-start' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#3b82f6' }}>+{sbssNextMilestone.pts} pts</span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>→ {sbssNextMilestone.label}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -1539,13 +1574,10 @@ export function Dashboard() {
         {hasAssessment && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
 
-            {/* ROW 1: CAPITAL POTENTIAL + PRIORITY ACTION — Command band */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 310px) 1fr', gap: '24px', marginBottom: '36px', alignItems: 'stretch' }}>
-              <ReadinessSnapshotCard
+            {/* ROW 1: CAPITAL SNAPSHOT + BANK READINESS + PRIORITY ACTION — Command band */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(240px, 300px) minmax(220px, 270px) minmax(520px, 1fr)', gap: '24px', marginBottom: '36px', alignItems: 'stretch' }}>
+              <CapitalSnapshotCard
                 fundScore={fundScore}
-                bankableScore={bankableScore}
-                bankablePassPct={bankablePassPct}
-                bankablePassCount={bankablePassCount}
                 capitalDisplay={capitalDisplay}
                 realCapital={realCapital}
                 criticalBlockers={criticalBlockers}
@@ -1554,6 +1586,11 @@ export function Dashboard() {
                 gaugeColor={gaugeColor}
                 topBlocker={topBlocker}
                 navigate={navigate}
+              />
+              <BankReadinessCard
+                bankableScore={bankableScore}
+                bankablePassPct={bankablePassPct}
+                bankablePassCount={bankablePassCount}
               />
               <NextBestMoveCard
                 criticalBlockers={criticalBlockers}
