@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { lazy, Suspense } from 'react';
 import { RootLayout } from './layout/RootLayout';
+import { AdminRoute } from './components/AdminRoute';
 import { Shield, TrendingUp, Building, HelpCircle, User, DollarSign, GraduationCap } from 'lucide-react';
 
 // Lazy load all page components
@@ -323,7 +324,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'admin/lender-portal',
-        element: <LazyComponent Component={LenderPortal} />,
+        element: <AdminRoute><LazyComponent Component={LenderPortal} /></AdminRoute>,
       },
       {
         path: 'capital-glossary',

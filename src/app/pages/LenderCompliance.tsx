@@ -254,7 +254,7 @@ function ModuleCard({ module, isComplete, index, locked, onLockedClick }: {
         {locked ? (
           <>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#6366f1', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '5px', padding: '2px 7px' }}>
-              +{impact} pts
+              ~{impact} pts
             </span>
             <Lock size={14} style={{ color: '#6366f1' }} />
           </>
@@ -263,7 +263,7 @@ function ModuleCard({ module, isComplete, index, locked, onLockedClick }: {
         ) : (
           <>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '5px', padding: '2px 7px' }}>
-              +{impact} pts
+              ~{impact} pts
             </span>
             <ChevronRight size={16} style={{ color: 'var(--muted-foreground)' }} />
           </>
@@ -405,6 +405,16 @@ export function LenderCompliance() {
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '4px' }}>
                   {overall.total - overall.completed} modules remaining to become fully bankable
                 </div>
+                {overall.completed < 10 && (
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#f59e0b', marginTop: '3px', fontWeight: 600 }}>
+                    Goal 02 unlocks at 10 of 13 — {10 - Math.min(overall.completed, 10)} more to go
+                  </div>
+                )}
+                {overall.completed >= 10 && (
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#10b981', marginTop: '3px', fontWeight: 600 }}>
+                    Goal 02 threshold reached ✓
+                  </div>
+                )}
               </div>
             </div>
 
@@ -451,6 +461,9 @@ export function LenderCompliance() {
               <ModuleCard key={m.id} module={m} isComplete={!!progress[m.id]?.completed} index={i} locked={isLocked} onLockedClick={() => openUpgrade()} />
             ))}
           </div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '10px', opacity: 0.7 }}>
+            * Score impact estimates. Actual improvement depends on your current profile.
+          </p>
         </motion.div>
 
         {/* CATEGORY 2: GETTING APPROVED */}
@@ -472,6 +485,9 @@ export function LenderCompliance() {
               <ModuleCard key={m.id} module={m} isComplete={!!progress[m.id]?.completed} index={i} locked={isLocked} onLockedClick={() => openUpgrade()} />
             ))}
           </div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '10px', opacity: 0.7 }}>
+            * Score impact estimates. Actual improvement depends on your current profile.
+          </p>
         </motion.div>
 
       </div>
