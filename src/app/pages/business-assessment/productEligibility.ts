@@ -290,9 +290,11 @@ export function evaluateProducts(data: UnifiedAnswers, score: number): Product[]
   // 11. Invoice Factoring
   const factoringBlockers: string[] = [];
   const factoringBoosts: string[] = [];
-  if (!data.arBalance || data.arBalance < 10000) factoringBlockers.push('A/R balance below $10K');
+  const arHasBalance = data.arBalance && data.arBalance !== 'none' && data.arBalance !== 'under_10k';
+  const arIsLarge    = data.arBalance === '50k_250k' || data.arBalance === 'over_250k';
+  if (!arHasBalance) factoringBlockers.push('A/R balance below $10K');
   if (businessAge < 3) factoringBlockers.push('Business under 3 months');
-  if (data.arBalance && data.arBalance >= 50000) factoringBoosts.push('Strong A/R balance');
+  if (arIsLarge) factoringBoosts.push('Strong A/R balance');
 
   products.push({
     id: 'factoring',
@@ -303,7 +305,7 @@ export function evaluateProducts(data: UnifiedAnswers, score: number): Product[]
     speed: '24–72 hours',
     description: 'Advance against outstanding invoices.',
     qualifies: factoringBlockers.length === 0,
-    confidence: factoringBlockers.length === 0 && data.arBalance && data.arBalance >= 50000 ? 'High' : factoringBlockers.length === 0 ? 'Medium' : 'Not Eligible',
+    confidence: factoringBlockers.length === 0 && arIsLarge ? 'High' : factoringBlockers.length === 0 ? 'Medium' : 'Not Eligible',
     blockers: factoringBlockers,
     boosts: factoringBoosts,
   });
@@ -333,9 +335,11 @@ export function evaluateProducts(data: UnifiedAnswers, score: number): Product[]
   // 13. Purchase Order Financing
   const poBlockers: string[] = [];
   const poBoosts: string[] = [];
-  if (!data.poBalance || data.poBalance < 25000) poBlockers.push('PO balance below $25K');
+  const poHasBalance = data.poBalance && data.poBalance !== 'none' && data.poBalance !== 'under_10k';
+  const poIsLarge    = data.poBalance === '50k_250k' || data.poBalance === 'over_250k';
+  if (!poHasBalance) poBlockers.push('PO balance below $25K');
   if (businessAge < 6) poBlockers.push('Business under 6 months');
-  if (data.poBalance && data.poBalance >= 100000) poBoosts.push('Large PO value');
+  if (poIsLarge) poBoosts.push('Large PO value');
 
   products.push({
     id: 'po_financing',
@@ -346,7 +350,7 @@ export function evaluateProducts(data: UnifiedAnswers, score: number): Product[]
     speed: '5–10 days',
     description: 'Finance large orders before delivery.',
     qualifies: poBlockers.length === 0,
-    confidence: poBlockers.length === 0 && data.poBalance && data.poBalance >= 100000 ? 'High' : poBlockers.length === 0 ? 'Medium' : 'Not Eligible',
+    confidence: poBlockers.length === 0 && poIsLarge ? 'High' : poBlockers.length === 0 ? 'Medium' : 'Not Eligible',
     blockers: poBlockers,
     boosts: poBoosts,
   });
