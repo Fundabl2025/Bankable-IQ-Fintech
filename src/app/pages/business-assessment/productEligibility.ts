@@ -240,10 +240,12 @@ export function evaluateProducts(data: UnifiedAnswers, score: number): Product[]
   // 9. 0% APR Business Credit Cards
   const bcc0Blockers: string[] = [];
   const bcc0Boosts: string[] = [];
+  const utilizationIsHigh = data.utilization === '30_50' || data.utilization === '50_75' || data.utilization === 'over_75';
+  const utilizationIsLow  = data.utilization === 'under_10';
   if (creditScore < 700) bcc0Blockers.push('Credit score below 700');
-  if (data.utilization && data.utilization > 30) bcc0Blockers.push('Utilization above 30%');
+  if (utilizationIsHigh) bcc0Blockers.push('Utilization above 30%');
   if (creditScore >= 750) bcc0Boosts.push('Excellent credit');
-  if (data.utilization && data.utilization < 10) bcc0Boosts.push('Low utilization');
+  if (utilizationIsLow)  bcc0Boosts.push('Low utilization');
 
   products.push({
     id: 'bcc_0apr',
