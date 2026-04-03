@@ -789,6 +789,81 @@ export function updateBusinessProfile(updates: Partial<BusinessProfile>): void {
   localStorage.setItem(STORAGE_KEYS.BUSINESS_PROFILE, JSON.stringify(updated));
 }
 
+// ── Sync unified assessment answers → BusinessProfile ─────────────────────────
+// Called whenever assessment is completed or results are viewed.
+// One-directional: assessment is the canonical source of truth for these fields.
+// Never overwrites manually-edited profile fields with blank/empty values.
+export function syncAssessmentToBusinessProfile(data: Record<string, any>): void {
+  const SCORE_MAP: Record<string, number> = {
+    exceptional: 820, very_good: 770, good: 700, fair: 620, poor: 550, unknown: 580,
+  };
+  const REVENUE_MAP: Record<string, string> = {
+    under_5k: 'Under $5K/mo', '5k_15k': '$5K–$15K/mo', '15k_40k': '$15K–$40K/mo',
+    '40k_100k': '$40K–$100K/mo', over_100k: 'Over $100K/mo',
+  };
+  const ANNUAL_MAP: Record<string, string> = {
+    under_5k: 'Under $60K', '5k_15k': '$60K–$180K', '15k_40k': '$180K–$480K',
+    '40k_100k': '$480K–$1.2M', over_100k: 'Over $1.2M',
+  };
+  const ENTITY_MAP: Record<string, string> = {
+    sole_prop: 'Sole Proprietorship', llc_single: 'Single-Member LLC',
+    llc_multi: 'Multi-Member LLC', corp: 'Corporation',
+  };
+
+  // Credit score midpoints
+  const expScore = SCORE_MAP[data.experian] || 0;
+  const tuScore  = SCORE_MAP[data.transunion] || 0;
+  const eqScore  = SCORE_MAP[data.equifax] || 0;
+  const allScores = [expScore, tuScore, eqScore].filter(s => s > 0).sort((a, b) => a - b);
+  const midScore = allScores.length >= 2 ? allScores[Math.floor(allScores.length / 2)] : allScores[0] || 0;
+
+  // Time in business
+  let timeInBusiness = '';
+  if (data.startDate?.year && data.startDate?.month) {
+    const start = new Date(data.startDate.year, (data.startDate.month || 1) - 1);
+    const now = new Date();
+    const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+    if (months < 12) timeInBusiness = `${months} month${months !== 1 ? 's' : ''}`;
+    else timeInBusiness = `${Math.floor(months / 12)} year${Math.floor(months / 12) !== 1 ? 's' : ''}`;
+  }
+
+  // Only include non-empty values so we don't overwrite manual edits with blanks
+  const updates: Partial<BusinessProfile> = {};
+  if (data.ownerFirstName)   updates.contactFirstName    = data.ownerFirstName;
+  if (data.ownerLastName)    updates.contactLastName     = data.ownerLastName;
+  if (data.ownerEmail)       updates.contactEmail        = data.ownerEmail;
+  if (data.ownerPhone)       updates.contactPhone        = data.ownerPhone;
+  if (data.businessName)     updates.businessLegalName   = data.businessName;
+  if (data.entityType)       updates.businessType        = ENTITY_MAP[data.entityType] || data.entityType;
+  if (data.industry)         updates.industry            = data.industry;
+  if (data.businessAddress)  updates.businessAddress     = data.businessAddress;
+  if (data.businessCity)     updates.city                = data.businessCity;
+  if (data.businessState)    updates.state               = data.businessState;
+  if (data.businessZip)      updates.zipCode             = data.businessZip;
+  if (data.businessPhone)    updates.businessPhoneNumber = data.businessPhone;
+  if (data.monthlyRevenue)   updates.monthlyRevenue      = REVENUE_MAP[data.monthlyRevenue] || '';
+  if (data.monthlyRevenue)   updates.annualRevenue       = ANNUAL_MAP[data.monthlyRevenue] || '';
+  if (data.websiteUrl)       updates.websiteUrl          = data.websiteUrl;
+  if (data.einNumber)        updates.einNumber           = data.einNumber;
+  if (timeInBusiness)        updates.timeInBusiness      = timeInBusiness;
+  if (expScore > 0)          updates.experianScore       = expScore;
+  if (tuScore > 0)           updates.transunionScore     = tuScore;
+  if (eqScore > 0)           updates.equifaxScore        = eqScore;
+  if (midScore > 0)          updates.personalCreditScore = midScore;
+
+  updates.hasEIN             = !!data.hasEIN;
+  updates.hasWebsite         = !!data.hasWebsite;
+  updates.hasBankAccount     = data.bankAccount === 'dedicated' || data.bankAccount === 'personal';
+  updates.hasBusinessAddress = !!(data.businessAddress && data.businessCity);
+  updates.hasBusinessPhone   = !!(data.ownerPhone || data.businessPhone);
+  updates.hasBusinessEmail   = !!data.ownerEmail;
+  updates.hasBusinessCredit  = data.bizCreditFile === 'paydex_80plus' || data.bizCreditFile === 'below_80';
+  updates.scanCompleted      = true;
+  updates.scanCompletedDate  = updates.scanCompletedDate || new Date().toISOString();
+
+  updateBusinessProfile(updates);
+}
+
 export function getAllAuditItems(): AuditItem[] {
   // Always start with default items (which have all the severity/fix metadata)
   const categories = getDefaultAuditCategories();

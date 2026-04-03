@@ -12,6 +12,7 @@ import { evaluateProducts } from './productEligibility';
 import { extractCreditBlockers, selectTopThree } from '../credit-path/creditBlockers';
 import { PRODUCT_TO_PROGRAM_ID } from '../../utils/fundingEligibility';
 import { EstimatedFunding } from '../StatusReports/EstimatedFunding';
+import { syncAssessmentToBusinessProfile } from '../../utils/businessData';
 import { useAuth } from '../../contexts/AuthContext';
 import { ArrowRight, Check, AlertCircle, ChevronRight } from 'lucide-react';
 import { logEvent } from '../../lib/analytics/events';
@@ -155,6 +156,11 @@ export function Results() {
       }
 
       setData(assessmentData);
+
+      // Sync assessment answers → businessProfile (one-directional, non-destructive)
+      // This ensures MyBusinessProfile, Dashboard profile section, and other consumers
+      // reflect what the user entered in the assessment without manual re-entry.
+      syncAssessmentToBusinessProfile(assessmentData);
 
       // Calculate final score
       const scoreResult = computeScore(assessmentData);
@@ -439,36 +445,40 @@ export function Results() {
                   margin: '0 auto 24px auto',
                 }}
               >
-                <div style={{ marginBottom: '12px' }}>
+                <div style={{ marginBottom: '8px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      Bankable Score
+                      Business SBSS Score
                     </div>
                     <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: statusInfo.bankableScore >= statusInfo.bankableThreshold ? 'var(--success)' : 'var(--warning)' }}>
-                      {statusInfo.bankableScore} / {statusInfo.bankableThreshold}
+                      {statusInfo.bankableScore} / 300
                     </div>
                   </div>
-                  <div style={{
-                    width: '100%',
-                    height: '8px',
-                    background: 'var(--bg-surface-1)',
-                    borderRadius: '4px',
-                    overflow: 'hidden',
-                  }}>
-                    <div
-                      style={{
-                        width: `${Math.min(100, (statusInfo.bankableScore / statusInfo.bankableThreshold) * 100)}%`,
-                        height: '100%',
-                        background: statusInfo.bankableScore >= statusInfo.bankableThreshold ? 'var(--success)' : 'var(--primary)',
-                        transition: 'width 0.6s ease-out',
-                      }}
-                    />
+                  {/* Bar scaled to 300 max, threshold marker at 53.3% (160/300) */}
+                  <div style={{ width: '100%', height: '8px', background: 'var(--bg-surface-1)', borderRadius: '4px', position: 'relative' }}>
+                    <div style={{
+                      width: `${Math.min(100, (statusInfo.bankableScore / 300) * 100)}%`,
+                      height: '100%',
+                      background: statusInfo.bankableScore >= statusInfo.bankableThreshold ? 'var(--success)' : 'var(--primary)',
+                      borderRadius: '4px',
+                      transition: 'width 0.6s ease-out',
+                    }} />
+                    <div style={{
+                      position: 'absolute', left: `${(160 / 300) * 100}%`,
+                      top: '-3px', width: '2px', height: '14px',
+                      background: 'var(--text-muted)', borderRadius: '1px', opacity: 0.5,
+                    }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2px' }}>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'var(--text-muted)', opacity: 0.7 }}>
+                      bankable threshold: 160
+                    </span>
                   </div>
                 </div>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                  {statusInfo.pointsToBankable === 0 
-                    ? '✓ You have crossed the bankable threshold'
-                    : `You are ${statusInfo.pointsToBankable} points from becoming a Bankable Business`
+                  {statusInfo.pointsToBankable === 0
+                    ? '✓ Bankable threshold crossed'
+                    : `${statusInfo.pointsToBankable} points to bankable threshold`
                   }
                 </div>
               </motion.div>
