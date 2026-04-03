@@ -3,7 +3,7 @@
 // ONE ENGINE. ONE CALCULATION. ONE SCORE. NO SYNC.
 // ════════════════════════════════════════════════════════════════════════════════
 
-import { UnifiedAnswers, ScoreResult, ExtendedResultsOutput } from './types';
+import { UnifiedAnswers, ScoreResult, ExtendedResultsOutput, REVENUE_MIDPOINTS, CREDIT_SCORE_MIDPOINTS } from './types';
 import { READINESS_QUESTIONS } from './questions';
 import { evaluateProducts } from './productEligibility';
 
@@ -40,13 +40,7 @@ const WEIGHTS = {
  * Used throughout engine for score calculation and comparisons
  */
 function mapCreditScore(category: string): number {
-  if (category === 'exceptional') return 850; // 800-850
-  if (category === 'very_good') return 770; // 740-799
-  if (category === 'good') return 700; // 670-739
-  if (category === 'fair') return 620; // 580-669
-  if (category === 'poor') return 550; // 300-579
-  if (category === 'unknown') return 580; // Treat as fair with slight penalty
-  return 0; // No score provided
+  return CREDIT_SCORE_MIDPOINTS[category] ?? 0;
 }
 
 /**
@@ -686,7 +680,7 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
     const sb = getFundingRange(baseResult.score);
     const allProds = evaluateProducts(data, baseResult.score);
     const elig = allProds.filter(p => p.qualifies);
-    const revMap: Record<string, number> = { under_5k: 2500, '5k_15k': 10000, '15k_40k': 27500, '40k_100k': 70000, over_100k: 150000 };
+    const revMap = REVENUE_MIDPOINTS;
     const mRev = revMap[(data as any).monthlyRevenue] || 0;
     const aRev = mRev * 12;
     const parseAmt = (s: string): number => { const c = s.replace(/[$,+]/g, ''); if (c.includes('M')) return parseFloat(c)*1e6; if (c.includes('K')) return parseFloat(c)*1e3; return parseInt(c)||0; };

@@ -3,7 +3,7 @@
 // 17 financing products with specific qualification logic
 // ════════════════════════════════════════════════════════════════════════════════
 
-import { UnifiedAnswers } from './types';
+import { UnifiedAnswers, REVENUE_MIDPOINTS, CC_SALES_MIDPOINTS, CREDIT_SCORE_MIDPOINTS } from './types';
 
 export interface Product {
   id: string;
@@ -20,36 +20,9 @@ export interface Product {
 }
 
 export function evaluateProducts(data: UnifiedAnswers, score: number): Product[] {
-  // Map credit score categories to numeric equivalents
-  const mapCreditScore = (category: string): number => {
-    if (category === 'exceptional') return 850; // 800-850
-    if (category === 'very_good') return 770; // 740-799
-    if (category === 'good') return 700; // 670-739
-    if (category === 'fair') return 620; // 580-669
-    if (category === 'poor') return 550; // 300-579
-    if (category === 'unknown') return 580; // Treat as fair with slight penalty
-    return 0; // No score provided
-  };
-
-  // Convert categorical revenue values to numeric for comparison
-  const revenueMap: Record<string, number> = {
-    'under_5k': 2500,
-    '5k_15k': 10000,
-    '15k_40k': 27500,
-    '40k_100k': 70000,
-    'over_100k': 125000,
-  };
-  const monthlyRev = revenueMap[data.monthlyRevenue] || 0;
-  
-  // Convert categorical CC sales values to numeric for comparison
-  const ccSalesMap: Record<string, number> = {
-    'no_cards': 0,
-    'under_5k': 2500,
-    '5k_15k': 10000,
-    '15k_50k': 32500,
-    'over_50k': 75000,
-  };
-  const ccSales = ccSalesMap[data.ccSales] || 0;
+  const mapCreditScore = (category: string): number => CREDIT_SCORE_MIDPOINTS[category] ?? 0;
+  const monthlyRev = REVENUE_MIDPOINTS[data.monthlyRevenue] || 0;
+  const ccSales = CC_SALES_MIDPOINTS[data.ccSales] || 0;
   
   const creditScore = Math.min(mapCreditScore(data.experian || ''), mapCreditScore(data.transunion || ''), mapCreditScore(data.equifax || '')); // Lowest score (most conservative)
   const businessAge = calculateBusinessAge(data.startDate.year, data.startDate.month);

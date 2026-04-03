@@ -1,6 +1,7 @@
 // Centralized funding eligibility storage and retrieval
 
 import { checkAllProgramsEligibility, type ScanData, checkProgramEligibility } from './fundingRequirements';
+import { REVENUE_MIDPOINTS, CREDIT_SCORE_MIDPOINTS } from '../pages/business-assessment/types';
 
 // Map program IDs to their routes
 export const programRoutes: { [key: string]: string } = {
@@ -38,18 +39,12 @@ function deriveFromUnifiedAssessment(): string[] {
     const raw = localStorage.getItem('unified_assessment');
     if (!raw) return [];
     const data = JSON.parse(raw);
-    const creditMap: Record<string, number> = {
-      exceptional: 850, very_good: 770, good: 700, fair: 620, poor: 550, unknown: 580,
-    };
-    const revenueMap: Record<string, number> = {
-      under_5k: 2500, '5k_15k': 10000, '15k_40k': 27500, '40k_100k': 70000, over_100k: 125000,
-    };
     const credit = Math.min(
-      creditMap[data.experian] ?? 580,
-      creditMap[data.transunion] ?? 580,
-      creditMap[data.equifax] ?? 580
+      CREDIT_SCORE_MIDPOINTS[data.experian] ?? 580,
+      CREDIT_SCORE_MIDPOINTS[data.transunion] ?? 580,
+      CREDIT_SCORE_MIDPOINTS[data.equifax] ?? 580
     );
-    const monthlyRev = revenueMap[data.monthlyRevenue] ?? 0;
+    const monthlyRev = REVENUE_MIDPOINTS[data.monthlyRevenue] ?? 0;
     const now = new Date();
     const start = data.startDate ? new Date(data.startDate.year, (data.startDate.month || 1) - 1) : null;
     const ageMonths = start ? (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()) : 0;

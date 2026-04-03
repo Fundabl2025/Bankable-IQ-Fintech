@@ -294,3 +294,35 @@ export function getDefaultAnswers(): UnifiedAnswers {
     readinessAnswers: Array(23).fill(undefined), // FIXED: was 14, now 23
   };
 }
+
+// ════════════════════════════════════════════════════════════════════════════════
+// SHARED NUMERIC CONVERSION CONSTANTS
+// Single source of truth for revenue and credit score midpoints.
+// All eligibility, scoring, and projection code must import from here.
+// Canonical over_100k midpoint is 125000 (conservative midpoint, matches eligibility logic).
+// ════════════════════════════════════════════════════════════════════════════════
+
+export const REVENUE_MIDPOINTS: Record<string, number> = {
+  under_5k:   2500,
+  '5k_15k':   10000,
+  '15k_40k':  27500,
+  '40k_100k': 70000,
+  over_100k:  125000,
+};
+
+export const CC_SALES_MIDPOINTS: Record<string, number> = {
+  no_cards:   0,
+  under_5k:   2500,
+  '5k_15k':   10000,
+  '15k_50k':  32500,
+  over_50k:   75000,
+};
+
+export const CREDIT_SCORE_MIDPOINTS: Record<string, number> = {
+  exceptional: 850, // 800–850
+  very_good:   770, // 740–799
+  good:        700, // 670–739
+  fair:        620, // 580–669
+  poor:        550, // 300–579
+  unknown:     580, // treated as fair with slight penalty
+};
