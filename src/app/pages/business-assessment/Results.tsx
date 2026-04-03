@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════════════════════════
 // FUNDREADY™ — Unified Assessment Results
-// Complete score reveal with products, actions, and comprehensive insights
+// Score reveal, opportunity surface, blocker diagnosis, CreditPath gateway
 // ════════════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useState } from 'react';
@@ -9,11 +9,11 @@ import { motion, useSpring } from 'motion/react';
 import { UnifiedAnswers, ExtendedResultsOutput } from './types';
 import { computeScore, getBand, computeExtendedResults } from './engine';
 import { evaluateProducts } from './productEligibility';
-import { getAllAuditItems, AuditItem } from '../../utils/businessData';
+import { extractCreditBlockers, selectTopThree } from '../credit-path/creditBlockers';
 import { PRODUCT_TO_PROGRAM_ID } from '../../utils/fundingEligibility';
 import { EstimatedFunding } from '../StatusReports/EstimatedFunding';
 import { useAuth } from '../../contexts/AuthContext';
-import { ArrowRight, Check, AlertCircle } from 'lucide-react';
+import { ArrowRight, Check, AlertCircle, ChevronRight } from 'lucide-react';
 import { logEvent } from '../../lib/analytics/events';
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -217,10 +217,9 @@ export function Results() {
   localStorage.setItem('preQualifiedPrograms', JSON.stringify(qualifiedProgramIds));
   window.dispatchEvent(new Event('fundscoreUpdated'));
 
-  // Get audit items for blockers
-  const auditItems = getAllAuditItems();
-  const incompleteItems = auditItems.filter(item => item.status === 'incomplete');
-  const topBlockers = incompleteItems.filter(item => item.priority === 'critical' || item.priority === 'high').slice(0, 3);
+  // Get assessment-derived credit blockers (same engine as CreditPath)
+  const allCreditBlockers = extractCreditBlockers(data);
+  const topBlockers = selectTopThree(allCreditBlockers);
 
   // Get business owner info from assessment
   const ownerName = data.ownerFirstName || data.ownerLastName 
@@ -476,7 +475,7 @@ export function Results() {
             );
           })()}
 
-          {/* Key Metrics */}
+          {/* Key Metrics — Products + SBSS only (Bankable Score shown above in progress bar) */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -496,14 +495,6 @@ export function Results() {
           >
             <div>
               <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                Bankable Score
-              </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 700, color: 'var(--primary)' }}>
-                {result.bankableScore}/160
-              </div>
-            </div>
-            <div>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '8px' }}>
                 Products Eligible
               </div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 700, color: 'var(--success)' }}>
@@ -521,40 +512,7 @@ export function Results() {
           </motion.div>
         </motion.div>
 
-        {/* ═══════════════════════════════════════════════════════════════════════ */}
-        {/* FEATURE 3: HOW THIS WORKS — FFP transparency box                       */}
-        {/* ═══════════════════════════════════════════════════════════════════════ */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.1 }}
-          style={{
-            background: 'linear-gradient(135deg, rgba(59,130,246,0.05) 0%, rgba(16,185,129,0.05) 100%)',
-            borderRadius: '14px',
-            border: '1px solid rgba(59,130,246,0.2)',
-            padding: '20px 24px',
-            marginBottom: '24px',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '14px',
-          }}
-        >
-          <span style={{ fontSize: '22px', flexShrink: 0, marginTop: '1px' }}>💡</span>
-          <div>
-            <div style={{
-              fontFamily: 'var(--font-display)', fontWeight: 700,
-              fontSize: '14px', color: 'var(--text-primary)', marginBottom: '6px',
-            }}>
-              How This Works
-            </div>
-            <p style={{
-              fontFamily: 'var(--font-body)', fontSize: '13px',
-              color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0,
-            }}>
-              This assessment is based on your self-reported answers. As you connect bank statements and upload documents, your FundScore updates to verified data — most businesses discover they qualify for more than they expected once the right gaps are closed. <strong style={{ color: 'var(--text-primary)' }}>Your score is a starting point, not a verdict.</strong>
-            </p>
-          </div>
-        </motion.div>
+        {/* How This Works moved to bottom — before conversion CTA */}
 
         {/* ═══════════════════════════════════════════════════════════════════════ */}
         {/* SECTION 2: WHAT THIS MEANS */}
@@ -614,86 +572,160 @@ export function Results() {
         </motion.div>
 
         {/* ═══════════════════════════════════════════════════════════════════════ */}
-        {/* SECTION 3: TOP BLOCKERS */}
+        {/* SECTION 3: TOP CREDIT BLOCKERS (assessment-derived, same engine as CreditPath) */}
         {/* ═══════════════════════════════════════════════════════════════════════ */}
-        {topBlockers.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.4 }}
-            style={{
-              background: 'var(--bg-surface-1)',
-              borderRadius: '16px',
-              border: '1px solid var(--border-subtle)',
-              padding: '40px',
-              marginBottom: '32px',
-            }}
-          >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.4 }}
+          style={{
+            background: 'var(--bg-surface-1)',
+            borderRadius: '16px',
+            border: '1px solid var(--border-subtle)',
+            padding: '40px',
+            marginBottom: '32px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '8px', flexWrap: 'wrap' }}>
             <h2 style={{
               fontFamily: 'var(--font-display)',
               fontSize: '24px',
               fontWeight: 700,
               color: 'var(--text-primary)',
-              marginBottom: '24px',
+              margin: 0,
             }}>
-              Patterns Lenders Flag at This Stage
+              {topBlockers.length > 0 ? 'What\'s Holding Your Score Back' : 'Your Credit Profile Is Clean'}
             </h2>
+            {allCreditBlockers.length > 0 && (
+              <span style={{
+                padding: '4px 10px',
+                background: 'rgba(176,68,40,0.08)',
+                color: '#b04428',
+                borderRadius: '6px',
+                fontFamily: 'var(--font-body)',
+                fontSize: '11px',
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
+                alignSelf: 'center',
+              }}>
+                {allCreditBlockers.length} blocker{allCreditBlockers.length !== 1 ? 's' : ''} detected
+              </span>
+            )}
+          </div>
+          <p style={{
+            fontFamily: 'var(--font-body)',
+            fontSize: '13px',
+            color: 'var(--text-muted)',
+            marginBottom: '24px',
+            lineHeight: 1.5,
+          }}>
+            {topBlockers.length > 0
+              ? 'Derived from your assessment answers — the same engine that powers CreditPath. These are ranked by impact and effort.'
+              : 'No credit blockers detected from your assessment answers. Your CreditPath analysis will confirm this.'}
+          </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {topBlockers.map((blocker, idx) => (
-                <div key={idx} style={{
-                  padding: '16px',
-                  background: 'var(--bg-surface-2)',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border-subtle)',
-                  borderLeft: `4px solid ${blocker.priority === 'critical' ? '#ef4444' : '#f97316'}`,
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                    <div style={{ flex: 1 }}>
+          {topBlockers.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+              {topBlockers.map((blocker, idx) => {
+                const severityColor = blocker.severity === 'critical' ? '#ef4444' : blocker.severity === 'high' ? '#f97316' : '#f59e0b';
+                const severityBg = blocker.severity === 'critical' ? 'rgba(239,68,68,0.08)' : blocker.severity === 'high' ? 'rgba(249,115,22,0.08)' : 'rgba(245,158,11,0.08)';
+                const severityLabel = blocker.severity === 'critical' ? 'Approval Barrier' : blocker.severity === 'high' ? 'High Priority' : 'Moderate';
+                return (
+                  <div key={idx} style={{
+                    padding: '16px',
+                    background: 'var(--bg-surface-2)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-subtle)',
+                    borderLeft: `4px solid ${severityColor}`,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontFamily: 'var(--font-body)',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                          marginBottom: '4px',
+                        }}>
+                          {blocker.title}
+                        </div>
+                        <div style={{
+                          fontFamily: 'var(--font-body)',
+                          fontSize: '12px',
+                          color: 'var(--text-muted)',
+                          marginBottom: '8px',
+                          lineHeight: 1.5,
+                        }}>
+                          {blocker.why}
+                        </div>
+                        <div style={{
+                          fontFamily: 'var(--font-body)',
+                          fontSize: '11px',
+                          color: 'var(--text-muted)',
+                        }}>
+                          First step: {blocker.firstStep} · Est. {blocker.timeToResult}
+                        </div>
+                      </div>
                       <div style={{
+                        padding: '4px 10px',
+                        background: severityBg,
+                        color: severityColor,
+                        borderRadius: '4px',
                         fontFamily: 'var(--font-body)',
-                        fontSize: '14px',
+                        fontSize: '10px',
                         fontWeight: 600,
-                        color: 'var(--text-primary)',
-                        marginBottom: '4px',
+                        textTransform: 'uppercase' as const,
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
                       }}>
-                        {blocker.title}
+                        {severityLabel}
                       </div>
-                      <div style={{
-                        fontFamily: 'var(--font-body)',
-                        fontSize: '12px',
-                        color: 'var(--text-muted)',
-                        marginBottom: '8px',
-                      }}>
-                        {blocker.description}
-                      </div>
-                      <div style={{
-                        fontFamily: 'var(--font-body)',
-                        fontSize: '11px',
-                        color: 'var(--text-muted)',
-                      }}>
-                        Fix time: ~{blocker.priority === 'critical' ? '7 days' : blocker.priority === 'high' ? '14 days' : '21 days'}
-                      </div>
-                    </div>
-                    <div style={{
-                      padding: '4px 10px',
-                      background: blocker.priority === 'critical' ? 'rgba(239,68,68,0.1)' : 'rgba(249,115,22,0.1)',
-                      color: blocker.priority === 'critical' ? '#ef4444' : '#f97316',
-                      borderRadius: '4px',
-                      fontFamily: 'var(--font-body)',
-                      fontSize: '10px',
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {blocker.priority === 'critical' ? 'Approval Barrier' : 'Significant Pattern'}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          </motion.div>
-        )}
+          )}
+
+          {/* CreditPath CTA */}
+          <button
+            onClick={() => navigate('/app/credit-path')}
+            style={{
+              width: '100%',
+              padding: '14px 20px',
+              background: 'linear-gradient(135deg, rgba(176,68,40,0.08) 0%, rgba(245,158,11,0.08) 100%)',
+              border: '1px solid rgba(176,68,40,0.25)',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              gap: '12px',
+            }}
+          >
+            <div style={{ textAlign: 'left' }}>
+              <div style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '14px',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                marginBottom: '2px',
+              }}>
+                Get Your Full CreditPath Analysis
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '12px',
+                color: 'var(--text-muted)',
+              }}>
+                {allCreditBlockers.length > 0
+                  ? `See all ${allCreditBlockers.length} blockers with step-by-step action plans, timelines, and Phase 3 tools`
+                  : 'Confirm your clean profile and see tools to build your score further'}
+              </div>
+            </div>
+            <ChevronRight size={18} style={{ color: '#b04428', flexShrink: 0 }} />
+          </button>
+        </motion.div>
 
         {/* ═══════════════════════════════════════════════════════════════════════ */}
         {/* FEATURE 4: WHAT LENDERS ACTUALLY SEE — self-reported vs. lender view   */}
@@ -851,7 +883,7 @@ export function Results() {
 
           {eligibleProducts.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {eligibleProducts.slice(0, 5).map((product) => (
+              {eligibleProducts.map((product) => (
                 <div key={product.id} style={{
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -882,11 +914,6 @@ export function Results() {
                   </div>
                 </div>
               ))}
-              {eligibleProducts.length > 5 && (
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', paddingTop: '12px' }}>
-                  +{eligibleProducts.length - 5} more products available
-                </div>
-              )}
             </div>
           ) : (
             <div style={{
@@ -1106,9 +1133,65 @@ export function Results() {
         </motion.div>
 
         {/* ═══════════════════════════════════════════════════════════════════════ */}
+        {/* HOW THIS WORKS — transparency disclosure, positioned before CTA        */}
+        {/* ═══════════════════════════════════════════════════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 2.1 }}
+          style={{
+            background: 'linear-gradient(135deg, rgba(59,130,246,0.05) 0%, rgba(16,185,129,0.05) 100%)',
+            borderRadius: '14px',
+            border: '1px solid rgba(59,130,246,0.2)',
+            padding: '20px 24px',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '14px',
+          }}
+        >
+          <span style={{ fontSize: '22px', flexShrink: 0, marginTop: '1px' }}>💡</span>
+          <div>
+            <div style={{
+              fontFamily: 'var(--font-display)', fontWeight: 700,
+              fontSize: '14px', color: 'var(--text-primary)', marginBottom: '6px',
+            }}>
+              How This Works
+            </div>
+            <p style={{
+              fontFamily: 'var(--font-body)', fontSize: '13px',
+              color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0,
+            }}>
+              This assessment is based on your self-reported answers. As you connect bank statements and upload documents, your FundScore updates to verified data — most businesses discover they qualify for more than they expected once the right gaps are closed. <strong style={{ color: 'var(--text-primary)' }}>Your score is a starting point, not a verdict.</strong>
+            </p>
+          </div>
+        </motion.div>
+
+        {/* ═══════════════════════════════════════════════════════════════════════ */}
         {/* SECTION 7: CONVERSION CTA (Only for non-logged-in users) */}
         {/* ═══════════════════════════════════════════════════════════════════════ */}
-        {!user && (
+        {!user && extendedResults && (() => {
+          const statusInfo = computeStatus(extendedResults);
+          const ctaHeadline = statusInfo.status === 'Elite'
+            ? 'Lock In Your Elite Status — Access the Full Platform'
+            : statusInfo.status === 'Bankable'
+            ? 'You\'re Bankable — Now Expand Your Capital Stack'
+            : statusInfo.status === 'Progressing'
+            ? 'See the Exact Moves to Cross the Bankable Threshold'
+            : statusInfo.status === 'Fundable'
+            ? 'You Qualify for Capital — Here\'s How to Get More'
+            : 'See the Foundation Steps That Unlock Your First Funding';
+          const ctaBody = statusInfo.status === 'Elite'
+            ? `Save your results, track your ${eligibleProducts.length}-product portfolio, and run your full CreditPath analysis to protect your position.`
+            : statusInfo.status === 'Bankable'
+            ? `You've crossed the bankable threshold. Create an account to unlock the remaining ${17 - eligibleProducts.length} products and track your path to Elite.`
+            : statusInfo.status === 'Progressing'
+            ? `You're ${statusInfo.pointsToBankable} points from bank-rate capital. Create an account to save your blockers and get your 90-day action plan.`
+            : statusInfo.status === 'Fundable'
+            ? 'You qualify for alternative capital right now. Create an account to save your results and see your step-by-step path to bankability.'
+            : 'Create a free account to save your results and see the specific foundation steps to start qualifying for capital.';
+
+          return (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1128,7 +1211,7 @@ export function Results() {
               color: '#e4e8d8',
               marginBottom: '16px',
             }}>
-              See the Exact Path to Your Next Capital Tier
+              {ctaHeadline}
             </h2>
             <p style={{
               fontFamily: 'var(--font-body)',
@@ -1139,7 +1222,7 @@ export function Results() {
               maxWidth: '600px',
               margin: '0 auto 32px',
             }}>
-              Create a free account to save your results, track your progress, and see the specific moves that shift your profile toward bankability.
+              {ctaBody}
             </p>
             <div style={{
               display: 'flex',
@@ -1200,7 +1283,8 @@ export function Results() {
               </button>
             </div>
           </motion.div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );
