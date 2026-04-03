@@ -3,7 +3,7 @@
 // 20-item compliance status with pass/fail indicators
 // ════════════════════════════════════════════════════════════════════════════════
 
-import { Download, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { Download, CheckCircle2, XCircle, AlertTriangle, ClipboardCheck } from 'lucide-react';
 import { ExtendedResultsOutput } from '../business-assessment/types';
 import { useEffect, useState } from 'react';
 import { computeExtendedResults } from '../business-assessment/engine';
@@ -138,6 +138,35 @@ export function BankableStatus({ data: propData }: BankableStatusProps) {
             This report shows where your business currently stands in the process of becoming bankable and which critical items will need to be completed to become bankable. There are many funding programs available to non-bankable businesses but due to the higher risk those programs tend to be smaller amounts, high interest and shorter repayment terms. Below are a few of the requirements to become bankable. There are about 50, here are the top 20 you must address.
           </p>
 
+          {/* Self-Reported Notice */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+              background: 'rgba(245, 158, 11, 0.06)',
+              border: '1px solid rgba(245, 158, 11, 0.25)',
+              borderLeft: '3px solid #f59e0b',
+              borderRadius: '6px',
+              padding: '12px 16px',
+              marginBottom: '16px',
+            }}
+          >
+            <ClipboardCheck style={{ width: '16px', height: '16px', color: '#f59e0b', flexShrink: 0, marginTop: '1px' }} />
+            <div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: '#f59e0b', marginBottom: '2px' }}>
+                Assessment Baseline — Self-Reported
+              </div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 300, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                These statuses reflect what you reported in your assessment — not independently verified. Items showing "pass" are based on your answers.{' '}
+                <Link to="/app/lender-compliance" style={{ color: '#f59e0b', textDecoration: 'none', fontWeight: 500 }}>
+                  Complete your compliance modules
+                </Link>{' '}
+                to convert claimed items into verified status that lenders will accept.
+              </div>
+            </div>
+          </div>
+
           {/* Results For / Report Date */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
             <div
@@ -167,7 +196,7 @@ export function BankableStatus({ data: propData }: BankableStatusProps) {
         <div style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-subtle)', borderLeft: `4px solid ${scoreColor}`, borderRadius: '8px', padding: '16px 20px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <span style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 800, color: scoreColor }}>{passCount}</span>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)', marginLeft: '6px' }}>/ {totalCount} bankable items passing</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)', marginLeft: '6px' }}>/ {totalCount} items claimed in assessment</span>
             {partialCount > 0 && <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--warning)', marginLeft: '10px' }}>({partialCount} partial)</span>}
           </div>
           <div style={{ textAlign: 'right' }}>
@@ -286,7 +315,8 @@ export function BankableStatus({ data: propData }: BankableStatusProps) {
 
         {/* T-13: minimal totals line -- detail lives in summary card above table */}
         <div style={{ marginBottom: '24px', fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', textAlign: 'right' }}>
-          {passCount} passing{partialCount > 0 ? ` · ${partialCount} partial` : ''} · {failCount} need attention
+          {passCount} claimed passing{partialCount > 0 ? ` · ${partialCount} partial` : ''} · {failCount} need attention ·{' '}
+          <Link to="/app/lender-compliance" style={{ color: 'var(--text-muted)', textDecoration: 'underline' }}>verify via compliance modules →</Link>
         </div>
 
         {/* Bankable Explanation */}

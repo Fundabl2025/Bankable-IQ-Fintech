@@ -379,7 +379,8 @@ export function Dashboard() {
   const { user } = useAuth();
   const [fundScore, setFundScore] = useState(0);
   const [bankableScore, setBankableScore] = useState(0);
-  const [bankablePassPct, setBankablePassPct] = useState(0); // % of bankable items passing
+  const [bankablePassPct, setBankablePassPct] = useState(0);   // % of bankable items passing (assessment-based)
+  const [bankablePassCount, setBankablePassCount] = useState(0); // raw pass count (out of 20)
   const [scoreBand, setScoreBand] = useState({ name: 'Not Assessed', color: '#64748b' });
   const [hasAssessment, setHasAssessment] = useState(false);
   const [dimAvg, setDimAvg] = useState<Record<string, number>>({});
@@ -431,6 +432,7 @@ export function Dashboard() {
           setBankableScore(bs);
           const bItems = extendedResults.bankableItems || [];
           const bPass = bItems.filter((i: any) => i.status === 'pass').length;
+          setBankablePassCount(bPass);
           setBankablePassPct(bItems.length > 0 ? Math.round((bPass / bItems.length) * 100) : 0);
           setScoreBand(band);
           setNapScore(scoreResult.napScore || 0);
@@ -967,8 +969,12 @@ export function Dashboard() {
               const hasPaidMembership = canAccessGoal2(membershipTier);
 
               // ── Goal 02: Become Bankable ──────────────────────────────────
-               // T-10: "Done" requires BOTH gates: SBSS >= 160 AND >= 10/13 compliance modules.
-              // Previously only checked SBSS >= 160 -- fixed.
+              // T-10: "Done" requires BOTH gates: SBSS >= 160 AND >= 10/13 compliance modules.
+              // NOTE: bankablePassCount (assessment-based, 19/20) and goal02CompletedModules
+              // (verified module completions, 0/13) are intentionally different measures:
+              //   - bankablePassCount = what the assessment CLAIMS you already have
+              //   - goal02CompletedModules = what you've PROVEN by working through the app
+              // Goal 02 shows BOTH so the user sees their claimed baseline vs. verified progress.
               const GOAL_02_MIN_MODULES = 10;
               const _g2p = getComplianceProgress();
               const goal02CompletedModules = complianceModules.filter(m => _g2p[m.id]?.completed).length;
@@ -977,19 +983,21 @@ export function Dashboard() {
               const modulesGateMet = goal02CompletedModules >= GOAL_02_MIN_MODULES;
               const goal02Done = scoreGateMet && modulesGateMet;
 
-              // T-10: Three explicit states -- user sees exactly which gate is missing.
+              // Three explicit states — user sees both claimed baseline AND verified progress.
               const goal02Metric = !hasPaidMembership
                 ? 'Requires Virtual or Live membership'
                 : goal02Done
-                  ? `SBSS ${bankableScore}/300 ✓ · ${goal02CompletedModules}/${goal02TotalModules} modules ✓`
+                  ? `SBSS ${bankableScore}/300 ✓ · ${bankablePassCount}/20 items · ${goal02CompletedModules}/${goal02TotalModules} modules ✓`
                   : (() => {
                       const sbssPart = scoreGateMet
                         ? `SBSS ${bankableScore}/300 ✓`
                         : `SBSS ${bankableScore}/300 — need 160+`;
+                      // Show assessment items as "claimed" and modules as "verified"
+                      const claimedPart = `${bankablePassCount}/20 claimed`;
                       const modPart = modulesGateMet
-                        ? `${goal02CompletedModules}/${goal02TotalModules} modules ✓`
-                        : `${goal02CompletedModules}/${goal02TotalModules} modules — need ${GOAL_02_MIN_MODULES}`;
-                      return `${sbssPart} · ${modPart}`;
+                        ? `${goal02CompletedModules}/${goal02TotalModules} verified ✓`
+                        : `${goal02CompletedModules}/${goal02TotalModules} verified — need ${GOAL_02_MIN_MODULES}`;
+                      return `${sbssPart} · ${claimedPart} · ${modPart}`;
                     })();
 
               // Goal 03: Bankable Funding
@@ -1010,7 +1018,7 @@ export function Dashboard() {
                 {
                   num: '02',
                   title: 'Build Credit & Become Bankable',
-                  desc: '13 compliance steps that make you look low risk — required to unlock bank capital',
+                  desc: 'Your assessment shows what you claim to have. Complete 10 of 13 compliance modules to verify it — banks require proof, not self-report.',
                   // T-10: status and metric use dual-gate goal02Done, not isBankable
                   status: !hasPaidMembership ? 'membership_locked' : goal02Done ? 'complete' : 'active',
                   metric: goal02Metric,
