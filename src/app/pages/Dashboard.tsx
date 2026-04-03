@@ -322,6 +322,9 @@ const DIM_CONFIG = [
   },
 ];
 
+// Display order for the 6 readiness dimensions — module-level so all components can access it
+const DIM_ORDER = ['P', 'B', 'F', 'C', 'S', 'N'];
+
 function getDimAction(key: string, score: number, dimConfig: typeof DIM_CONFIG): string {
   const dim = dimConfig.find(d => d.key === key);
   if (!dim) return '';
@@ -1438,8 +1441,8 @@ export function Dashboard() {
   const lockedCapital = getLockedCapital(fundScore);
   const hour = new Date().getHours();
   const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-  const DIM_ORDER = ['P', 'B', 'F', 'C', 'S', 'N'];
   // DIM_LABELS imported from business-assessment/types — derived from DIMENSION_INFO
+  // DIM_ORDER is defined at module scope (above FollowOnBlockersCard)
   const preQualPrograms = getPreQualifiedPrograms();
   // Real capital potential from actual qualifying products — replaces static scoreToAmount lookup
   const realCapital = computeRealCapital(storedAssessment, fundScore);
