@@ -10,7 +10,7 @@
 // Do not modify computeScore() or computeExtendedResults() — read from them.
 // ════════════════════════════════════════════════════════════════════════════════
 
-import { UnifiedAnswers, CREDIT_SCORE_MIDPOINTS } from '../../pages/business-assessment/types';
+import { UnifiedAnswers, CREDIT_SCORE_MIDPOINTS, NOI_MIDPOINTS, DEBT_SERVICE_MIDPOINTS } from '../../pages/business-assessment/types';
 
 export const CREDITPATH_VERSION = '1.0';
 export const CREDITPATH_CONFIDENCE_TIER = 1 as const;
@@ -24,7 +24,8 @@ export type BlockerCategory =
   | 'bankruptcy'
   | 'inquiry_load'
   | 'thin_file'
-  | 'business_credit_depth';
+  | 'business_credit_depth'
+  | 'capacity';
 
 export type BlockerSeverity = 'critical' | 'high' | 'medium' | 'low';
 
@@ -436,6 +437,55 @@ export function extractCreditBlockers(data: UnifiedAnswers): CreditBlocker[] {
     });
   }
 
+  // ── CAPACITY — DSCR ──────────────────────────────────────────────────────────
+
+  if (data.annualNOI && data.annualNOI !== '' && data.annualDebtService && data.annualDebtService !== '') {
+    const noi = NOI_MIDPOINTS[data.annualNOI] ?? 0;
+    const ds = DEBT_SERVICE_MIDPOINTS[data.annualDebtService] ?? 0;
+
+    if (ds > 0) {
+      const dscr = noi / ds;
+
+      if (dscr < 1.0) {
+        blockers.push({
+          id: 'dscr_critical',
+          category: 'capacity',
+          severity: 'critical',
+          title: 'DSCR Below 1.0 — Debt Not Covered',
+          why: 'Your estimated NOI does not cover your annual debt payments. A DSCR below 1.0x is a hard stop in most lender pipelines — it signals the business cannot service the proposed debt. Lenders will not approve until this is resolved.',
+          effort: 'high',
+          timeToResult: '90–180 days',
+          readinessImpact: 'Bringing DSCR to 1.25x may clear the Capacity module in a lender\'s underwriting pipeline — often the most common reason for denial.',
+          capitalImpact: 'Most SBA and conventional products require DSCR ≥ 1.25x. Products with lighter coverage requirements (MCA, revenue-based) may still be accessible.',
+          firstStep: 'Use the DSCR Estimator below to calculate exactly how much NOI increase or debt reduction is needed to reach the 1.25x lender threshold.',
+          disclosures: [
+            'DSCR estimate is based on categorical ranges you self-reported. Actual lender calculations use verified tax returns and full debt schedules.',
+            'This is not financial or lending advice. Consult a qualified advisor for your specific situation.',
+          ],
+          confidenceTier: 1,
+        });
+      } else if (dscr < 1.25) {
+        blockers.push({
+          id: 'dscr_below_threshold',
+          category: 'capacity',
+          severity: 'high',
+          title: 'DSCR Below Lender Threshold (1.25x)',
+          why: `Your estimated DSCR is approximately ${dscr.toFixed(2)}x — below the 1.25x minimum required by most SBA and conventional lenders. This triggers a Capacity flag in the underwriting pipeline and often requires manual exception review.`,
+          effort: 'high',
+          timeToResult: '90–180 days',
+          readinessImpact: 'Improving DSCR to 1.25x or above may clear the Capacity module and move your application into auto-approval range for many programs.',
+          capitalImpact: 'Lenders may approve with compensating factors, but expect higher rates, shorter terms, or additional collateral requirements below 1.25x.',
+          firstStep: 'Use the DSCR Estimator below to identify whether increasing NOI or reducing debt service is the faster path to 1.25x.',
+          disclosures: [
+            'DSCR estimate is based on categorical ranges you self-reported. Actual lender calculations will differ.',
+            'Some lenders accept DSCR as low as 1.15x with strong compensating factors. Consult a qualified advisor.',
+          ],
+          confidenceTier: 1,
+        });
+      }
+    }
+  }
+
   return blockers;
 }
 
@@ -473,9 +523,12 @@ export function selectTopThree(blockers: CreditBlocker[]): CreditBlocker[] {
 export function evaluateMilestones(
   data: UnifiedAnswers,
   progress: CreditProgressState,
+  // Pass the already-computed blockers array from the call site — avoids a second
+  // extraction pass and keeps milestone evaluation consistent with the rendered cards.
+  precomputedBlockers?: CreditBlocker[],
 ): CreditMilestone[] {
   const composite = getCompositeFromData(data);
-  const allBlockers = extractCreditBlockers(data);
+  const allBlockers = precomputedBlockers ?? extractCreditBlockers(data);
   const criticalBlockers = allBlockers.filter(b => b.severity === 'critical');
   const unresolvedCritical = criticalBlockers.filter(
     b => !progress.completedActions.includes(b.id),
@@ -486,6 +539,18 @@ export function evaluateMilestones(
     return blocker &&
       (blocker.category === 'derogatories' || blocker.category === 'bankruptcy');
   });
+
+  // Utilization milestone: distinguish between "already healthy" and "not yet there"
+  // so users who had good utilization before opening CreditPath don't see a pre-checked
+  // milestone that implies they achieved something here.
+  const utilizationAlreadyHealthy =
+    data.utilization === 'under_10' || data.utilization === '10_30';
+  const utilizationLabel = utilizationAlreadyHealthy
+    ? 'Utilization OK'
+    : 'Utilization';
+  const utilizationDescription = utilizationAlreadyHealthy
+    ? 'Credit utilization already in healthy range'
+    : 'Credit utilization at or below 30%';
 
   return [
     {
@@ -502,19 +567,19 @@ export function evaluateMilestones(
     },
     {
       id: 'utilization_target',
-      label: 'Utilization',
-      description: 'Credit utilization at or below 30%',
-      reached: data.utilization === 'under_10' || data.utilization === '10_30',
+      label: utilizationLabel,
+      description: utilizationDescription,
+      reached: utilizationAlreadyHealthy,
     },
     {
       id: 'first_derog_addressed',
-      label: 'Derog Addressed',
+      label: 'Derog\u00a0Cleared',
       description: 'Addressed a derogatory item',
       reached: hasDerogAction,
     },
     {
       id: 'bankable_candidate',
-      label: 'Bankable Range',
+      label: 'Bankable',
       description: 'Estimated score in bankable range with no unresolved critical blockers',
       reached: composite >= 700 && unresolvedCritical.length === 0,
     },

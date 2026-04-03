@@ -19,11 +19,12 @@ import { getPipelineCounts } from '../lib/funding-service';
 // ── Onboarding milestone checklist ──────────────────────────────────────────
 // Steps are sequential. Complete them in order — each one unlocks the next.
 const MILESTONES = [
-  { id: 'scan',       step: 1, label: 'Take the Business Success Scan',       desc: '33 questions · 8 minutes · generates your full FundScore',              path: '/business-assessment',         check: () => !!localStorage.getItem('unified_assessment') },
-  { id: 'results',    step: 2, label: 'Review your FundScore report',          desc: 'Understand your 6 capital dimensions and every active blocker',          path: '/business-assessment/results', check: () => localStorage.getItem('fundready_results_viewed') === '1' },
-  { id: 'forge',      step: 3, label: 'Get your FORGE™ action plan',           desc: 'AI roadmap — your exact path from current stage to bank capital',        path: '/app/ai-coach',                check: () => localStorage.getItem('aiCoachOpened') === '1' },
-  { id: 'compliance', step: 4, label: 'Complete at least 1 compliance module', desc: 'Start building your lender file — required for Stage 2+ products',       path: '/app/lender-compliance',       check: () => complianceModules.some(m => getComplianceProgress()[m.id]?.completed) },
-  { id: 'funding',    step: 5, label: 'Apply to a pre-qualified product',      desc: 'See which capital products you qualify for based on your current score', path: '/app/access-funding',          check: () => !!localStorage.getItem('preQualifiedPrograms') },
+  { id: 'scan',        step: 1, label: 'Take the Business Success Scan',       desc: '36 questions · 8 minutes · generates your full FundScore + DSCR profile', path: '/business-assessment',         check: () => !!localStorage.getItem('unified_assessment') },
+  { id: 'results',     step: 2, label: 'Review your FundScore report',          desc: 'Understand your 6 capital dimensions and every active blocker',            path: '/business-assessment/results', check: () => localStorage.getItem('fundready_results_viewed') === '1' },
+  { id: 'creditpath',  step: 3, label: 'Open your CreditPath roadmap',          desc: 'Personalized credit blockers, DSCR estimator, and step-by-step fix tools', path: '/app/credit-path',             check: () => !!localStorage.getItem('creditpath_progress') },
+  { id: 'forge',       step: 4, label: 'Get your FORGE™ action plan',           desc: 'AI roadmap — your exact path from current stage to bank capital',          path: '/app/ai-coach',                check: () => localStorage.getItem('aiCoachOpened') === '1' },
+  { id: 'compliance',  step: 5, label: 'Complete at least 1 compliance module', desc: 'Start building your lender file — required for Stage 2+ products',         path: '/app/lender-compliance',       check: () => complianceModules.some(m => getComplianceProgress()[m.id]?.completed) },
+  { id: 'funding',     step: 6, label: 'Apply to a pre-qualified product',      desc: 'See which capital products you qualify for based on your current score',   path: '/app/access-funding',          check: () => !!localStorage.getItem('preQualifiedPrograms') },
 ];
 
 // ── Sections ─────────────────────────────────────────────────────────────────
@@ -39,13 +40,13 @@ const STAGES = [
     num: 2, label: 'Stage 2', title: 'Traditional Capital', color: '#f59e0b',
     range: '$50K – $500K', apr: '15–25% APR',
     desc: 'Term loans, SBA microloans, equipment financing. Lower cost, more documentation required.',
-    requirements: ['1–2 years in business', '650+ personal credit', '3+ months consistent revenue', 'Business credit profile started'],
+    requirements: ['1–2 years in business', '650+ personal credit', '3+ months consistent revenue', 'DSCR ≥ 1.0x (break-even coverage)', 'Business credit profile started'],
   },
   {
     num: 3, label: 'Stage 3', title: 'Bank & SBA Capital', color: '#10b981',
     range: '$250K – $5M+', apr: '8–15% APR',
     desc: 'SBA 7(a)/504, conventional bank loans, credit union loans. Best rates. Saves ~$62K/year vs Stage 1.',
-    requirements: ['2+ years in business', '680+ personal credit (740+ preferred)', 'SBSS score 160+', 'Full compliance file complete'],
+    requirements: ['2+ years in business', '680+ personal credit (740+ preferred)', 'SBSS score 160+', 'DSCR ≥ 1.25x (lender minimum)', 'Full compliance file complete'],
   },
 ];
 
@@ -59,8 +60,9 @@ const DIMENSIONS = [
 ];
 
 const PLATFORM_SECTIONS = [
-  { path: '/business-assessment', icon: ClipboardCheck, color: '#10b981', label: 'Business Success Scan', desc: 'Your 33-question assessment. Generates your FundScore and identifies every blocker.' },
+  { path: '/business-assessment', icon: ClipboardCheck, color: '#10b981', label: 'Business Success Scan', desc: 'Your 36-question assessment. Generates your FundScore, DSCR profile, and every active blocker.' },
   { path: '/app/dashboard', icon: BarChart3, color: '#3b82f6', label: 'Mission Control Dashboard', desc: 'Live view of your score, capital potential, goals, and top priority action.' },
+  { path: '/app/credit-path', icon: TrendingUp, color: '#10b981', label: 'CreditPath™', desc: 'Your personalized credit improvement roadmap. DSCR estimator, utilization calculator, dispute scaffolding, tradeline starter list — tools mapped to your exact blockers.' },
   { path: '/app/ai-coach', icon: Brain, color: '#8b5cf6', label: 'FORGE™ AI Coach', desc: 'AI roadmap engine. Shows your exact path from current stage to Stage 3 bank capital.' },
   { path: '/app/lender-compliance', icon: Shield, color: '#f59e0b', label: 'Lender Compliance', desc: '13 verification modules that build your lender file. Complete all 13 to unlock the full capital stack.' },
   { path: '/app/document-collection', icon: FolderOpen, color: '#06b6d4', label: 'Document Portal', desc: 'Organize and store all required lender documents: returns, P&L, bank statements, licenses.' },
@@ -73,6 +75,7 @@ const PLATFORM_SECTIONS = [
 
 const FAQ = [
   { q: 'What is the FundScore?', a: 'A 0–1000 score across 6 dimensions that predicts your capital readiness. 700+ = capital ready. 800+ = bank-eligible. 900+ = top 5%.' },
+  { q: 'What is DSCR and why does it matter?', a: 'DSCR (Debt Service Coverage Ratio) = Annual Net Operating Income ÷ Annual Debt Service. Lenders require ≥ 1.25x — meaning your business must generate $1.25 for every $1.00 of debt payments. Below 1.0x is an automatic decline in most lender pipelines. It is the single most common reason commercial loan applications are denied. Use CreditPath\'s DSCR Estimator to calculate yours and see exactly how to reach the 1.25x threshold.' },
   { q: 'What is the SBSS / Bank Readiness Score?', a: 'A 0–300 score (similar to FICO® SBSS) used by banks and the SBA to approve business loans. Score 160+ = bank-eligible. Below 160 = typically auto-declined by banks.' },
   { q: 'How long does it take to move from Stage 1 to Stage 3?', a: 'Most businesses can reach Stage 3 eligibility in 12–24 months with consistent execution. The platform gives you the exact blockers to address and tracks progress in real time.' },
   { q: 'Do I need an LLC to use FundReady?', a: 'No — sole proprietors can use the platform. But most capital products require an LLC or Corp entity. If you\'re a sole prop, forming an LLC is typically Step 1.' },
@@ -162,7 +165,7 @@ export function GettingStarted() {
             <div style={{ marginBottom: '12px', padding: '10px 14px', background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '16px' }}>👋</span>
               <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--foreground)', lineHeight: 1.5 }}>
-                <strong>New here?</strong> Start with Step 1 — the scan takes 8 minutes and instantly shows every blocker between you and funded.
+                <strong>New here?</strong> Start with Step 1 — the scan takes 8 minutes and instantly shows every blocker between you and funded, including your DSCR capacity profile.
               </span>
             </div>
           )}

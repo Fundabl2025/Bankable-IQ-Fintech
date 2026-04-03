@@ -21,7 +21,7 @@ export function UnifiedAssessment() {
   
   // Current question (0-32 for 33 total questions)
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const totalQuestions = 35; // 12 foundation + 23 readiness
+  const totalQuestions = 36; // 13 foundation + 23 readiness
 
   // Live score
   const [liveScore, setLiveScore] = useState(0);
@@ -103,7 +103,7 @@ export function UnifiedAssessment() {
   
   const calculateApplicableQuestions = (): number => {
     // Calculate total applicable questions for accurate progress tracking
-    let count = 12; // Foundation questions always shown (12 total)
+    let count = 13; // Foundation questions always shown (13 total)
     
     // Check each readiness question for applicability
     for (let i = 0; i < 23; i++) {
@@ -118,12 +118,12 @@ export function UnifiedAssessment() {
   const getNextApplicableQuestion = (startFrom: number): number => {
     let nextQuestion = startFrom + 1;
 
-    while (nextQuestion < 35) {
-      if (nextQuestion < 12) {
+    while (nextQuestion < 36) {
+      if (nextQuestion < 13) {
         // Foundation questions always applicable
         return nextQuestion;
       } else {
-        const readinessIdx = nextQuestion - 12;
+        const readinessIdx = nextQuestion - 13;
         if (shouldShowReadinessQuestion(readinessIdx)) {
           return nextQuestion;
         }
@@ -131,18 +131,18 @@ export function UnifiedAssessment() {
       nextQuestion++;
     }
 
-    return 35; // Reached end
+    return 36; // Reached end
   };
   
   const getPreviousApplicableQuestion = (startFrom: number): number => {
     let prevQuestion = startFrom - 1;
     
     while (prevQuestion >= 0) {
-      if (prevQuestion < 10) {
+      if (prevQuestion < 13) {
         // Foundation questions always applicable
         return prevQuestion;
       } else {
-        const readinessIdx = prevQuestion - 10;
+        const readinessIdx = prevQuestion - 13;
         if (shouldShowReadinessQuestion(readinessIdx)) {
           return prevQuestion;
         }
@@ -156,7 +156,7 @@ export function UnifiedAssessment() {
   const handleNext = () => {
     const nextQuestion = getNextApplicableQuestion(currentQuestion);
     
-    if (nextQuestion < 35) {
+    if (nextQuestion < 36) {
       setCurrentQuestion(nextQuestion);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
@@ -184,8 +184,8 @@ export function UnifiedAssessment() {
   const [showLoading, setShowLoading] = useState(false);
 
   // Determine which component to render based on question number
-  const isFoundationQuestion = currentQuestion < 12; // Q0-11 are foundation (12 questions)
-  const readinessIndex = currentQuestion - 12; // Q12-34 map to readiness 0-22
+  const isFoundationQuestion = currentQuestion < 13; // Q0-12 are foundation (13 questions)
+  const readinessIndex = currentQuestion - 13; // Q13-35 map to readiness 0-22
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>

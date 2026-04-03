@@ -1,3 +1,30 @@
+// ── BuildingCredit.tsx — DEPRECATED ──────────────────────────────────────────
+// This page has been superseded by CreditPath at /app/credit-path.
+// CreditPath is assessment-aware, personalized, and includes Phase 3 tools.
+// This file is retained for backward compatibility with any existing links.
+// Navigation and sidebar no longer surface this route.
+// TODO: Remove this file when no inbound links remain.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router';
+
+export function BuildingCredit() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redirect to the live CreditPath page immediately.
+    // Users who bookmarked or linked to this route will land on the current module.
+    navigate('/app/credit-path', { replace: true });
+  }, [navigate]);
+
+  // Render nothing — redirect fires before paint
+  return null;
+}
+
+// ── Preserved original component (renamed, unused) ───────────────────────────
+// Kept below for reference during transition. Remove when redirect is confirmed stable.
+
 import { useState } from 'react';
 import { CreditCard, TrendingUp, Plus, CheckCircle, Clock, AlertCircle, DollarSign, Calendar, Award, Target } from 'lucide-react';
 import { Card } from '../components/ui/card';
@@ -5,7 +32,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { motion } from 'motion/react';
 
-export function BuildingCredit() {
+function BuildingCreditLegacy() {
   const [activeTab, setActiveTab] = useState<'roadmap' | 'tradelines' | 'recommendations'>('roadmap');
 
   const creditRoadmap = [

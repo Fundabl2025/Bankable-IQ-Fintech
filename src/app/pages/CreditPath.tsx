@@ -1,5 +1,6 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// CREDITPATH™ — Phase 2: Deterministic Credit Improvement Roadmap
+// CREDITPATH™ — Phase 3 Complete: Deterministic Credit Improvement Roadmap + Tools
+// Tools: Utilization Calculator · Tradeline Starter · Inquiry Tracker · Dispute Scaffolding · DSCR Estimator
 // Assessment-Only · Confidence Tier 1 · No AI · No uploads · No score-engine changes
 //
 // Data flow: localStorage.unified_assessment
@@ -16,10 +17,10 @@ import { Link } from 'react-router';
 import { motion } from 'motion/react';
 import {
   CheckCircle2, Circle, ChevronRight, TrendingUp, Shield,
-  CreditCard, Info, AlertTriangle,
+  CreditCard, Info,
 } from 'lucide-react';
 import { computeExtendedResults } from './business-assessment/engine';
-import { UnifiedAnswers } from './business-assessment/types';
+import { UnifiedAnswers, NOI_MIDPOINTS, DEBT_SERVICE_MIDPOINTS } from './business-assessment/types';
 import {
   extractCreditBlockers,
   selectTopThree,
@@ -29,6 +30,11 @@ import {
   toggleActionComplete,
   CreditProgressState,
 } from './credit-path/creditBlockers';
+import { UtilizationCalculator } from './credit-path/UtilizationCalculator';
+import { TradlineStarterList } from './credit-path/TradlineStarterList';
+import { InquiryTracker } from './credit-path/InquiryTracker';
+import { DisputeScaffolding } from './credit-path/DisputeScaffolding';
+import { DSCREstimator } from './credit-path/DSCREstimator';
 import { logEvent } from '../lib/analytics/events';
 
 // ── Score display helpers ─────────────────────────────────────────────────────
@@ -173,7 +179,7 @@ export function CreditPath() {
   const pcs = ext.personalCreditSummary;
   const allBlockers = extractCreditBlockers(data);
   const topThree = selectTopThree(allBlockers);
-  const milestones = evaluateMilestones(data, progress);
+  const milestones = evaluateMilestones(data, progress, allBlockers);
   const completedCount = topThree.filter(b => progress.completedActions.includes(b.id)).length;
   const reachedMilestoneCount = milestones.filter(m => m.reached).length;
   const progressPct = milestones.length > 1
@@ -629,6 +635,35 @@ export function CreditPath() {
                       </div>
                     )}
 
+                    {/* ── Phase 3 Tools — rendered per blocker category ───── */}
+
+                    {/* Tool 1: Utilization payoff calculator */}
+                    {blocker.category === 'utilization' && (
+                      <UtilizationCalculator />
+                    )}
+
+                    {/* Tool 2: Tradeline starter list */}
+                    {blocker.category === 'business_credit_depth' && (
+                      <TradlineStarterList
+                        bizCreditFile={data.bizCreditFile as 'none' | 'building' | 'below_80' | 'strong' | undefined}
+                      />
+                    )}
+
+                    {/* Tool 3: Inquiry aging tracker */}
+                    {blocker.category === 'inquiry_load' && (
+                      <InquiryTracker
+                        inquiryBand={data.inquiries30d as '0' | '1_2' | '3_4' | '5plus' ?? '0'}
+                      />
+                    )}
+
+                    {/* Tool 5: DSCR Estimator */}
+                    {blocker.category === 'capacity' && (
+                      <DSCREstimator
+                        seedNOI={data.annualNOI ? NOI_MIDPOINTS[data.annualNOI] : undefined}
+                        seedDebtService={data.annualDebtService ? DEBT_SERVICE_MIDPOINTS[data.annualDebtService] : undefined}
+                      />
+                    )}
+
                     {/* Confidence tier note */}
                     <div style={{
                       marginTop: '8px', fontFamily: 'var(--font-body)', fontSize: '10px',
@@ -640,6 +675,21 @@ export function CreditPath() {
                 );
               })}
             </div>
+          )}
+
+          {/* Tool 4: Dispute scaffolding — rendered once below all cards
+              when any derogatory blocker is present in the top 3 */}
+          {topThree.some(b =>
+            b.category === 'derogatories' || b.category === 'bankruptcy'
+          ) && (
+            <DisputeScaffolding
+              hasDerog
+              hasCollections={data.hasCollections === 'active' || data.hasCollections === 'resolved'}
+              hasTaxLiens={data.hasTaxLiens !== 'no' && !!data.hasTaxLiens}
+              hasJudgments={!!data.hasJudgments}
+              hasChargeoffs={!!data.hasChargeoffs}
+              hasLatePay={!!data.hasLatePay}
+            />
           )}
         </motion.div>
 
@@ -747,12 +797,13 @@ export function CreditPath() {
                   fontFamily: 'var(--font-body)', fontSize: '13px',
                   color: 'var(--muted-foreground)', lineHeight: 1.6, marginBottom: '12px',
                 }}>
-                  Personal credit is the{' '}
-                  <strong style={{ color: 'var(--foreground)' }}>
-                    Personal Credit dimension (20%)
-                  </strong>{' '}
-                  of your FundScore. Addressing the items above may improve this dimension over time,
-                  which could strengthen your overall readiness profile and lender signals.
+                  Personal credit is one of the key factors many lenders evaluate. Improving it
+                  strengthens your{' '}
+                  <strong style={{ color: 'var(--foreground)' }}>Character profile</strong>
+                  {' '}— the{' '}
+                  <strong style={{ color: 'var(--foreground)' }}>Personal Credit dimension (20%)</strong>
+                  {' '}of your FundScore — while lenders also review your repayment capacity,
+                  available capital, cash flow, and other business conditions.
                 </div>
                 <div style={{
                   padding: '10px 13px', borderRadius: '8px', marginBottom: '14px',

@@ -74,6 +74,10 @@ export interface UnifiedAnswers {
   bizCreditFile: 'paydex_80plus' | 'below_80' | 'building' | 'none' | '';
   inquiries30d: '0' | '1_2' | '3_4' | '5plus' | 'unknown' | '';
 
+  // Q_F_DSCR: Capacity — NOI and Debt Service
+  annualNOI?: 'under_25k' | '25k_75k' | '75k_200k' | '200k_500k' | 'over_500k' | '';
+  annualDebtService?: 'under_10k' | '10k_30k' | '30k_75k' | '75k_200k' | 'over_200k' | '';
+
   // Q_F12: Capital Request — how much + what for
   loanAmount: 'under_25k' | '25k_100k' | '100k_250k' | '250k_500k' | '500k_1m' | 'over_1m' | '';
   loanPurpose: 'working_capital' | 'equipment' | 'real_estate' | 'expansion' | 'payroll' | 'acquisition' | 'other' | '';
@@ -285,6 +289,8 @@ export function getDefaultAnswers(): UnifiedAnswers {
     noDerogItems: '', // FIXED: was false (boolean), now empty string (matching type)
     bizCreditFile: '',
     inquiries30d: '',
+    annualNOI: '',
+    annualDebtService: '',
     loanAmount: '',
     loanPurpose: '',
     isIneligibleBizType: false,
@@ -316,6 +322,22 @@ export const CC_SALES_MIDPOINTS: Record<string, number> = {
   '5k_15k':   10000,
   '15k_50k':  32500,
   over_50k:   75000,
+};
+
+export const NOI_MIDPOINTS: Record<string, number> = {
+  under_25k:    12500,
+  '25k_75k':    50000,
+  '75k_200k':  137500,
+  '200k_500k': 350000,
+  over_500k:   750000,
+};
+
+export const DEBT_SERVICE_MIDPOINTS: Record<string, number> = {
+  under_10k:    5000,
+  '10k_30k':   20000,
+  '30k_75k':   52500,
+  '75k_200k': 137500,
+  over_200k:  300000,
 };
 
 export const CREDIT_SCORE_MIDPOINTS: Record<string, number> = {

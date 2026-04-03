@@ -21,8 +21,8 @@ interface FoundationQuestionProps {
 export function FoundationQuestion({ step, data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions }: FoundationQuestionProps) {
   const questions = [
     QuestionF1, QuestionF2, QuestionF3, QuestionF4, QuestionF5,
-    QuestionF6, QuestionF7, QuestionF8, QuestionF9, QuestionF10,
-    QuestionF11_Capital, QuestionF12_Eligibility,
+    QuestionF6, QuestionF7, QuestionF8, QuestionF9, QuestionF_DSCR,
+    QuestionF10, QuestionF11_Capital, QuestionF12_Eligibility,
   ];
 
   const CurrentQuestion = questions[step];
@@ -1889,6 +1889,156 @@ function QuestionF9({ data, updateData, onNext, onBack, currentQuestionNumber, t
       </div>
 
       <NavigationButtons onNext={onNext} onBack={onBack} disabled={!data.personalIncome} step={8} />
+    </>
+  );
+}
+
+function QuestionF_DSCR({ data, updateData, onNext, onBack, currentQuestionNumber, totalQuestions, step }: any) {
+  const noiOptions = [
+    { value: 'under_25k',   label: 'Under $25K',      sub: 'Low operating profit margin' },
+    { value: '25k_75k',     label: '$25K – $75K',     sub: 'Early-stage profitable operations' },
+    { value: '75k_200k',    label: '$75K – $200K',    sub: 'Growing business, healthy margin' },
+    { value: '200k_500k',   label: '$200K – $500K',   sub: 'Established profitable operations' },
+    { value: 'over_500k',   label: 'Over $500K',      sub: 'High-revenue, efficient operations' },
+  ];
+
+  const debtOptions = [
+    { value: 'under_10k',  label: 'Under $10K',      sub: 'Minimal debt obligations' },
+    { value: '10k_30k',    label: '$10K – $30K',     sub: 'Light debt load' },
+    { value: '30k_75k',    label: '$30K – $75K',     sub: 'Moderate debt payments' },
+    { value: '75k_200k',   label: '$75K – $200K',    sub: 'Significant debt service' },
+    { value: 'over_200k',  label: 'Over $200K',      sub: 'Heavy debt obligations' },
+  ];
+
+  const isValid = data.annualNOI && data.annualDebtService;
+
+  return (
+    <>
+      <QuestionHeader
+        number={10}
+        title="What is your annual net operating income, and what are your total annual debt payments?"
+        why="DSCR — Debt Service Coverage Ratio — is the most critical factor in commercial loan underwriting. Lenders require DSCR ≥ 1.25x: your business must generate $1.25 for every $1.00 in debt payments. This single metric is the most common reason commercial applications are declined. NOI = revenue minus operating expenses (before loan payments)."
+        currentQuestionNumber={currentQuestionNumber}
+        totalQuestions={totalQuestions}
+      />
+
+      {/* Annual NOI */}
+      <div style={{ marginBottom: '28px' }}>
+        <label
+          style={{
+            display: 'block',
+            fontFamily: 'var(--font-body)',
+            fontSize: '11px',
+            fontWeight: 600,
+            color: 'var(--text-muted)',
+            marginBottom: '12px',
+            textTransform: 'uppercase' as const,
+            letterSpacing: '0.05em',
+          }}
+        >
+          Annual Net Operating Income (NOI)
+        </label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {noiOptions.map((opt) => (
+            <motion.button
+              key={opt.value}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => updateData({ annualNOI: opt.value as any })}
+              style={{
+                background: '#131510',
+                border: data.annualNOI === opt.value ? '2px solid #8ab820' : '1px solid #6b7258',
+                color: data.annualNOI === opt.value ? '#8ab820' : '#e4e8d8',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                fontFamily: 'var(--font-body)',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                textAlign: 'left' as const,
+                width: '100%',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+              onMouseEnter={(e: any) => {
+                if (data.annualNOI !== opt.value) {
+                  e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
+                }
+              }}
+              onMouseLeave={(e: any) => {
+                if (data.annualNOI !== opt.value) {
+                  e.currentTarget.style.borderColor = '#6b7258';
+                }
+              }}
+            >
+              <span>{opt.label}</span>
+              <span style={{ fontSize: '11px', opacity: 0.7, fontWeight: 400 }}>{opt.sub}</span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+
+      {/* Annual Debt Service */}
+      <div style={{ marginBottom: '8px' }}>
+        <label
+          style={{
+            display: 'block',
+            fontFamily: 'var(--font-body)',
+            fontSize: '11px',
+            fontWeight: 600,
+            color: 'var(--text-muted)',
+            marginBottom: '12px',
+            textTransform: 'uppercase' as const,
+            letterSpacing: '0.05em',
+          }}
+        >
+          Total Annual Debt Service (all loan payments — principal + interest)
+        </label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {debtOptions.map((opt) => (
+            <motion.button
+              key={opt.value}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => updateData({ annualDebtService: opt.value as any })}
+              style={{
+                background: '#131510',
+                border: data.annualDebtService === opt.value ? '2px solid #8ab820' : '1px solid #6b7258',
+                color: data.annualDebtService === opt.value ? '#8ab820' : '#e4e8d8',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                fontFamily: 'var(--font-body)',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                textAlign: 'left' as const,
+                width: '100%',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+              onMouseEnter={(e: any) => {
+                if (data.annualDebtService !== opt.value) {
+                  e.currentTarget.style.borderColor = 'rgba(138, 184, 32, 0.6)';
+                }
+              }}
+              onMouseLeave={(e: any) => {
+                if (data.annualDebtService !== opt.value) {
+                  e.currentTarget.style.borderColor = '#6b7258';
+                }
+              }}
+            >
+              <span>{opt.label}</span>
+              <span style={{ fontSize: '11px', opacity: 0.7, fontWeight: 400 }}>{opt.sub}</span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+
+      <NavigationButtons onNext={onNext} onBack={onBack} disabled={!isValid} step={step} />
     </>
   );
 }
