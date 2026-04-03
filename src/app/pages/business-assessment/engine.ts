@@ -191,8 +191,8 @@ export function computeScore(data: UnifiedAnswers): ScoreResult {
 
   // ── S1: BUSINESS AGE (calculated from start date) ───────────────────────────
   const now = new Date();
-  const startYear = data.startDate.year || now.getFullYear();
-  const startMonth = data.startDate.month || now.getMonth() + 1;
+  const startYear = data.startDate?.year || now.getFullYear();
+  const startMonth = data.startDate?.month || now.getMonth() + 1;
   const ageMonths = (now.getFullYear() - startYear) * 12 + (now.getMonth() + 1 - startMonth);
 
   if (ageMonths >= 60) buckets.S.push(1.0);  // 5+ years
@@ -461,8 +461,8 @@ function calculateBankableScore(data: UnifiedAnswers): number {
 
   // Business age (0-20 points)
   const now = new Date();
-  const startYear = data.startDate.year || now.getFullYear();
-  const startMonth = data.startDate.month || now.getMonth() + 1;
+  const startYear = data.startDate?.year || now.getFullYear();
+  const startMonth = data.startDate?.month || now.getMonth() + 1;
   const ageMonths = (now.getFullYear() - startYear) * 12 + (now.getMonth() + 1 - startMonth);
   
   let agePoints = 0;
@@ -706,7 +706,7 @@ export function computeExtendedResults(data: UnifiedAnswers): ExtendedResultsOut
     'over_250k': 'Over $250K',
   };
 
-  const timeInBusiness = calculateTimeInBusiness(data.startDate.year, data.startDate.month);
+  const timeInBusiness = calculateTimeInBusiness(data.startDate?.year, data.startDate?.month);
 
   // Map inquiries (approximate)
   const inquiryMap: Record<string, { mo3: number; mo6: number; mo12: number }> = {
