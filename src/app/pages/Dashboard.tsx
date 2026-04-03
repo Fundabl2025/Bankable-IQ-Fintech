@@ -1540,7 +1540,7 @@ export function Dashboard() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
 
             {/* ROW 1: CAPITAL POTENTIAL + PRIORITY ACTION — Command band */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 380px) 1fr', gap: '24px', marginBottom: '36px', alignItems: 'stretch' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 460px) 1fr', gap: '24px', marginBottom: '36px', alignItems: 'stretch' }}>
               <ReadinessSnapshotCard
                 fundScore={fundScore}
                 bankableScore={bankableScore}
