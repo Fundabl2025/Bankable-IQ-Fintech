@@ -30,6 +30,7 @@ import {
   Brain,
   Compass,
   User,
+  CreditCard,
 } from 'lucide-react';
 import { getPreQualifiedPrograms } from '../utils/fundingEligibility';
 import { computeScore } from '../pages/business-assessment/engine';
@@ -40,6 +41,7 @@ const PRIMARY_NAV = [
   { path: '/business-assessment', label: 'Business Success Scan', icon: ClipboardCheck, isAssessment: true },
   { path: '/app/dashboard',       label: 'Dashboard',             icon: LayoutDashboard },
   { path: '/app/status-reports',  label: 'Status Reports',        icon: BarChart2 },
+  { path: '/app/credit-path',     label: 'CreditPath',            icon: CreditCard },
   { path: '/app/access-funding',  label: 'Access Funding',        icon: DollarSign, showFunding: true },
   { path: '/app/my-progress',     label: 'My Progress',           icon: TrendingUp },
   { path: '/app/ai-coach',        label: 'FORGE™ AI Coach',       icon: Brain, isCoach: true },

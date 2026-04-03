@@ -56,6 +56,7 @@ const DenialDiagnosis = lazy(() => import('./pages/DenialDiagnosis'));
 const CapitalGlossary = lazy(() => import('./pages/CapitalGlossary').then(m => ({ default: m.CapitalGlossary })));
 const MyProgress = lazy(() => import('./pages/MyProgress').then(m => ({ default: m.MyProgress })));
 const GettingStarted = lazy(() => import('./pages/GettingStarted').then(m => ({ default: m.GettingStarted })));
+const CreditPath = lazy(() => import('./pages/CreditPath').then(m => ({ default: m.CreditPath })));
 const Finances = lazy(() => import('./pages/Finances').then(m => ({ default: m.Finances })));
 const LenderPortal = lazy(() => import('./pages/admin/LenderPortal').then(m => ({ default: m.LenderPortal })));
 const EntityFilings = lazy(() => import('./pages/LenderCompliance/EntityFilings').then(m => ({ default: m.EntityFilings })));
@@ -283,6 +284,10 @@ export const router = createBrowserRouter([
       {
         path: 'help-desk',
         element: <Navigate to="/app/getting-started" replace />,
+      },
+      {
+        path: 'credit-path',
+        element: <LazyComponent Component={CreditPath} />,
       },
       {
         path: 'my-progress',

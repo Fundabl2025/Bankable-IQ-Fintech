@@ -148,6 +148,41 @@ type MyProgressClickedEvent = {
   };
 };
 
+// ── CreditPath events (added Phase 2) ─────────────────────────────────────────
+
+/** CreditPath page mounted with assessment data (fires once per visit, ref-guarded). */
+type CreditPathViewedEvent = {
+  event_name: 'creditpath_viewed';
+  payload: {
+    has_assessment: boolean;    // false if no assessment in localStorage
+    composite_score: number;    // 0 if unknown/not provided
+    blocker_count: number;      // total blockers extracted from assessment
+    top_blocker_severity: string; // 'critical' | 'high' | 'medium' | 'low' | 'none'
+    confidence_tier: 1;         // Phase 2 is always Tier 1 (self-reported)
+  };
+};
+
+/** User interacted with an action card (mark-done click). */
+type CreditPathActionClickedEvent = {
+  event_name: 'creditpath_action_clicked';
+  payload: {
+    action_id: string;          // stable blocker ID e.g. 'utilization_high'
+    action_category: string;    // blocker category e.g. 'utilization'
+    action_severity: string;    // 'critical' | 'high' | 'medium' | 'low'
+    position: number;           // 1 | 2 | 3 — position in top-3 list
+  };
+};
+
+/** User toggled an action to the completed state (not fired on un-complete). */
+type CreditPathActionCompletedEvent = {
+  event_name: 'creditpath_action_completed';
+  payload: {
+    action_id: string;
+    action_category: string;
+    total_completed: number;    // running total of completed actions
+  };
+};
+
 // ── Discriminated union ───────────────────────────────────────────────────────
 // Each member has a unique event_name literal — TypeScript will narrow payload
 // to the correct shape based on the event_name at each call site.
@@ -173,6 +208,9 @@ export type ProductEvent = (
   | TrajectoryAccordionOpenedEvent
   | FullReportClickedEvent
   | MyProgressClickedEvent
+  | CreditPathViewedEvent
+  | CreditPathActionClickedEvent
+  | CreditPathActionCompletedEvent
 ) & {
   // Optional identifiers for future cross-table join queries
   business_id?: string;
