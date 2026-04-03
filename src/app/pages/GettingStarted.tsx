@@ -17,12 +17,13 @@ import { getComplianceProgress, complianceModules } from '../utils/lenderComplia
 import { getPipelineCounts } from '../lib/funding-service';
 
 // ── Onboarding milestone checklist ──────────────────────────────────────────
+// Steps are sequential. Complete them in order — each one unlocks the next.
 const MILESTONES = [
-  { id: 'scan', label: 'Complete the Business Success Scan', desc: '33 questions · 8 minutes', path: '/business-assessment', check: () => !!localStorage.getItem('unified_assessment') },
-  { id: 'results', label: 'Review your full FundScore report', desc: 'Understand all 6 capital dimensions', path: '/business-assessment/results', check: () => localStorage.getItem('fundready_results_viewed') === '1' },
-  { id: 'compliance', label: 'Complete at least 1 compliance module', desc: 'Start building your lender file', path: '/app/lender-compliance', check: () => complianceModules.some(m => getComplianceProgress()[m.id]?.completed) },
-  { id: 'docs', label: 'Upload your first document', desc: 'Business bank statement or tax return', path: '/app/document-collection', check: () => !!localStorage.getItem('fundready_documents') },
-  { id: 'funding', label: 'Browse your pre-qualified funding products', desc: 'See what capital you can access today', path: '/app/access-funding', check: () => !!localStorage.getItem('preQualifiedPrograms') },
+  { id: 'scan',       step: 1, label: 'Take the Business Success Scan',       desc: '33 questions · 8 minutes · generates your full FundScore',              path: '/business-assessment',         check: () => !!localStorage.getItem('unified_assessment') },
+  { id: 'results',    step: 2, label: 'Review your FundScore report',          desc: 'Understand your 6 capital dimensions and every active blocker',          path: '/business-assessment/results', check: () => localStorage.getItem('fundready_results_viewed') === '1' },
+  { id: 'forge',      step: 3, label: 'Get your FORGE™ action plan',           desc: 'AI roadmap — your exact path from current stage to bank capital',        path: '/app/ai-coach',                check: () => localStorage.getItem('aiCoachOpened') === '1' },
+  { id: 'compliance', step: 4, label: 'Complete at least 1 compliance module', desc: 'Start building your lender file — required for Stage 2+ products',       path: '/app/lender-compliance',       check: () => complianceModules.some(m => getComplianceProgress()[m.id]?.completed) },
+  { id: 'funding',    step: 5, label: 'Apply to a pre-qualified product',      desc: 'See which capital products you qualify for based on your current score', path: '/app/access-funding',          check: () => !!localStorage.getItem('preQualifiedPrograms') },
 ];
 
 // ── Sections ─────────────────────────────────────────────────────────────────
@@ -132,10 +133,10 @@ export function GettingStarted() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
             <div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px', color: 'var(--foreground)' }}>
-                Your Onboarding Checklist
+                Start Here: Your Setup Sequence
               </div>
               <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '2px' }}>
-                {completedCount} of {MILESTONES.length} complete · {completionPct}% done
+                Complete these steps in order · {completedCount} of {MILESTONES.length} done
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -156,6 +157,15 @@ export function GettingStarted() {
           <div style={{ height: '6px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden', marginBottom: '16px' }}>
             <div style={{ height: '100%', width: `${completionPct}%`, background: 'linear-gradient(90deg, #10b981, #3b82f6)', borderRadius: '99px', transition: 'width 0.8s ease' }} />
           </div>
+          {/* New-user callout */}
+          {!hasAssessment && (
+            <div style={{ marginBottom: '12px', padding: '10px 14px', background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '16px' }}>👋</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--foreground)', lineHeight: 1.5 }}>
+                <strong>New here?</strong> Start with Step 1 — the scan takes 8 minutes and instantly shows every blocker between you and funded.
+              </span>
+            </div>
+          )}
           {/* Milestone list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {MILESTONES.map(m => (
@@ -170,8 +180,13 @@ export function GettingStarted() {
                   ? <CheckCircle2 size={18} style={{ color: '#10b981', flexShrink: 0 }} />
                   : <Circle size={18} style={{ color: 'var(--border)', flexShrink: 0 }} />}
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: milestones[m.id] ? '#10b981' : 'var(--foreground)' }}>{m.label}</div>
-                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>{m.desc}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: milestones[m.id] ? '#10b981' : 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>
+                      Step {m.step}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: milestones[m.id] ? '#10b981' : 'var(--foreground)' }}>{m.label}</span>
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '1px' }}>{m.desc}</div>
                 </div>
                 {!milestones[m.id] && <ChevronRight size={14} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />}
               </div>

@@ -457,6 +457,7 @@ export function AICoach() {
   }, []);
 
   useEffect(() => {
+    localStorage.setItem('aiCoachOpened', '1');
     load();
     window.addEventListener('fundscoreUpdated', load);
     const onStorage = (e: StorageEvent) => {
