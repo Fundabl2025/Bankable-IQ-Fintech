@@ -135,7 +135,7 @@ export function StatusReports() {
             },
             {
               label: 'Estimated Funding',
-              sub: 'Capital ceiling',
+              sub: 'Potential max — business only',
               value: extended.fundingRange.businessOnlyMax >= 1000000 ? '$' + (extended.fundingRange.businessOnlyMax / 1000000).toFixed(1) + 'M' : '$' + Math.round(extended.fundingRange.businessOnlyMax / 1000) + 'K',
               valueColor: '#3b82f6',
               accent: 'rgba(59,130,246,0.06)',
@@ -181,6 +181,35 @@ export function StatusReports() {
             </Link>
           ))}
         </motion.div>
+
+        {/* ── START HERE — contextual priority card ── */}
+        {(() => {
+          const startHere = sbss >= 160
+            ? { color: '#10b981', bg: 'rgba(16,185,129,0.06)', border: 'rgba(16,185,129,0.2)', icon: '✓', headline: 'You\'re bankable — apply for SBA or bank products now', sub: 'SBSS 160+ threshold reached. Start with an SBA 7(a) or bank term loan. Each application builds your repayment history.', path: '/app/access-funding' }
+            : sbss >= 120
+            ? { color: '#f59e0b', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.2)', icon: '→', headline: 'Apply for alternative capital to build your track record', sub: `SBSS ${sbss}/300 — ${160 - sbss} points from the bankability threshold. A first draw creates a live credit event that moves you toward 160.`, path: '/app/access-funding' }
+            : { color: '#3b82f6', bg: 'rgba(59,130,246,0.06)', border: 'rgba(59,130,246,0.2)', icon: '→', headline: 'Complete compliance modules to unlock your first funding', sub: `SBSS ${sbss}/300 — complete 10 of 13 compliance modules to reach Goal 02 and qualify for your first products.`, path: '/app/lender-compliance' };
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.045 }}
+              style={{ background: startHere.bg, border: '1px solid ' + startHere.border, borderRadius: '14px', padding: '16px 20px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1 }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px', color: startHere.color, lineHeight: 1, paddingTop: '2px' }}>{startHere.icon}</span>
+                <div>
+                  <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--foreground)', margin: '0 0 4px', lineHeight: 1.3 }}>{startHere.headline}</p>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: 0, lineHeight: 1.5 }}>{startHere.sub}</p>
+                </div>
+              </div>
+              <Link to={startHere.path} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: startHere.color, textDecoration: 'none', whiteSpace: 'nowrap', padding: '8px 16px', background: startHere.bg, border: '1px solid ' + startHere.border, borderRadius: '8px' }}>
+                Start here →
+              </Link>
+            </motion.div>
+          );
+        })()}
+
         {/* ── SCORE HERO ── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
