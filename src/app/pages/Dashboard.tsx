@@ -371,6 +371,905 @@ function getLockedCapital(score: number) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
+// DASHBOARD SUB-COMPONENTS
+// These receive props from the Dashboard parent — no internal state except where
+// noted (tooltip). All computation stays in the parent.
+// ════════════════════════════════════════════════════════════════════════════════
+
+// ── DashboardHeader ───────────────────────────────────────────────────────────
+
+interface DashboardHeaderProps {
+  timeOfDay: string;
+  firstName: string;
+  hasAssessment: boolean;
+  criticalBlockersCount: number;
+  capitalDisplay: number;
+  navigate: (path: string) => void;
+}
+
+function DashboardHeader({ timeOfDay, firstName, hasAssessment, criticalBlockersCount, capitalDisplay, navigate }: DashboardHeaderProps) {
+  const subtitle = !hasAssessment
+    ? 'Take the Business Success Scan to see your capital ceiling'
+    : criticalBlockersCount > 0
+    ? `${criticalBlockersCount} blocker${criticalBlockersCount !== 1 ? 's' : ''} limiting your capital access — fix to unlock more`
+    : capitalDisplay > 0
+    ? `No blockers — you're positioned for ${formatMoney(capitalDisplay)}`
+    : 'Complete your assessment to see your full capital potential';
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
+      <div>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
+          Good {timeOfDay}, {firstName}
+        </p>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(24px, 3.5vw, 34px)', color: 'var(--foreground)', lineHeight: 1.1, letterSpacing: '-0.02em', margin: 0 }}>
+          Mission Control
+        </h1>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', margin: '5px 0 0', lineHeight: 1.4 }}>
+          {subtitle}
+        </p>
+      </div>
+      <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+        <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer' }}>
+          My Progress
+        </button>
+        {hasAssessment && (
+          <button onClick={() => navigate('/business-assessment/results')} style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: 'var(--primary)', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer' }}>
+            Full Report →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── ReadinessSnapshotCard ─────────────────────────────────────────────────────
+
+interface ReadinessSnapshotCardProps {
+  fundScore: number;
+  bankableScore: number;
+  bankablePassPct: number;
+  bankablePassCount: number;
+  capitalDisplay: number;
+  realCapital: ReturnType<typeof computeRealCapital>;
+  criticalBlockers: any[];
+  statusInfo: ReturnType<typeof getStatusInfo>;
+  nextMilestone: ReturnType<typeof getNextMilestone>;
+  gaugeColor: string;
+  topBlocker: any;
+  navigate: (path: string) => void;
+}
+
+function ReadinessSnapshotCard({
+  fundScore, bankableScore, bankablePassPct, bankablePassCount,
+  capitalDisplay, realCapital, criticalBlockers, statusInfo,
+  nextMilestone, gaugeColor, topBlocker, navigate,
+}: ReadinessSnapshotCardProps) {
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+
+  // Closest Unlock — only show if delta is positive and non-trivial
+  const closestUnlock = (() => {
+    if (!topBlocker || !topBlocker.ficoImpact || topBlocker.ficoImpact <= 0) return null;
+    const currentTier = scoreToAmount(fundScore);
+    const unlockedTier = scoreToAmount(fundScore + topBlocker.ficoImpact);
+    const delta = unlockedTier - currentTier;
+    if (delta <= 0) return null;
+    return { delta, label: topBlocker.title };
+  })();
+
+  // SBSS block internals (same logic as before, moved from IIFE)
+  const scoreTier = bankableScore >= 210 ? { label: 'Excellent', color: '#10b981' }
+    : bankableScore >= 190 ? { label: 'Good', color: '#22c55e' }
+    : bankableScore >= 160 ? { label: 'Fair', color: '#f59e0b' }
+    :                        { label: 'Poor', color: '#ef4444' };
+  const isCompliant   = bankablePassPct >= 85;
+  const isApproaching = bankablePassPct >= 60;
+  const approxFail    = Math.max(1, Math.round(((100 - bankablePassPct) / 100) * 20));
+  const sbssMsg = bankableScore < 160
+    ? `${160 - bankableScore} points from bank approval threshold`
+    : isCompliant && bankableScore >= 210
+    ? 'Score and compliance clear — bank & SBA products accessible'
+    : isCompliant
+    ? 'Score qualifies — verify compliance items to apply'
+    : isApproaching
+    ? `Score clears threshold · ${approxFail} compliance item${approxFail !== 1 ? 's' : ''} still needed`
+    : `Score clears threshold · Significant compliance work needed before applying`;
+  const sbssTier = { ...scoreTier, msg: sbssMsg };
+  const sbssPct = Math.min((bankableScore / 300) * 100, 100);
+  const thresholdPct = (160 / 300) * 100;
+
+  return (
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+      {/* Hero dollar */}
+      <div>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          {capitalDisplay > 0 ? (
+            <div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(32px, 5vw, 44px)', color: gaugeColor, lineHeight: 1, letterSpacing: '-0.02em' }}>
+                {formatMoney(capitalDisplay)}
+              </div>
+              {realCapital.count > 0 && (
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', marginTop: '2px' }}>
+                  <span style={{ fontWeight: 700, color: realCapital.isHighConfidence ? gaugeColor : '#f59e0b' }}>
+                    {realCapital.confidenceLabel}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '38px', color: '#ef4444', lineHeight: 1 }}>$0</div>
+          )}
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '4px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+            <span>
+              {realCapital.count > 0
+                ? `Estimated capital ceiling · ${realCapital.productLabel}`
+                : 'Estimated Capital Potential'}
+            </span>
+            <button
+              onMouseEnter={() => setTooltipVisible(true)}
+              onMouseLeave={() => setTooltipVisible(false)}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', color: 'var(--muted-foreground)', opacity: 0.55, flexShrink: 0 }}
+              aria-label="How this estimate is calculated"
+            >
+              <Info style={{ width: '11px', height: '11px' }} />
+            </button>
+            {tooltipVisible && (
+              <div style={{ position: 'absolute', bottom: '20px', left: 0, zIndex: 50, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 12px', width: '240px', fontSize: '11px', lineHeight: 1.6, color: 'var(--muted-foreground)', boxShadow: '0 4px 20px rgba(0,0,0,0.25)', fontWeight: 400 }}>
+                Revenue-capped ceiling based on your highest qualifying product. Actual loan offers depend on lender underwriting, documentation, and full credit review.
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* FundScore bar */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', fontWeight: 600 }}>FundScore</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px', color: gaugeColor }}>{fundScore}</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>/ 1,000</span>
+          </div>
+        </div>
+        <div style={{ height: '6px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: Math.min((fundScore / 1000) * 100, 100) + '%' }}
+            transition={{ duration: 1.2, ease: 'easeOut', delay: 0.2 }}
+            style={{ height: '100%', background: `linear-gradient(90deg, ${gaugeColor}99, ${gaugeColor})`, borderRadius: '99px' }}
+          />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+          {[{ v: 300, l: 'Alt Cap' }, { v: 500, l: 'Working Capital' }, { v: 700, l: 'Term Loans' }, { v: 900, l: 'SBA/Bank' }].map(m => (
+            <div key={m.v} style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: fundScore >= m.v ? gaugeColor : 'var(--muted-foreground)', fontWeight: fundScore >= m.v ? 700 : 400, opacity: fundScore >= m.v ? 1 : 0.5 }}>{m.l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bank Readiness Score (SBSS) */}
+      <div style={{ padding: '12px', borderRadius: '10px', background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Target size={11} style={{ color: '#3b82f6' }} />
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Bank Readiness Score</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px', color: sbssTier.color }}>{bankableScore}</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>/300</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: 'white', background: sbssTier.color, borderRadius: '4px', padding: '1px 6px', marginLeft: '2px' }}>{sbssTier.label}</span>
+          </div>
+        </div>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: sbssTier.color, fontWeight: 600, marginBottom: '8px' }}>{sbssTier.msg}</div>
+        <div style={{ position: 'relative', height: '7px', background: 'var(--border)', borderRadius: '99px', overflow: 'visible' }}>
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: sbssPct + '%' }}
+            transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 }}
+            style={{ height: '100%', background: `linear-gradient(90deg, ${sbssTier.color}99, ${sbssTier.color})`, borderRadius: '99px', position: 'absolute', top: 0, left: 0 }}
+          />
+          <div style={{ position: 'absolute', top: '-3px', left: `${thresholdPct}%`, width: '2px', height: '13px', background: '#3b82f6', borderRadius: '2px', transform: 'translateX(-50%)' }} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '5px' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'var(--muted-foreground)' }}>Poor (0–159)</span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: '#3b82f6', fontWeight: 700 }}>↑ 160 = Bank Approval</span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'var(--muted-foreground)' }}>Excellent (300)</span>
+        </div>
+        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(59,130,246,0.15)', fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+          Banks use this 0–300 scale to approve business loans. Scores below 160 are typically declined by banks and the SBA.
+        </div>
+      </div>
+
+      {/* Status tier + next milestone */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '8px', background: gaugeColor + '15', border: '1px solid ' + gaugeColor + '40' }}>
+          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: gaugeColor }} />
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '11px', color: gaugeColor }}>{statusInfo.tier}</span>
+        </div>
+        {nextMilestone && (
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
+            <span style={{ fontWeight: 700, color: gaugeColor }}>+{nextMilestone.pts} pts</span> → {nextMilestone.label}
+          </span>
+        )}
+      </div>
+
+      {/* Closest Unlock — gated: only show when delta is real and positive */}
+      {closestUnlock ? (
+        <div style={{ padding: '8px 12px', borderRadius: '8px', background: gaugeColor + '08', border: '1px solid ' + gaugeColor + '25' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: gaugeColor, fontWeight: 700 }}>
+            Fix 1 item → unlock {formatMoney(closestUnlock.delta)} more
+          </span>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
+            {' '}via {closestUnlock.label}
+          </span>
+        </div>
+      ) : topBlocker ? (
+        <div style={{ padding: '8px 12px', borderRadius: '8px', background: 'var(--background)', border: '1px solid var(--border)' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
+            Fix your top blocker to strengthen access to more advanced products
+          </span>
+        </div>
+      ) : null}
+
+      {/* Blocker count */}
+      <div style={{ paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+        {criticalBlockers.length > 0 ? (
+          <>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
+              <span style={{ fontWeight: 700, color: '#f59e0b' }}>{criticalBlockers.length} blocker{criticalBlockers.length !== 1 ? 's' : ''}</span> limiting your potential
+            </span>
+            <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', whiteSpace: 'nowrap' }}>
+              See all →
+            </button>
+          </>
+        ) : (
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: '#10b981', fontWeight: 700 }}>
+            No blockers · Full potential unlocked
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── FollowOnBlockersCard ─────────────────────────────────────────────────────
+
+interface FollowOnBlockersCardProps {
+  hardBlockers: any[];
+  suppressors: any[];
+  incompleteItems: any[];
+  dimAvg: Record<string, number>;
+  preQualPrograms: ReturnType<typeof getPreQualifiedPrograms>;
+  pipelineCounts: PipelineCounts;
+  fundScore: number;
+  realCapital: ReturnType<typeof computeRealCapital>;
+  capitalPath: CapitalMilestone[];
+  navigate: (path: string) => void;
+}
+
+function FollowOnBlockersCard({
+  hardBlockers, suppressors, incompleteItems, dimAvg,
+  preQualPrograms, pipelineCounts, fundScore, realCapital, capitalPath, navigate,
+}: FollowOnBlockersCardProps) {
+  const [trajectoryOpen, setTrajectoryOpen] = useState(false);
+
+  // Now / Next / Later grouping
+  const nowBlockers = hardBlockers.slice(0, 3);         // hard blockers = act immediately
+  const nextBlockers = suppressors.slice(0, 2);          // top 2 suppressors = act soon
+  const laterBlockers = suppressors.slice(2);             // the rest
+
+  // Capital Access
+  const FEATURED_PROGRAMS = [
+    { path: '/app/access-funding/business-credit-line', label: 'Business Credit Line', range: '$10K–$250K', icon: '💳' },
+    { path: '/app/access-funding/revenue-based-loan', label: 'Revenue-Based Loan', range: '$5K–$500K', icon: '📈' },
+    { path: '/app/access-funding/sba-business-loan', label: 'SBA Loans 7a & 504', range: '$50K–$5M', icon: '🏛️' },
+  ];
+
+  const gaugeColor = getGaugeColor(fundScore);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+      {/* ── CAPITAL ACCESS — opportunity-first, visually hopeful ── */}
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: pipelineCounts.total > 0 ? '14px' : '0' }}>
+            <div>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--foreground)', margin: 0 }}>
+                {preQualPrograms.length > 0 ? '💰 Funding Pipeline' : '🔑 Capital Products'}
+              </h3>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: '3px 0 0' }}>
+                {preQualPrograms.length > 0
+                  ? `${preQualPrograms.length} pre-qualified · up to ${formatMoney(scoreToAmount(fundScore))} accessible today`
+                  : 'Improve your score to unlock funding products'}
+              </p>
+            </div>
+            <button onClick={() => navigate('/app/access-funding')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: 'var(--primary)', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '7px 14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              {pipelineCounts.total > 0 ? 'View Pipeline →' : `View All ${preQualPrograms.length > 0 ? preQualPrograms.length : ''} →`}
+            </button>
+          </div>
+
+          {pipelineCounts.total > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+              {[
+                { label: 'Applied', count: pipelineCounts.applied, color: '#3b82f6' },
+                { label: 'Reviewing', count: pipelineCounts.under_review, color: '#f59e0b' },
+                { label: 'Offers', count: pipelineCounts.offer_received, color: '#10b981', highlight: pipelineCounts.offer_received > 0 },
+                { label: 'Accepted', count: pipelineCounts.accepted, color: '#10b981' },
+                { label: 'Funded', count: pipelineCounts.funded, color: '#10b981' },
+              ].map((stage, i) => (
+                <div key={stage.label} onClick={() => navigate('/app/access-funding')} style={{ padding: '8px 10px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer', background: (stage as any).highlight ? `${stage.color}15` : 'var(--background)', border: `1px solid ${stage.count > 0 ? stage.color + '30' : 'var(--border)'}`, position: 'relative' }}>
+                  {(stage as any).highlight && stage.count > 0 && (
+                    <div style={{ position: 'absolute', top: '-4px', right: '-4px', width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', border: '2px solid var(--card)' }} />
+                  )}
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '18px', color: stage.count > 0 ? stage.color : 'var(--muted-foreground)' }}>{stage.count}</div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', fontWeight: 600 }}>{stage.label}</div>
+                  {i < 4 && <div style={{ position: 'absolute', right: '-5px', top: '50%', transform: 'translateY(-50%)', fontSize: '8px', color: 'var(--muted-foreground)', zIndex: 1 }}>▶</div>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {pipelineCounts.offer_received > 0 && (
+            <div onClick={() => navigate('/app/access-funding')} style={{ marginTop: '10px', padding: '10px 14px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '14px' }}>💰</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: '#10b981' }}>
+                {pipelineCounts.offer_received} funding offer{pipelineCounts.offer_received !== 1 ? 's' : ''} waiting — tap to review
+              </span>
+              <ArrowRight size={13} style={{ color: '#10b981', marginLeft: 'auto' }} />
+            </div>
+          )}
+        </div>
+
+        {/* Featured programs grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+          {FEATURED_PROGRAMS.map((prog, i) => {
+            const isPreQual = preQualPrograms.some((p: { path: string }) => p.path === prog.path);
+            const thresholds: Record<string, number> = {
+              '/app/access-funding/business-credit-line': 450,
+              '/app/access-funding/revenue-based-loan': 400,
+              '/app/access-funding/sba-business-loan': 750,
+            };
+            const threshold = thresholds[prog.path] || 500;
+            const ptsNeeded = Math.max(0, threshold - fundScore);
+            return (
+              <div key={prog.path} onClick={() => navigate(prog.path)} style={{ padding: '16px 20px', borderRight: i < 2 ? '1px solid var(--border)' : 'none', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--background)')} onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <span style={{ fontSize: '20px', flexShrink: 0 }}>{prog.icon}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)' }}>{prog.label}</span>
+                      {isPreQual && <CheckCircle2 size={13} style={{ color: '#10b981', flexShrink: 0 }} />}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>{prog.range}</div>
+                    <div style={{ marginTop: '6px', display: 'inline-block', padding: '2px 8px', borderRadius: '4px', background: isPreQual ? 'rgba(16,185,129,0.1)' : 'rgba(100,116,139,0.1)', border: '1px solid ' + (isPreQual ? 'rgba(16,185,129,0.25)' : 'var(--border)') }}>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: isPreQual ? '#10b981' : 'var(--muted-foreground)' }}>
+                        {isPreQual ? 'Pre-Qualified ✓' : ptsNeeded === 0 ? 'Almost there' : `+${ptsNeeded} pts needed`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── NOW / NEXT / LATER BLOCKERS — subordinated under opportunity ── */}
+      {(nowBlockers.length > 0 || nextBlockers.length > 0) && (
+        <div style={{ padding: '4px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Active Blockers</span>
+            <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>Full detail →</button>
+          </div>
+
+          {/* NOW */}
+          {nowBlockers.length > 0 && (
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#ef4444', marginBottom: '8px' }}>
+                Now — fix first
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {nowBlockers.map((blocker, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => navigate(getBlockerRoute(blocker.category))}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '9px', background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.18)', cursor: 'pointer', gap: '10px' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{blocker.title}</span>
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#ef4444', flexShrink: 0 }}>Fix →</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* NEXT */}
+          {nextBlockers.length > 0 && (
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#f59e0b', marginBottom: '8px' }}>
+                Next — after the above
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {nextBlockers.map((blocker, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => navigate(getBlockerRoute(blocker.category))}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '9px', background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.18)', cursor: 'pointer', gap: '10px' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{blocker.title}</span>
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#10b981', flexShrink: 0 }}>
+                      {blocker.ficoImpact ? `+${blocker.ficoImpact} pts` : 'Fix →'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* LATER */}
+          {laterBlockers.length > 0 && (
+            <div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted-foreground)', marginBottom: '6px' }}>
+                Later — {laterBlockers.length} more blocker{laterBlockers.length !== 1 ? 's' : ''}
+              </div>
+              <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                View all blockers →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── READINESS BREAKDOWN ── */}
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--foreground)', margin: 0 }}>Readiness Breakdown</h3>
+          <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>Full detail →</button>
+        </div>
+        <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {DIM_ORDER.map((key, idx) => {
+            const val = dimAvg[key] ?? 0;
+            const st = getDimStatus(val);
+            const dim = DIM_CONFIG.find(d => d.key === key);
+            const Icon = dim ? dim.Icon : Zap;
+            return (
+              <div key={key}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <Icon size={13} style={{ color: st.color, flexShrink: 0 }} />
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--foreground)', flex: 1 }}>{DIM_LABELS[key]}</span>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: st.color }}>{st.label}</span>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', minWidth: '32px', textAlign: 'right' }}>{Math.round(val * 100)}%</span>
+                </div>
+                <div style={{ height: '5px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
+                  <motion.div initial={{ width: 0 }} animate={{ width: (val * 100) + '%' }} transition={{ duration: 0.8, ease: 'easeOut', delay: idx * 0.08 }} style={{ height: '100%', background: st.color, borderRadius: '99px' }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── CAPITAL TRAJECTORY (moved lower — context, not above fold) ── */}
+      {capitalPath.some(m => m.amount > capitalPath[0].amount) && (
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
+          <button
+            onClick={() => setTrajectoryOpen(v => !v)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '14px' }}>📈</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)' }}>Your Projected Capital Path</span>
+            </div>
+            <ChevronRight size={14} style={{ color: 'var(--muted-foreground)', transform: trajectoryOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
+          </button>
+          {trajectoryOpen && (
+            <div style={{ padding: '0 20px 16px' }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', margin: '0 0 12px' }}>
+                Projected if you fix your top blockers
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                {capitalPath.map((milestone, i) => {
+                  const isGrowth = milestone.amount > capitalPath[0].amount;
+                  const isToday = i === 0;
+                  return (
+                    <div key={milestone.label} style={{ textAlign: 'center', padding: '10px 6px', borderRadius: '10px', background: isToday ? 'var(--background)' : isGrowth ? milestone.color + '10' : 'var(--background)', border: '1px solid ' + (isToday ? 'var(--border)' : isGrowth ? milestone.color + '40' : 'var(--border)') }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: isToday ? 'var(--foreground)' : isGrowth ? milestone.color : 'var(--muted-foreground)', marginBottom: '3px' }}>
+                        {milestone.amount > 0 ? formatMoney(milestone.amount) : '$0'}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', fontWeight: isToday ? 700 : 400 }}>{milestone.label}</div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: milestone.color, marginTop: '2px', fontWeight: 600 }}>{Math.round(milestone.score)} pts</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── ProgressMarkerCard ───────────────────────────────────────────────────────
+
+interface ProgressMarkerCardProps {
+  bankableScore: number;
+  bankablePassCount: number;
+  pipelineCounts: PipelineCounts;
+  membershipTier: MembershipTier;
+  napScore: number;
+  capitalDisplay: number;
+  realCapital: ReturnType<typeof computeRealCapital>;
+  preQualPrograms: ReturnType<typeof getPreQualifiedPrograms>;
+  fundScore: number;
+  navigate: (path: string) => void;
+}
+
+function ProgressMarkerCard({
+  bankableScore, bankablePassCount, pipelineCounts, membershipTier,
+  napScore, capitalDisplay, realCapital, preQualPrograms, fundScore, navigate,
+}: ProgressMarkerCardProps) {
+  const hasPaidMembership = canAccessGoal2(membershipTier);
+  const complianceProgress = getComplianceProgress();
+  const totalModules = complianceModules.length;
+  const completedModules = complianceModules.filter(m => complianceProgress[m.id]?.completed).length;
+  const compPct = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
+  const nextModule = complianceModules.find(m => !complianceProgress[m.id]?.completed);
+  const compColor = compPct === 100 ? '#10b981' : compPct >= 60 ? '#f59e0b' : '#3b82f6';
+  const napUrgent = napScore < 80;
+  const napColor = napScore >= 80 ? '#10b981' : napScore >= 60 ? '#f59e0b' : '#ef4444';
+
+  // Stage determination
+  const GOAL_02_MIN_MODULES = 10;
+  const scoreGateMet = bankableScore >= 160;
+  const modulesGateMet = completedModules >= GOAL_02_MIN_MODULES;
+  const goal01Done = pipelineCounts.funded > 0 || pipelineCounts.accepted > 0;
+  const goal02Done = scoreGateMet && modulesGateMet;
+
+  // Which stage is active?
+  // Stage 1 is active if not done and no membership lock
+  // Stage 2 is active if Stage 1 done and membership available
+  // Stage 3 is active when goal02Done
+  const activeStage = goal02Done ? 3 : (goal01Done && hasPaidMembership) ? 2 : 1;
+
+  const stage1Metric = goal01Done
+    ? `${pipelineCounts.funded + pipelineCounts.accepted} funding${(pipelineCounts.funded + pipelineCounts.accepted) !== 1 ? 's' : ''} received`
+    : capitalDisplay > 0
+      ? `${formatMoney(capitalDisplay)} available · ${realCapital.count} product${realCapital.count !== 1 ? 's' : ''} ready`
+      : preQualPrograms.length > 0
+        ? `${preQualPrograms.length} program${preQualPrograms.length !== 1 ? 's' : ''} pre-qualified`
+        : 'Complete compliance modules to unlock products';
+
+  const stages = [
+    {
+      num: 1,
+      label: 'Stage 1: Initial Funding',
+      desc: 'Non-bank programs available now — smaller amounts, faster approval',
+      done: goal01Done,
+      active: activeStage === 1,
+      locked: false,
+      metric: stage1Metric,
+      color: '#10b981',
+      ctaLabel: goal01Done ? 'View Funded' : capitalDisplay > 0 ? 'Apply Now' : 'See What You Qualify For',
+      ctaPath: '/app/access-funding',
+    },
+    {
+      num: 2,
+      label: 'Stage 2: Build Bankability',
+      desc: 'Complete compliance modules and build your SBSS score to 160+',
+      done: goal02Done,
+      active: activeStage === 2,
+      locked: !hasPaidMembership,
+      metric: !hasPaidMembership
+        ? 'Requires Virtual or Live membership'
+        : goal02Done
+          ? `SBSS ${bankableScore}/300 ✓ · ${bankablePassCount}/20 items · ${completedModules}/${totalModules} modules ✓`
+          : `SBSS ${bankableScore}/300 ${scoreGateMet ? '✓' : `— need 160+`} · ${completedModules}/${totalModules} modules verified`,
+      color: '#3b82f6',
+      ctaLabel: !hasPaidMembership ? 'Upgrade to Unlock' : goal02Done ? 'View Compliance' : completedModules > 0 ? 'Continue Modules' : 'Start Compliance',
+      ctaPath: '/app/lender-compliance',
+      membershipLocked: !hasPaidMembership,
+    },
+    {
+      num: 3,
+      label: 'Stage 3: Bank & SBA Capital',
+      desc: 'Up to $5M · 9–12% APR · up to 25-year terms',
+      done: false,
+      active: activeStage === 3,
+      locked: !goal02Done,
+      metric: goal02Done
+        ? 'Full bank access unlocked · 9–12% APR'
+        : !hasPaidMembership
+          ? 'Requires membership + Stage 2 completion'
+          : `Complete Stage 2 to unlock bank products`,
+      color: '#f59e0b',
+      ctaLabel: 'Access Bank Products',
+      ctaPath: '/app/access-funding',
+    },
+  ];
+
+  return (
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px' }}>
+      {/* Header */}
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '3px' }}>
+            Your Capital Journey
+          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--foreground)' }}>
+            Stage {activeStage} of 3 — {stages[activeStage - 1].label.replace(`Stage ${activeStage}: `, '')}
+          </div>
+        </div>
+      </div>
+
+      {/* Stage spine */}
+      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {stages.map((stage, i) => {
+          const isActive = stage.active;
+          const isDone = stage.done;
+          const isLocked = stage.locked && !isActive && !isDone;
+          const isMembershipLocked = (stage as any).membershipLocked && !isDone;
+
+          return (
+            <div
+              key={stage.num}
+              style={{
+                borderRadius: '12px',
+                border: isDone ? `1px solid ${stage.color}20` : isActive ? `1.5px solid ${stage.color}35` : isMembershipLocked ? '1px solid rgba(99,102,241,0.25)' : '1px solid var(--border)',
+                background: isActive ? `${stage.color}06` : isDone ? `${stage.color}04` : 'var(--background)',
+                overflow: 'hidden',
+                opacity: isLocked && !isMembershipLocked ? 0.5 : 1,
+              }}
+            >
+              {/* Stage row header */}
+              <div style={{ padding: isActive ? '14px 16px 0' : '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                  {/* Stage indicator dot/check */}
+                  <div style={{
+                    width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0,
+                    background: isDone ? stage.color : isActive ? `${stage.color}20` : 'var(--border)',
+                    border: `2px solid ${isDone ? stage.color : isActive ? stage.color : 'transparent'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {isDone
+                      ? <span style={{ fontSize: '10px', color: 'white', fontWeight: 900 }}>✓</span>
+                      : isActive
+                        ? <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: stage.color }} />
+                        : <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--muted-foreground)', opacity: 0.4 }} />
+                    }
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: isDone || isActive ? 700 : 600, fontSize: '13px', color: isLocked && !isMembershipLocked ? 'var(--muted-foreground)' : 'var(--foreground)', lineHeight: 1.2 }}>
+                      {stage.label}
+                    </div>
+                    {!isActive && (
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: isDone ? stage.color : 'var(--muted-foreground)', fontWeight: isDone ? 700 : 400, marginTop: '2px' }}>
+                        {isDone ? stage.metric : isLocked ? stage.metric : null}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '99px', background: isDone ? `${stage.color}15` : isActive ? `${stage.color}12` : isMembershipLocked ? 'rgba(99,102,241,0.1)' : 'var(--border)', border: `1px solid ${isDone || isActive ? stage.color + '30' : isMembershipLocked ? 'rgba(99,102,241,0.3)' : 'transparent'}`, flexShrink: 0 }}>
+                  <span style={{ fontSize: '9px', fontWeight: 700, color: isMembershipLocked ? '#6366f1' : isDone ? stage.color : isActive ? stage.color : 'var(--muted-foreground)' }}>
+                    {isDone ? '✓ Done' : isActive ? '● Active' : isMembershipLocked ? '🔒 Members' : '🔒 Locked'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Expanded body — only for active stage */}
+              {isActive && (
+                <div style={{ padding: '12px 16px 14px' }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', lineHeight: 1.5, marginBottom: '10px' }}>
+                    {stage.desc}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: stage.color, marginBottom: '12px' }}>
+                    {stage.metric}
+                  </div>
+
+                  {/* Stage 2: show compliance progress inline */}
+                  {stage.num === 2 && !isMembershipLocked && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <div style={{ height: '6px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden', marginBottom: '6px' }}>
+                        <div style={{ height: '100%', width: `${compPct}%`, background: `linear-gradient(90deg, ${compColor}, ${compColor}cc)`, borderRadius: '99px', transition: 'width 0.8s ease' }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>{completedModules} complete</span>
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>{totalModules - completedModules} remaining</span>
+                      </div>
+                      {/* NAP row */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '7px', marginTop: '8px', background: napUrgent ? 'rgba(239,68,68,0.06)' : 'rgba(16,185,129,0.05)', border: `1px solid ${napUrgent ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.15)'}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '12px' }}>{napUrgent ? '⚠️' : '✓'}</span>
+                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: napColor }}>Business Visibility · {napScore}/100</span>
+                        </div>
+                        {napUrgent && (
+                          <button onClick={() => navigate('/app/lender-compliance')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>Fix now →</button>
+                        )}
+                      </div>
+                      {/* Next module CTA */}
+                      {nextModule && (
+                        <button
+                          onClick={() => navigate(`/app${nextModule.route}`)}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '10px', cursor: 'pointer', textAlign: 'left', background: 'linear-gradient(135deg, rgba(59,130,246,0.07), rgba(16,185,129,0.07))', border: '1px solid rgba(59,130,246,0.22)', marginTop: '10px', transition: 'opacity 0.15s' }}
+                          onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                        >
+                          <div>
+                            <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#3b82f6', marginBottom: '2px' }}>Continue</div>
+                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)' }}>{nextModule.title}</div>
+                            <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '1px' }}>Est. 5 min · unlocks more funding programs</div>
+                          </div>
+                          <ArrowRight size={16} style={{ color: '#3b82f6', flexShrink: 0 }} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <button
+                      onClick={() => navigate(stage.ctaPath)}
+                      style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', padding: '8px 16px', background: isMembershipLocked ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : stage.color, border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      {isMembershipLocked && <Lock size={11} />}
+                      {stage.ctaLabel} <ArrowRight size={12} />
+                    </button>
+                    {stage.num === 2 && !isMembershipLocked && (
+                      <button onClick={() => navigate('/app/lender-compliance')} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}>
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>View all {totalModules} modules</span>
+                        <ChevronRight size={11} color="var(--muted-foreground)" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── NextBestMoveCard ──────────────────────────────────────────────────────────
+
+interface NextBestMoveCardProps {
+  criticalBlockers: any[];
+  topBlocker: any;
+  fundScore: number;
+  capitalDisplay: number;
+  lockedCapital: string | null;
+  navigate: (path: string) => void;
+}
+
+function NextBestMoveCard({ criticalBlockers, topBlocker, fundScore, capitalDisplay, lockedCapital, navigate }: NextBestMoveCardProps) {
+  return (
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '0' }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
+          ⚡ Priority Action
+        </p>
+        {lockedCapital && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '8px', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)' }}>
+            <Lock size={11} style={{ color: '#ef4444', flexShrink: 0 }} />
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#ef4444' }}>{lockedCapital} locked</span>
+          </div>
+        )}
+      </div>
+
+      {topBlocker ? (
+        <>
+          {/* Zone A — Why this matters (trust-aligned, non-absolute wording) */}
+          <div style={{ marginBottom: '14px', padding: '8px 12px', borderRadius: '8px', background: topBlocker.severity === 'hard_blocker' ? 'rgba(239,68,68,0.06)' : 'rgba(245,158,11,0.06)', border: `1px solid ${topBlocker.severity === 'hard_blocker' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)'}` }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: topBlocker.severity === 'hard_blocker' ? '#ef4444' : '#f59e0b' }}>
+              {topBlocker.severity === 'hard_blocker'
+                ? '⚠ Top lender-confidence blocker — many lenders will stop here until this is resolved'
+                : 'Score suppressor — addressing this strengthens your position with lenders'}
+            </span>
+          </div>
+
+          {/* Zone B — Do this now */}
+          <div style={{ paddingBottom: '16px', borderBottom: '1px solid var(--border)', marginBottom: '16px' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '19px', color: 'var(--foreground)', marginBottom: '6px', lineHeight: 1.2 }}>{topBlocker.title}</h2>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', lineHeight: 1.6, marginBottom: '12px' }}>
+              {topBlocker.description || 'Fixing this unlocks the next tier of capital products for your business.'}
+            </p>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+              {topBlocker.ficoImpact ? (
+                <div style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#10b981' }}>+{topBlocker.ficoImpact} score pts</span>
+                </div>
+              ) : null}
+              <div style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#3b82f6' }}>~15 min to fix</span>
+              </div>
+            </div>
+            <button onClick={() => navigate(getBlockerRoute(topBlocker.category))} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '11px 22px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 16px rgba(16,185,129,0.25)' }}>
+              Fix This Now <ArrowRight size={14} />
+            </button>
+          </div>
+
+          {/* Zone C — What this unlocks (gated: only show if delta is real) */}
+          {(() => {
+            const unlockAmount = topBlocker.ficoImpact
+              ? scoreToAmount(fundScore + topBlocker.ficoImpact) - scoreToAmount(fundScore)
+              : 0;
+            return (
+              <div style={{ marginBottom: '16px', padding: '10px 12px', borderRadius: '8px', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.18)' }}>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#10b981', marginBottom: '4px' }}>What this unlocks</p>
+                {unlockAmount > 0 ? (
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--foreground)', fontWeight: 600, margin: 0 }}>
+                    Fixing this adds <span style={{ color: '#10b981' }}>{formatMoney(unlockAmount)}</span> of additional capital potential
+                  </p>
+                ) : (
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: 0 }}>
+                    Resolving this strengthens your lender profile and improves access to more capital products
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Next after that — sequenced secondary blockers */}
+          {criticalBlockers.length > 1 && (
+            <div>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
+                Next after that ({criticalBlockers.length - 1} more)
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {criticalBlockers.slice(1, 4).map((blocker, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => navigate(getBlockerRoute(blocker.category))}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '10px', background: 'var(--background)', border: '1px solid var(--border)', cursor: 'pointer', gap: '10px' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: blocker.severity === 'hard_blocker' ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{blocker.title}</span>
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#10b981', flexShrink: 0 }}>
+                      {blocker.ficoImpact ? `+${blocker.ficoImpact} pts` : 'Fix →'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {criticalBlockers.length > 4 && (
+                <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0', marginTop: '4px' }}>
+                  + {criticalBlockers.length - 4} more blockers →
+                </button>
+              )}
+            </div>
+          )}
+        </>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid var(--border)', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <CheckCircle2 size={28} style={{ color: '#10b981' }} />
+            <div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px', color: 'var(--foreground)' }}>No critical blockers!</div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)' }}>You are ready to apply for capital. Review qualifying products below.</div>
+            </div>
+          </div>
+          <button onClick={() => navigate('/app/access-funding')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', padding: '12px 24px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start' }}>
+            View Funding Options <ArrowRight size={15} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
 // MAIN DASHBOARD COMPONENT
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -391,8 +1290,6 @@ export function Dashboard() {
   const [napScore, setNapScore] = useState(0);
   const [membershipTier, setMembershipTier] = useState<MembershipTier>(() => getMembershipTier());
   const [storedAssessment, setStoredAssessment] = useState<UnifiedAnswers | null>(null);
-  const [capitalTooltipVisible, setCapitalTooltipVisible] = useState(false);
-
   const dismissWelcome = () => {
     localStorage.setItem('fundready_welcomed', '1');
     setShowWelcome(false);
@@ -574,24 +1471,14 @@ export function Dashboard() {
       <div className="dashboard-main-padding" style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
         
         {/* ── HEADER ─────────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
-          <div>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
-              Good {timeOfDay}, {firstName}
-            </p>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(24px, 3.5vw, 34px)', color: 'var(--foreground)', lineHeight: 1.1, letterSpacing: '-0.02em', margin: 0 }}>
-              Mission Control
-            </h1>
-          </div>
-          <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
-            <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer' }}>
-              My Progress
-            </button>
-            <button onClick={() => navigate('/business-assessment/results')} style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: 'var(--primary)', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer' }}>
-              Full Report →
-            </button>
-          </div>
-        </div>
+        <DashboardHeader
+          timeOfDay={timeOfDay}
+          firstName={firstName}
+          hasAssessment={hasAssessment}
+          criticalBlockersCount={criticalBlockers.length}
+          capitalDisplay={capitalDisplay}
+          navigate={navigate}
+        />
 
         {/* ══════════════════════════════════════════════════════════════════════ */}
 
@@ -613,834 +1500,61 @@ export function Dashboard() {
         {hasAssessment && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
 
-            {/* ROW 1: CAPITAL POTENTIAL + PRIORITY ACTION — identity first, then action */}
+            {/* ROW 1: CAPITAL POTENTIAL + PRIORITY ACTION */}
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(230px, 270px) 1fr', gap: '20px', marginBottom: '20px', alignItems: 'stretch' }}>
-
-              {/* CAPITAL POTENTIAL CARD — dollar-first */}
-              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-                {/* Hero: dollar number */}
-                <div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    {capitalDisplay > 0 ? (
-                      <div>
-                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(32px, 5vw, 44px)', color: gaugeColor, lineHeight: 1, letterSpacing: '-0.02em' }}>
-                          {formatMoney(capitalDisplay)}
-                        </div>
-                        {realCapital.count > 0 && (
-                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', marginTop: '2px' }}>
-                            <span style={{ fontWeight: 700, color: realCapital.isHighConfidence ? gaugeColor : '#f59e0b' }}>
-                              {realCapital.confidenceLabel}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '38px', color: '#ef4444', lineHeight: 1 }}>
-                        $0
-                      </div>
-                    )}
-                    {/* T-11: "Estimated capital ceiling" label + ⓘ tooltip */}
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '4px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
-                      <span>
-                        {realCapital.count > 0
-                          ? `Estimated capital ceiling · ${realCapital.productLabel}`
-                          : 'Estimated Capital Potential'}
-                      </span>
-                      <button
-                        onMouseEnter={() => setCapitalTooltipVisible(true)}
-                        onMouseLeave={() => setCapitalTooltipVisible(false)}
-                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', color: 'var(--muted-foreground)', opacity: 0.55, flexShrink: 0 }}
-                        aria-label="How this estimate is calculated"
-                      >
-                        <Info style={{ width: '11px', height: '11px' }} />
-                      </button>
-                      {capitalTooltipVisible && (
-                        <div style={{
-                          position: 'absolute',
-                          bottom: '20px',
-                          left: 0,
-                          zIndex: 50,
-                          background: 'var(--card)',
-                          border: '1px solid var(--border)',
-                          borderRadius: '8px',
-                          padding: '10px 12px',
-                          width: '240px',
-                          fontSize: '11px',
-                          lineHeight: 1.6,
-                          color: 'var(--muted-foreground)',
-                          boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
-                          fontWeight: 400,
-                        }}>
-                          Revenue-capped ceiling based on your highest qualifying product. Actual loan offers depend on lender underwriting, documentation, and full credit review.
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                </div>
-
-                {/* FundScore bar */}
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', fontWeight: 600 }}>FundScore</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px', color: gaugeColor }}>{fundScore}</span>
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>/ 1,000</span>
-                    </div>
-                  </div>
-                  <div style={{ height: '6px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: Math.min((fundScore / 1000) * 100, 100) + '%' }}
-                      transition={{ duration: 1.2, ease: 'easeOut', delay: 0.2 }}
-                      style={{ height: '100%', background: `linear-gradient(90deg, ${gaugeColor}99, ${gaugeColor})`, borderRadius: '99px' }}
-                    />
-                  </div>
-                  {/* Milestone labels — real product tier thresholds */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-                    {[{ v: 300, l: 'Alt Cap' }, { v: 500, l: 'Working Capital' }, { v: 700, l: 'Term Loans' }, { v: 900, l: 'SBA/Bank' }].map(m => (
-                      <div key={m.v} style={{ textAlign: 'center' }}>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: fundScore >= m.v ? gaugeColor : 'var(--muted-foreground)', fontWeight: fundScore >= m.v ? 700 : 400, opacity: fundScore >= m.v ? 1 : 0.5 }}>{m.l}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* FICO SBSS Bankable Score — The Primary Goal */}
-                {(() => {
-                  // Score tier — label based on SBSS number alone (honest label for the digit shown)
-                  const scoreTier = bankableScore >= 210 ? { label: 'Excellent', color: '#10b981' }
-                    : bankableScore >= 190 ? { label: 'Good',    color: '#22c55e' }
-                    : bankableScore >= 160 ? { label: 'Fair',    color: '#f59e0b' }
-                    :                        { label: 'Poor',    color: '#ef4444' };
-                  // Compliance gate — separate from the score: bankable items pass %
-                  const isCompliant   = bankablePassPct >= 85;
-                  const isApproaching = bankablePassPct >= 60;
-                  const approxFail    = Math.max(1, Math.round(((100 - bankablePassPct) / 100) * 20));
-                  // Composite message — BOTH gates must clear. Never claim approval on score alone.
-                  const sbssMsg = bankableScore < 160
-                    ? `${160 - bankableScore} points from bank approval threshold`
-                    : isCompliant && bankableScore >= 210
-                    ? 'Score and compliance clear — bank & SBA products accessible'
-                    : isCompliant
-                    ? 'Score qualifies — verify compliance items to apply'
-                    : isApproaching
-                    ? `Score clears threshold · ${approxFail} compliance item${approxFail !== 1 ? 's' : ''} still needed`
-                    : `Score clears threshold · Significant compliance work needed before applying`;
-                  const sbssTier = { ...scoreTier, msg: sbssMsg };
-                  const sbssPct = Math.min((bankableScore / 300) * 100, 100);
-                  const thresholdPct = (160 / 300) * 100;
-                  return (
-                    <div style={{ padding: '12px', borderRadius: '10px', background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)' }}>
-                      {/* Header row */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <Target size={11} style={{ color: '#3b82f6' }} />
-                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Bank Readiness Score</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '16px', color: sbssTier.color }}>{bankableScore}</span>
-                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>/300</span>
-                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: 'white', background: sbssTier.color, borderRadius: '4px', padding: '1px 6px', marginLeft: '2px' }}>{sbssTier.label}</span>
-                        </div>
-                      </div>
-                      {/* What this means */}
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: sbssTier.color, fontWeight: 600, marginBottom: '8px' }}>
-                        {sbssTier.msg}
-                      </div>
-                      {/* SBSS bar with 160 threshold marker */}
-                      <div style={{ position: 'relative', height: '7px', background: 'var(--border)', borderRadius: '99px', overflow: 'visible' }}>
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: sbssPct + '%' }}
-                          transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 }}
-                          style={{ height: '100%', background: `linear-gradient(90deg, ${sbssTier.color}99, ${sbssTier.color})`, borderRadius: '99px', position: 'absolute', top: 0, left: 0 }}
-                        />
-                        {/* 160 threshold marker */}
-                        <div style={{ position: 'absolute', top: '-3px', left: `${thresholdPct}%`, width: '2px', height: '13px', background: '#3b82f6', borderRadius: '2px', transform: 'translateX(-50%)' }} />
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '5px' }}>
-                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'var(--muted-foreground)' }}>Poor (0–159)</span>
-                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: '#3b82f6', fontWeight: 700 }}>↑ 160 = Bank Approval</span>
-                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '9px', color: 'var(--muted-foreground)' }}>Excellent (300)</span>
-                      </div>
-                      {/* Footer explanation */}
-                      <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(59,130,246,0.15)', fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
-                        Banks use this 0–300 scale to approve business loans. Scores below 160 are typically declined by banks and the SBA.
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Status tier + next milestone */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '8px', background: gaugeColor + '15', border: '1px solid ' + gaugeColor + '40' }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: gaugeColor }} />
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '11px', color: gaugeColor }}>{statusInfo.tier}</span>
-                  </div>
-                  {nextMilestone && (
-                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
-                      <span style={{ fontWeight: 700, color: gaugeColor }}>+{nextMilestone.pts} pts</span> → {nextMilestone.label}
-                    </span>
-                  )}
-                </div>
-
-                {/* Blocker count */}
-                <div style={{ paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                  {criticalBlockers.length > 0 ? (
-                    <>
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
-                        <span style={{ fontWeight: 700, color: '#f59e0b' }}>{criticalBlockers.length} blocker{criticalBlockers.length !== 1 ? 's' : ''}</span> limiting your potential
-                      </span>
-                      <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', whiteSpace: 'nowrap' }}>
-                        See all →
-                      </button>
-                    </>
-                  ) : (
-                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: '#10b981', fontWeight: 700 }}>
-                      No blockers · Full potential unlocked
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* NEXT RED X */}
-              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '0' }}>
-
-                {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
-                    ⚡ Priority Action
-                  </p>
-                  {lockedCapital && (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '8px', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                      <Lock size={11} style={{ color: '#ef4444', flexShrink: 0 }} />
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#ef4444' }}>{lockedCapital} locked</span>
-                    </div>
-                  )}
-                </div>
-
-                {topBlocker ? (
-                  <>
-                    {/* Main blocker */}
-                    <div style={{ paddingBottom: '16px', borderBottom: '1px solid var(--border)', marginBottom: '16px' }}>
-                      <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '19px', color: 'var(--foreground)', marginBottom: '6px', lineHeight: 1.2 }}>{topBlocker.title}</h2>
-                      <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', lineHeight: 1.6, marginBottom: '12px' }}>
-                        {topBlocker.description || 'Fixing this unlocks the next tier of capital products for your business.'}
-                      </p>
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
-                        {topBlocker.ficoImpact ? (
-                          <div style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                            <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#10b981' }}>+{topBlocker.ficoImpact} score pts</span>
-                          </div>
-                        ) : null}
-                        {(() => {
-                          const unlockAmount = scoreToAmount(fundScore + (topBlocker.ficoImpact || 0)) - scoreToAmount(fundScore);
-                          return unlockAmount > 0 ? (
-                            <div style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#ef4444' }}>Unlocks {formatMoney(unlockAmount)}</span>
-                            </div>
-                          ) : null;
-                        })()}
-                        <div style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
-                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#3b82f6' }}>
-                            {topBlocker.severity === 'hard_blocker' ? '⛔ Blocks all lenders' : '~15 min to fix'}
-                          </span>
-                        </div>
-                      </div>
-                      <button onClick={() => navigate(getBlockerRoute(topBlocker.category))} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '11px 22px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 16px rgba(16,185,129,0.25)' }}>
-                        Fix This Now <ArrowRight size={14} />
-                      </button>
-                    </div>
-
-                    {/* Other blockers list */}
-                    {criticalBlockers.length > 1 && (
-                      <div style={{ marginBottom: '16px' }}>
-                        <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
-                          Also blocking you ({criticalBlockers.length - 1} more)
-                        </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {criticalBlockers.slice(1, 4).map((blocker, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => navigate(getBlockerRoute(blocker.category))}
-                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '10px', background: 'var(--background)', border: '1px solid var(--border)', cursor: 'pointer', gap: '10px' }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: blocker.severity === 'hard_blocker' ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
-                                <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{blocker.title}</span>
-                              </div>
-                              <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#10b981', flexShrink: 0 }}>
-                                {blocker.ficoImpact ? `+${blocker.ficoImpact} pts` : 'Fix →'}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                        {criticalBlockers.length > 4 && (
-                          <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0', marginTop: '4px' }}>
-                            + {criticalBlockers.length - 4} more blockers →
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid var(--border)', marginBottom: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <CheckCircle2 size={28} style={{ color: '#10b981' }} />
-                      <div>
-                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '18px', color: 'var(--foreground)' }}>No critical blockers!</div>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)' }}>You are ready to apply for capital. Review qualifying products below.</div>
-                      </div>
-                    </div>
-                    <button onClick={() => navigate('/app/access-funding')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', padding: '12px 24px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start' }}>
-                      View Funding Options <ArrowRight size={15} />
-                    </button>
-                  </div>
-                )}
-              </div>
+              <ReadinessSnapshotCard
+                fundScore={fundScore}
+                bankableScore={bankableScore}
+                bankablePassPct={bankablePassPct}
+                bankablePassCount={bankablePassCount}
+                capitalDisplay={capitalDisplay}
+                realCapital={realCapital}
+                criticalBlockers={criticalBlockers}
+                statusInfo={statusInfo}
+                nextMilestone={nextMilestone}
+                gaugeColor={gaugeColor}
+                topBlocker={topBlocker}
+                navigate={navigate}
+              />
+              <NextBestMoveCard
+                criticalBlockers={criticalBlockers}
+                topBlocker={topBlocker}
+                fundScore={fundScore}
+                capitalDisplay={capitalDisplay}
+                lockedCapital={lockedCapital}
+                navigate={navigate}
+              />
             </div>
 
-            {/* ROW 1.5: CAPITAL PROJECTION TIMELINE */}
-            {capitalPath.some(m => m.amount > capitalPath[0].amount) && (
-              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px 20px', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', gap: '8px', flexWrap: 'wrap' }}>
-                  <div>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--foreground)', margin: 0 }}>
-                      📈 Your Capital Trajectory
-                    </h3>
-                    <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', margin: '2px 0 0' }}>
-                      Projected if you fix your top {criticalBlockers.length} blockers
-                    </p>
-                  </div>
-                  <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>
-                    Full plan →
-                  </button>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-                  {capitalPath.map((milestone, i) => {
-                    const isGrowth = milestone.amount > capitalPath[0].amount;
-                    const isToday = i === 0;
-                    return (
-                      <div key={milestone.label} style={{ textAlign: 'center', padding: '10px 6px', borderRadius: '10px', background: isToday ? 'var(--background)' : milestone.amount > capitalPath[0].amount ? milestone.color + '10' : 'var(--background)', border: '1px solid ' + (isToday ? 'var(--border)' : isGrowth ? milestone.color + '40' : 'var(--border)'), position: 'relative' }}>
-                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: isToday ? 'var(--foreground)' : isGrowth ? milestone.color : 'var(--muted-foreground)', marginBottom: '3px' }}>
-                          {milestone.amount > 0 ? formatMoney(milestone.amount) : '$0'}
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', fontWeight: isToday ? 700 : 400 }}>
-                          {milestone.label}
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: milestone.color, marginTop: '2px', fontWeight: 600 }}>
-                          {Math.round(milestone.score)} pts
-                        </div>
-                        {!isToday && milestone.amount > capitalPath[i - 1].amount && (
-                          <div style={{ position: 'absolute', top: '50%', left: '-5px', transform: 'translateY(-50%)', fontSize: '10px', color: milestone.color }}>▶</div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            {/* ── PROGRESS MARKER — stage-aware capital journey ── */}
+            <ProgressMarkerCard
+              bankableScore={bankableScore}
+              bankablePassCount={bankablePassCount}
+              pipelineCounts={pipelineCounts}
+              membershipTier={membershipTier}
+              napScore={napScore}
+              capitalDisplay={capitalDisplay}
+              realCapital={realCapital}
+              preQualPrograms={preQualPrograms}
+              fundScore={fundScore}
+              navigate={navigate}
+            />
 
-            {/* ── YOUR CAPITAL ROADMAP — context after user knows their status ── */}
-            {(() => {
-              const isBankable = bankableScore >= 160;
+            {/* FOLLOW-ON BLOCKERS + READINESS + CAPITAL ACCESS */}
+            <FollowOnBlockersCard
+              hardBlockers={hardBlockers}
+              suppressors={suppressors}
+              incompleteItems={incompleteItems}
+              dimAvg={dimAvg}
+              preQualPrograms={preQualPrograms}
+              pipelineCounts={pipelineCounts}
+              fundScore={fundScore}
+              realCapital={realCapital}
+              capitalPath={capitalPath}
+              navigate={navigate}
+            />
 
-              // ── Goal 01: Pre-Bankable Funding ─────────────────────────────
-              // "Done" = user has ACTUALLY received or accepted funding via pipeline.
-              // SBSS score alone does NOT complete this goal — SBSS measures creditworthiness,
-              // not whether funding was obtained. Showing "Done" based on SBSS while
-              // compliance is 0% creates a direct contradiction in the UI.
-              const goal01Done = pipelineCounts.funded > 0 || pipelineCounts.accepted > 0;
-              const goal01Metric = goal01Done
-                ? `${pipelineCounts.funded + pipelineCounts.accepted} funding${(pipelineCounts.funded + pipelineCounts.accepted) !== 1 ? 's' : ''} received`
-                : capitalDisplay > 0
-                  ? `${formatMoney(capitalDisplay)} available · ${realCapital.count} product${realCapital.count !== 1 ? 's' : ''} ready`
-                  : preQualPrograms.length > 0
-                    ? `${preQualPrograms.length} program${preQualPrograms.length !== 1 ? 's' : ''} pre-qualified — apply now`
-                    : 'Complete compliance modules to unlock products';
-
-              // ── Membership gating ─────────────────────────────────────────
-              // Goal 02 and 03 require paid membership (virtual or live)
-              const hasPaidMembership = canAccessGoal2(membershipTier);
-
-              // ── Goal 02: Become Bankable ──────────────────────────────────
-              // T-10: "Done" requires BOTH gates: SBSS >= 160 AND >= 10/13 compliance modules.
-              // NOTE: bankablePassCount (assessment-based, 19/20) and goal02CompletedModules
-              // (verified module completions, 0/13) are intentionally different measures:
-              //   - bankablePassCount = what the assessment CLAIMS you already have
-              //   - goal02CompletedModules = what you've PROVEN by working through the app
-              // Goal 02 shows BOTH so the user sees their claimed baseline vs. verified progress.
-              const GOAL_02_MIN_MODULES = 10;
-              const _g2p = getComplianceProgress();
-              const goal02CompletedModules = complianceModules.filter(m => _g2p[m.id]?.completed).length;
-              const goal02TotalModules = complianceModules.length; // 13
-              const scoreGateMet = bankableScore >= 160;
-              const modulesGateMet = goal02CompletedModules >= GOAL_02_MIN_MODULES;
-              const goal02Done = scoreGateMet && modulesGateMet;
-
-              // Three explicit states — user sees both claimed baseline AND verified progress.
-              const goal02Metric = !hasPaidMembership
-                ? 'Requires Virtual or Live membership'
-                : goal02Done
-                  ? `SBSS ${bankableScore}/300 ✓ · ${bankablePassCount}/20 items · ${goal02CompletedModules}/${goal02TotalModules} modules ✓`
-                  : (() => {
-                      const sbssPart = scoreGateMet
-                        ? `SBSS ${bankableScore}/300 ✓`
-                        : `SBSS ${bankableScore}/300 — need 160+`;
-                      // Show assessment items as "claimed" and modules as "verified"
-                      const claimedPart = `${bankablePassCount}/20 claimed`;
-                      const modPart = modulesGateMet
-                        ? `${goal02CompletedModules}/${goal02TotalModules} verified ✓`
-                        : `${goal02CompletedModules}/${goal02TotalModules} verified — need ${GOAL_02_MIN_MODULES}`;
-                      return `${sbssPart} · ${claimedPart} · ${modPart}`;
-                    })();
-
-              // Goal 03: Bankable Funding
-              // "Active" = Goal 02 Done (both gates) AND paid membership. Else locked..
-
-              const phases = [
-                {
-                  num: '01',
-                  title: 'Receive Initial Funding',
-                  desc: 'Non-bank programs available now — smaller amounts, faster approval',
-                  status: goal01Done ? 'complete' : 'active',
-                  metric: goal01Metric,
-                  color: '#10b981',
-                  cta: '/app/access-funding',
-                  ctaLabel: goal01Done ? 'View Funded' : capitalDisplay > 0 ? 'Apply Now' : 'See What You Qualify For',
-                  membershipRequired: false,
-                },
-                {
-                  num: '02',
-                  title: 'Build Credit & Become Bankable',
-                  desc: 'Your assessment shows what you claim to have. Complete 10 of 13 compliance modules to verify it — banks require proof, not self-report.',
-                  // T-10: status and metric use dual-gate goal02Done, not isBankable
-                  status: !hasPaidMembership ? 'membership_locked' : goal02Done ? 'complete' : 'active',
-                  metric: goal02Metric,
-                  color: '#3b82f6',
-                  cta: '/app/lender-compliance',
-                  ctaLabel: !hasPaidMembership
-                    ? 'Upgrade to Unlock'
-                    : goal02Done
-                      ? 'View Compliance'
-                      : !scoreGateMet && !modulesGateMet
-                        ? 'Start Compliance'
-                        : !scoreGateMet
-                          ? 'Build Your SBSS Score'
-                          : 'Complete Your Modules',
-                  membershipRequired: true,
-                },
-                {
-                  num: '03',
-                  title: 'Access Bank & SBA Capital',
-                  desc: 'Up to $5M · 9–12% APR · up to 25-year terms — the full capital stack',
-                  // T-10: Goal 03 unlocks only when Goal 02 is fully Done (both gates)
-                  status: !hasPaidMembership ? 'membership_locked' : goal02Done ? 'active' : 'locked',
-                  metric: !hasPaidMembership
-                    ? 'Requires Virtual or Live membership'
-                    : goal02Done
-                      ? `Full bank access unlocked · 9–12% APR`
-                      : scoreGateMet && !modulesGateMet
-                        ? `Complete ${GOAL_02_MIN_MODULES - goal02CompletedModules} more module${(GOAL_02_MIN_MODULES - goal02CompletedModules) !== 1 ? 's' : ''} to unlock`
-                        : `SBSS ${bankableScore}/300 — need 160+ and ${GOAL_02_MIN_MODULES} modules`,
-                  color: '#f59e0b',
-                  cta: !hasPaidMembership ? '/app/lender-compliance' : '/app/access-funding',
-                  ctaLabel: !hasPaidMembership ? 'Upgrade to Unlock' : 'Access Bank Products',
-                  membershipRequired: true,
-                },
-              ];
-              return (
-                <div className="dashboard-goals-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
-                  {phases.map((phase, i) => {
-                    const isComplete = phase.status === 'complete';
-                    const isActive = phase.status === 'active';
-                    const isLocked = phase.status === 'locked';
-                    const isMembershipLocked = phase.status === 'membership_locked';
-                    const isAnyLocked = isLocked || isMembershipLocked;
-                    return (
-                      <motion.div
-                        key={phase.num}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: i * 0.08 }}
-                        style={{
-                          background: isActive ? phase.color + '08' : 'var(--card)',
-                          border: isMembershipLocked ? '1px solid rgba(99,102,241,0.25)' : isActive ? '1.5px solid ' + phase.color + '35' : isComplete ? '1px solid ' + phase.color + '20' : '1px solid var(--border)',
-                          borderRadius: '14px',
-                          padding: '18px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '10px',
-                          opacity: isLocked ? 0.55 : 1,
-                          position: 'relative',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {isMembershipLocked && (
-                          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #6366f100, #6366f1, #6366f100)' }} />
-                        )}
-                        {isActive && !isMembershipLocked && (
-                          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, ' + phase.color + '00, ' + phase.color + ', ' + phase.color + '00)' }} />
-                        )}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '11px', color: isAnyLocked ? 'var(--muted-foreground)' : phase.color, letterSpacing: '0.08em' }}>
-                            GOAL {phase.num}
-                          </span>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '99px', background: isComplete ? phase.color + '15' : isActive ? phase.color + '12' : isMembershipLocked ? 'rgba(99,102,241,0.1)' : 'var(--border)', border: '1px solid ' + (isAnyLocked ? (isMembershipLocked ? 'rgba(99,102,241,0.3)' : 'transparent') : (phase.color + '30')) }}>
-                            <span style={{ fontSize: '9px', fontWeight: 700, color: isMembershipLocked ? '#6366f1' : isAnyLocked ? 'var(--muted-foreground)' : phase.color }}>
-                              {isComplete ? '✓ Done' : isActive ? '● Active' : isMembershipLocked ? '🔒 Members Only' : '🔒 Locked'}
-                            </span>
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '14px', color: isAnyLocked ? 'var(--muted-foreground)' : 'var(--foreground)', lineHeight: 1.2, marginBottom: '4px' }}>
-                            {phase.title}
-                          </div>
-                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
-                            {phase.desc}
-                          </div>
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: isAnyLocked ? 'var(--muted-foreground)' : phase.color }}>
-                          {phase.metric}
-                        </div>
-                        {(isActive || isMembershipLocked) && (
-                          <button
-                            onClick={() => navigate(phase.cta)}
-                            style={{
-                              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px',
-                              padding: '8px 14px',
-                              background: isMembershipLocked ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : phase.color,
-                              border: 'none', borderRadius: '8px', color: 'white',
-                              cursor: 'pointer', marginTop: '2px', textAlign: 'left',
-                              display: 'flex', alignItems: 'center', gap: '6px',
-                            }}
-                          >
-                            {isMembershipLocked && <Lock size={11} />}
-                            {phase.ctaLabel} <ArrowRight size={12} />
-                          </button>
-                        )}
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-
-            {/* ── LENDER COMPLIANCE — single unified bankability card ── */}
-            {(() => {
-              const complianceProgress = getComplianceProgress();
-              const totalModules = complianceModules.length;
-              const completedModules = complianceModules.filter(m => complianceProgress[m.id]?.completed).length;
-              const compPct = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
-              const nextModule = complianceModules.find(m => !complianceProgress[m.id]?.completed);
-              const compColor = compPct === 100 ? '#10b981' : compPct >= 60 ? '#f59e0b' : '#3b82f6';
-              const napUrgent = napScore < 80;
-              const napColor = napScore >= 80 ? '#10b981' : napScore >= 60 ? '#f59e0b' : '#ef4444';
-
-              // Segment label — Chase identity framing
-              const statusLabel = compPct === 100 ? 'Lender-Ready' : compPct >= 60 ? 'In Progress' : 'Needs Action';
-
-              return (
-                <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '20px', marginBottom: '20px' }}>
-
-                  {/* Header: identity framing — "You are X% bankable" */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px', gap: '12px' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted-foreground)', marginBottom: '4px' }}>
-                        Lender Compliance
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--foreground)', lineHeight: 1.15 }}>
-                        You are{' '}
-                        <span style={{ color: compColor }}>{compPct}% bankable</span>
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '3px' }}>
-                        {completedModules} of {totalModules} compliance modules complete
-                      </div>
-                    </div>
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', flexShrink: 0,
-                      padding: '4px 10px', borderRadius: '99px',
-                      background: `${compColor}15`, border: `1px solid ${compColor}35`,
-                    }}>
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: compColor }}>
-                        {statusLabel}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Dominant progress bar */}
-                  <div style={{ marginBottom: '14px' }}>
-                    <div style={{ height: '8px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
-                      <div style={{
-                        height: '100%', width: `${compPct}%`,
-                        background: `linear-gradient(90deg, ${compColor}, ${compColor}cc)`,
-                        borderRadius: '99px', transition: 'width 0.8s ease',
-                      }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}>
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>
-                        {completedModules} complete
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>
-                        {totalModules - completedModules} remaining
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Business Visibility row — compact always, urgent styling when <80 */}
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '8px 12px', borderRadius: '8px', marginBottom: '14px',
-                    background: napUrgent ? 'rgba(239,68,68,0.06)' : 'rgba(16,185,129,0.05)',
-                    border: `1px solid ${napUrgent ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.15)'}`,
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '13px' }}>{napUrgent ? '⚠️' : '✓'}</span>
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: napColor }}>
-                        Business Visibility
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)' }}>
-                        {napScore}/100 · NAP consistency
-                      </span>
-                    </div>
-                    {napUrgent ? (
-                      <button
-                        onClick={() => navigate('/app/lender-compliance')}
-                        style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}
-                      >
-                        Fix now →
-                      </button>
-                    ) : (
-                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
-                        Verified ✓
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Hero CTA — one action, one benefit statement */}
-                  {nextModule ? (
-                    <button
-                      onClick={() => navigate(`/app${nextModule.route}`)}
-                      style={{
-                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '14px 16px', borderRadius: '12px', cursor: 'pointer', textAlign: 'left',
-                        background: 'linear-gradient(135deg, rgba(59,130,246,0.07), rgba(16,185,129,0.07))',
-                        border: '1px solid rgba(59,130,246,0.22)', marginBottom: '10px',
-                        transition: 'opacity 0.15s',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
-                      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-                    >
-                      <div>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#3b82f6', marginBottom: '3px' }}>
-                          Continue
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: 'var(--foreground)' }}>
-                          {nextModule.title}
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '2px' }}>
-                          Est. 5 min · unlocks more funding programs
-                        </div>
-                      </div>
-                      <ArrowRight size={18} style={{ color: '#3b82f6', flexShrink: 0 }} />
-                    </button>
-                  ) : (
-                    <div style={{
-                      padding: '14px 16px', borderRadius: '12px', marginBottom: '10px', textAlign: 'center',
-                      background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)',
-                    }}>
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', color: '#10b981' }}>
-                        ✓ All compliance modules complete
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '3px' }}>
-                        You're lender-ready — access funding now
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Subtle escape hatch */}
-                  <button
-                    onClick={() => navigate('/app/lender-compliance')}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
-                  >
-                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
-                      View all {totalModules} modules
-                    </span>
-                    <ChevronRight size={11} color="var(--muted-foreground)" />
-                  </button>
-                </div>
-              );
-            })()}
-
-            {/* ROW 2: CAPITAL ACCESS */}
-            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px' }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
-                {/* Header row */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: pipelineCounts.total > 0 ? '14px' : '0' }}>
-                  <div>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--foreground)', margin: 0 }}>
-                      {preQualPrograms.length > 0 ? '💰 Funding Pipeline' : '🔑 Capital Products'}
-                    </h3>
-                    <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)', margin: '3px 0 0' }}>
-                      {preQualPrograms.length > 0
-                        ? `${preQualPrograms.length} pre-qualified · up to ${formatMoney(scoreToAmount(fundScore))} accessible today`
-                        : 'Improve your score to unlock funding products'}
-                    </p>
-                  </div>
-                  <button onClick={() => navigate('/app/access-funding')} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '12px', color: 'var(--primary)', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '7px 14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    {pipelineCounts.total > 0 ? 'View Pipeline →' : `View All ${preQualPrograms.length > 0 ? preQualPrograms.length : ''} →`}
-                  </button>
-                </div>
-
-                {/* Live pipeline strip — only shows once user has applied to something */}
-                {pipelineCounts.total > 0 && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-                    {[
-                      { label: 'Applied', count: pipelineCounts.applied, color: '#3b82f6' },
-                      { label: 'Reviewing', count: pipelineCounts.under_review, color: '#f59e0b' },
-                      { label: 'Offers', count: pipelineCounts.offer_received, color: '#10b981', highlight: pipelineCounts.offer_received > 0 },
-                      { label: 'Accepted', count: pipelineCounts.accepted, color: '#10b981' },
-                      { label: 'Funded', count: pipelineCounts.funded, color: '#10b981' },
-                    ].map((stage, i) => (
-                      <div
-                        key={stage.label}
-                        onClick={() => navigate('/app/access-funding')}
-                        style={{
-                          padding: '8px 10px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer',
-                          background: stage.highlight ? `${stage.color}15` : 'var(--background)',
-                          border: `1px solid ${stage.count > 0 ? stage.color + '30' : 'var(--border)'}`,
-                          position: 'relative',
-                        }}
-                      >
-                        {stage.highlight && stage.count > 0 && (
-                          <div style={{ position: 'absolute', top: '-4px', right: '-4px', width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', border: '2px solid var(--card)' }} />
-                        )}
-                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '18px', color: stage.count > 0 ? stage.color : 'var(--muted-foreground)' }}>
-                          {stage.count}
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)', fontWeight: 600 }}>
-                          {stage.label}
-                        </div>
-                        {i < 4 && (
-                          <div style={{ position: 'absolute', right: '-5px', top: '50%', transform: 'translateY(-50%)', fontSize: '8px', color: 'var(--muted-foreground)', zIndex: 1 }}>▶</div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Offer alert */}
-                {pipelineCounts.offer_received > 0 && (
-                  <div onClick={() => navigate('/app/access-funding')} style={{ marginTop: '10px', padding: '10px 14px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '14px' }}>💰</span>
-                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: '#10b981' }}>
-                      {pipelineCounts.offer_received} funding offer{pipelineCounts.offer_received !== 1 ? 's' : ''} waiting — tap to review
-                    </span>
-                    <ArrowRight size={13} style={{ color: '#10b981', marginLeft: 'auto' }} />
-                  </div>
-                )}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
-                {FEATURED_PROGRAMS.map((prog, i) => {
-                  const isPreQual = preQualPrograms.some((p: { path: string }) => p.path === prog.path);
-                  return (
-                    <div key={prog.path} onClick={() => navigate(prog.path)} style={{ padding: '16px 20px', borderRight: i < 2 ? '1px solid var(--border)' : 'none', cursor: 'pointer', transition: 'background 0.15s' }} onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--background)')} onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                        <span style={{ fontSize: '20px', flexShrink: 0 }}>{prog.icon}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)' }}>{prog.label}</span>
-                            {isPreQual && <CheckCircle2 size={13} style={{ color: '#10b981', flexShrink: 0 }} />}
-                          </div>
-                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>{prog.range}</div>
-                          {(() => {
-                            // Score threshold per product type
-                            const thresholds: Record<string, number> = {
-                              '/app/access-funding/business-credit-line': 450,
-                              '/app/access-funding/revenue-based-loan': 400,
-                              '/app/access-funding/sba-business-loan': 750,
-                              '/app/access-funding/equipment-financing': 500,
-                              '/app/access-funding/merchant-advance': 350,
-                              '/app/access-funding/working-capital-loans': 450,
-                            };
-                            const threshold = thresholds[prog.path] || 500;
-                            const ptsNeeded = Math.max(0, threshold - fundScore);
-                            return (
-                              <div style={{ marginTop: '6px', display: 'inline-block', padding: '2px 8px', borderRadius: '4px', background: isPreQual ? 'rgba(16,185,129,0.1)' : 'rgba(100,116,139,0.1)', border: '1px solid ' + (isPreQual ? 'rgba(16,185,129,0.25)' : 'var(--border)') }}>
-                                <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: isPreQual ? '#10b981' : 'var(--muted-foreground)' }}>
-                                  {isPreQual ? 'Pre-Qualified ✓' : ptsNeeded === 0 ? 'Almost there' : `+${ptsNeeded} pts needed`}
-                                </span>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* ROW 3: READINESS + TOOLS */}
-            <div className="dashboard-stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-              <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
-                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px', color: 'var(--foreground)', margin: 0 }}>Readiness Breakdown</h3>
-                  <button onClick={() => navigate('/app/my-progress')} style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 600, color: 'var(--muted-foreground)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>Full detail →</button>
-                </div>
-                <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {DIM_ORDER.map((key, idx) => {
-                    const val = (dimAvg as Record<string, number>)[key] ?? 0;
-                    const st = getDimStatus(val);
-                    const dim = DIM_CONFIG.find(d => d.key === key);
-                    const Icon = dim ? dim.Icon : Zap;
-                    return (
-                      <div key={key}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <Icon size={13} style={{ color: st.color, flexShrink: 0 }} />
-                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--foreground)', flex: 1 }}>{DIM_LABELS[key]}</span>
-                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: st.color }}>{st.label}</span>
-                          <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', minWidth: '32px', textAlign: 'right' }}>{Math.round(val * 100)}%</span>
-                        </div>
-                        <div style={{ height: '5px', background: 'var(--border)', borderRadius: '99px', overflow: 'hidden' }}>
-                          <motion.div initial={{ width: 0 }} animate={{ width: (val * 100) + '%' }} transition={{ duration: 0.8, ease: 'easeOut', delay: idx * 0.08 }} style={{ height: '100%', background: st.color, borderRadius: '99px' }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              {/* Quick actions — continue momentum, not redundant nav */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>Quick Actions</p>
-                {[
-                  { label: '📊 View Capital Intelligence', desc: 'FundScore · SBSS · Funding range', path: '/app/status-reports', color: '#3b82f6' },
-                  { label: '🛡️ Continue Compliance', desc: 'Work through your lender checklist', path: '/app/lender-compliance', color: '#10b981' },
-                  { label: '💰 Access Funding', desc: `${preQualPrograms.length > 0 ? preQualPrograms.length + ' products pre-qualified' : 'See products you qualify for'}`, path: '/app/access-funding', color: '#f59e0b' },
-                ].map(item => (
-                  <div
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'border-color 0.15s' }}
-                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.borderColor = item.color + '50')}
-                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.borderColor = 'var(--border)')}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', color: 'var(--foreground)' }}>{item.label}</div>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '2px' }}>{item.desc}</div>
-                    </div>
-                    <ArrowRight size={14} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* ROW 4: ACHIEVEMENTS STRIP — compact, actionable, links to full page */}
+            {/* ACHIEVEMENTS STRIP */}
             <BadgeStrip newBadgeIds={newBadgeIds} onViewAll={() => navigate('/app/my-progress')} />
 
           </motion.div>
