@@ -401,15 +401,15 @@ function DashboardHeader({ timeOfDay, firstName, hasAssessment, criticalBlockers
     : 'Complete your assessment to see your full capital potential';
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '36px', gap: '16px', flexWrap: 'wrap' }}>
       <div>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>
           Good {timeOfDay}, {firstName}
         </p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(24px, 3.5vw, 34px)', color: 'var(--foreground)', lineHeight: 1.1, letterSpacing: '-0.02em', margin: 0 }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(30px, 4.5vw, 44px)', color: 'var(--foreground)', lineHeight: 1.0, letterSpacing: '-0.03em', margin: 0 }}>
           Mission Control
         </h1>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', margin: '5px 0 0', lineHeight: 1.4 }}>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)', margin: '8px 0 0', lineHeight: 1.5 }}>
           {subtitle}
         </p>
       </div>
@@ -483,14 +483,14 @@ function ReadinessSnapshotCard({
   const thresholdPct = (160 / 300) * 100;
 
   return (
-    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '20px', padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: '18px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
 
       {/* Hero dollar */}
       <div>
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           {capitalDisplay > 0 ? (
             <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(32px, 5vw, 44px)', color: gaugeColor, lineHeight: 1, letterSpacing: '-0.02em' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(34px, 5.5vw, 48px)', color: gaugeColor, lineHeight: 1, letterSpacing: '-0.03em' }}>
                 {formatMoney(capitalDisplay)}
               </div>
               {realCapital.count > 0 && (
@@ -1012,7 +1012,7 @@ function ProgressMarkerCard({
   ];
 
   return (
-    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px' }}>
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden', marginBottom: '0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
       {/* Header */}
       <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
@@ -1173,7 +1173,7 @@ function NextBestMoveCard({ criticalBlockers, topBlocker, fundScore, capitalDisp
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '0' }}>
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '20px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '0', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -1201,7 +1201,7 @@ function NextBestMoveCard({ criticalBlockers, topBlocker, fundScore, capitalDisp
 
           {/* Zone B — Do this now */}
           <div style={{ paddingBottom: '16px', borderBottom: '1px solid var(--border)', marginBottom: '16px' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '19px', color: 'var(--foreground)', marginBottom: '6px', lineHeight: 1.2 }}>{topBlocker.title}</h2>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '22px', color: 'var(--foreground)', marginBottom: '8px', lineHeight: 1.15, letterSpacing: '-0.02em' }}>{topBlocker.title}</h2>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', lineHeight: 1.6, marginBottom: '12px' }}>
               {topBlocker.description || 'Fixing this unlocks the next tier of capital products for your business.'}
             </p>
@@ -1215,8 +1215,8 @@ function NextBestMoveCard({ criticalBlockers, topBlocker, fundScore, capitalDisp
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700, color: '#3b82f6' }}>~15 min to fix</span>
               </div>
             </div>
-            <button onClick={() => { logEvent({ event_name: 'top_blocker_cta_clicked', payload: { blocker_title: topBlocker.title, blocker_category: topBlocker.category, fico_impact: topBlocker.ficoImpact ?? 0 } }); navigate(getBlockerRoute(topBlocker.category)); }} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', padding: '11px 22px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '10px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 16px rgba(16,185,129,0.25)' }}>
-              Fix This Now <ArrowRight size={14} />
+            <button onClick={() => { logEvent({ event_name: 'top_blocker_cta_clicked', payload: { blocker_title: topBlocker.title, blocker_category: topBlocker.category, fico_impact: topBlocker.ficoImpact ?? 0 } }); navigate(getBlockerRoute(topBlocker.category)); }} style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '14px', padding: '13px 28px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', borderRadius: '11px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 6px 24px rgba(16,185,129,0.35)', letterSpacing: '-0.01em' }}>
+              Fix This Now <ArrowRight size={15} />
             </button>
           </div>
 
@@ -1507,7 +1507,7 @@ export function Dashboard() {
           <button onClick={() => navigate('/app/settings')} style={{ fontSize: '12px', fontWeight: 700, color: '#92400e', background: 'rgba(146,64,14,0.12)', border: '1px solid rgba(146,64,14,0.25)', borderRadius: '6px', padding: '5px 14px', cursor: 'pointer' }}>Verify Now →</button>
         </div>
       )}
-      <div className="dashboard-main-padding" style={{ padding: '32px 28px 48px', width: '100%', boxSizing: 'border-box' }}>
+      <div className="dashboard-main-padding" style={{ padding: '40px 32px 60px', width: '100%', boxSizing: 'border-box' }}>
         
         {/* ── HEADER ─────────────────────────────────────────────────────── */}
         <DashboardHeader
@@ -1523,7 +1523,7 @@ export function Dashboard() {
 
         {/* ── NO ASSESSMENT STATE ─────────────────────────────────────────────── */}
         {!hasAssessment && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} style={{ textAlign: 'center', padding: '60px 32px', background: 'var(--card)', border: '2px dashed var(--border)', borderRadius: '20px' }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} style={{ textAlign: 'center', padding: '72px 32px', background: 'var(--card)', border: '2px dashed var(--border)', borderRadius: '24px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎯</div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '24px', color: 'var(--foreground)', marginBottom: '10px' }}>Discover Your FundScore</h2>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '15px', color: 'var(--muted-foreground)', maxWidth: '420px', margin: '0 auto 24px', lineHeight: 1.6 }}>
@@ -1539,8 +1539,8 @@ export function Dashboard() {
         {hasAssessment && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
 
-            {/* ROW 1: CAPITAL POTENTIAL + PRIORITY ACTION */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(230px, 270px) 1fr', gap: '20px', marginBottom: '20px', alignItems: 'stretch' }}>
+            {/* ROW 1: CAPITAL POTENTIAL + PRIORITY ACTION — Command band */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 310px) 1fr', gap: '24px', marginBottom: '36px', alignItems: 'stretch' }}>
               <ReadinessSnapshotCard
                 fundScore={fundScore}
                 bankableScore={bankableScore}
@@ -1565,7 +1565,8 @@ export function Dashboard() {
               />
             </div>
 
-            {/* ── PROGRESS MARKER — stage-aware capital journey ── */}
+            {/* ── PROGRESS MARKER — stage-aware capital journey (Progress band) ── */}
+            <div style={{ marginBottom: '28px' }}>
             <ProgressMarkerCard
               bankableScore={bankableScore}
               bankablePassCount={bankablePassCount}
@@ -1578,8 +1579,9 @@ export function Dashboard() {
               fundScore={fundScore}
               navigate={navigate}
             />
+            </div>
 
-            {/* FOLLOW-ON BLOCKERS + READINESS + CAPITAL ACCESS */}
+            {/* FOLLOW-ON BLOCKERS + READINESS + CAPITAL ACCESS — Opportunity / Intelligence / Forecast bands */}
             <FollowOnBlockersCard
               hardBlockers={hardBlockers}
               suppressors={suppressors}
