@@ -1,7 +1,9 @@
 // Centralized funding eligibility storage and retrieval
 
 import { checkAllProgramsEligibility, type ScanData, checkProgramEligibility } from './fundingRequirements';
-import { REVENUE_MIDPOINTS, CREDIT_SCORE_MIDPOINTS } from '../pages/business-assessment/types';
+import { evaluateProducts } from '../pages/business-assessment/productEligibility';
+import { computeScore } from '../pages/business-assessment/engine';
+import type { UnifiedAnswers } from '../pages/business-assessment/types';
 
 // Map program IDs to their routes
 export const programRoutes: { [key: string]: string } = {
@@ -33,46 +35,39 @@ export function storePreQualifiedPrograms(programIds: string[]): void {
   window.dispatchEvent(new Event('scanDataUpdated'));
 }
 
-// Derive pre-qualified list from unified_assessment (new system) when available
+// ── Canonical product ID → route ID mapping ──────────────────────────────────
+// Single source of truth. Results.tsx imports this; do not redeclare elsewhere.
+// productEligibility IDs (engine) → fundingEligibility program IDs (routes)
+export const PRODUCT_TO_PROGRAM_ID: Record<string, string> = {
+  mca:          'merchant-advance',
+  term_alt:     'business-term-loan',
+  loc_alt:      'business-credit-line',
+  sba_7a:       'sba-business-loan',
+  sba_express:  'sba-business-loan',
+  bank_term:    'business-term-loan',
+  bank_loc:     'business-credit-line',
+  bcc:          'business-credit-cards',
+  bcc_0apr:     'business-credit-cards',
+  pgcl:         'personal-credit-cards',
+  factoring:    'receivable-factoring',
+  equipment:    'equipment-financing',
+  po_financing: 'purchase-order-finance',
+  cre:          'dscr-loans',
+  rbf:          'revenue-based-loan',
+  inventory:    'inventory-line-of-credit',
+  acquisition:  'bridge-loans',
+};
+
+// Derive pre-qualified route IDs from unified_assessment using the canonical
+// evaluateProducts() engine. Fallback for users who skipped the Results page.
 function deriveFromUnifiedAssessment(): string[] {
   try {
     const raw = localStorage.getItem('unified_assessment');
     if (!raw) return [];
-    const data = JSON.parse(raw);
-    const credit = Math.min(
-      CREDIT_SCORE_MIDPOINTS[data.experian] ?? 580,
-      CREDIT_SCORE_MIDPOINTS[data.transunion] ?? 580,
-      CREDIT_SCORE_MIDPOINTS[data.equifax] ?? 580
-    );
-    const monthlyRev = REVENUE_MIDPOINTS[data.monthlyRevenue] ?? 0;
-    const now = new Date();
-    const start = data.startDate ? new Date(data.startDate.year, (data.startDate.month || 1) - 1) : null;
-    const ageMonths = start ? (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()) : 0;
-    const hasBankruptcy = data.hasBankruptcy === 'recent' || data.hasBankruptcy === 'aging';
-    const hasEIN = data.hasEIN === true;
-
-    const qualified: string[] = [];
-
-    if (ageMonths >= 3 && monthlyRev >= 5000 && !hasBankruptcy) qualified.push('merchant-advance');
-    if (ageMonths >= 6 && monthlyRev >= 10000 && !hasBankruptcy) qualified.push('revenue-based-loan');
-    if (ageMonths >= 6 && monthlyRev >= 10000 && credit >= 550) qualified.push('business-term-loan');
-    if (ageMonths >= 6 && monthlyRev >= 5000 && credit >= 580) qualified.push('business-credit-line');
-    if (credit >= 580 && monthlyRev >= 5000 && hasEIN) qualified.push('equipment-financing');
-    if (credit >= 580 && monthlyRev >= 10000) qualified.push('startup-equipment');
-    if (credit >= 550 && monthlyRev >= 3000 && ageMonths >= 6) qualified.push('truck-utility-vehicles');
-    if (credit >= 680 && hasEIN) qualified.push('business-credit-cards');
-    if (credit >= 640) qualified.push('personal-credit-cards');
-    if (monthlyRev >= 15000 && data.arBalance && data.arBalance !== 'none') qualified.push('receivable-factoring');
-    if (credit >= 640 && ageMonths >= 12 && monthlyRev >= 5000) qualified.push('credit-union-loans');
-    if (credit >= 680 && ageMonths >= 24 && monthlyRev >= 15000 && hasEIN && !hasBankruptcy) qualified.push('sba-business-loan');
-    if (monthlyRev >= 25000 && data.arBalance && data.arBalance !== 'none') qualified.push('accounts-receivable-finance');
-    if (monthlyRev >= 15000 && data.inventoryValue && data.inventoryValue !== 'none') qualified.push('inventory-line-of-credit');
-    if (data.purchaseOrders === 'yes' && monthlyRev >= 25000) qualified.push('purchase-order-finance');
-    if (data.ownProperty === 'yes' && credit >= 660 && ageMonths >= 24) qualified.push('dscr-loans');
-    if (data.ownProperty === 'yes' && credit >= 640) qualified.push('bridge-loans');
-    if (data.ownProperty === 'yes' && credit >= 660 && ageMonths >= 24 && monthlyRev >= 25000) qualified.push('construction-loans');
-
-    return [...new Set(qualified)];
+    const data = JSON.parse(raw) as UnifiedAnswers;
+    const { score } = computeScore(data);
+    const eligible = evaluateProducts(data, score).filter(p => p.qualifies);
+    return [...new Set(eligible.map(p => PRODUCT_TO_PROGRAM_ID[p.id]).filter(Boolean))];
   } catch {
     return [];
   }

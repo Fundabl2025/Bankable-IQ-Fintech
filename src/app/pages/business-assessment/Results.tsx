@@ -10,6 +10,7 @@ import { UnifiedAnswers, ExtendedResultsOutput } from './types';
 import { computeScore, getBand, computeExtendedResults } from './engine';
 import { evaluateProducts } from './productEligibility';
 import { getAllAuditItems, AuditItem } from '../../utils/businessData';
+import { PRODUCT_TO_PROGRAM_ID } from '../../utils/fundingEligibility';
 import { EstimatedFunding } from '../StatusReports/EstimatedFunding';
 import { useAuth } from '../../contexts/AuthContext';
 import { ArrowRight, Check, AlertCircle } from 'lucide-react';
@@ -209,26 +210,7 @@ export function Results() {
   const eligibleProducts = products.filter(p => p.qualifies);
 
   // ── Sync eligible products → preQualifiedPrograms ─────────────────────────
-  // productEligibility IDs → fundingEligibility program IDs used by Access Funding
-  const PRODUCT_TO_PROGRAM_ID: Record<string, string> = {
-    mca:          'merchant-advance',
-    term_alt:     'business-term-loan',
-    loc_alt:      'business-credit-line',
-    sba_7a:       'sba-business-loan',
-    sba_express:  'sba-business-loan',
-    bank_term:    'business-term-loan',
-    bank_loc:     'business-credit-line',
-    bcc:          'business-credit-cards',
-    bcc_0apr:     'business-credit-cards',
-    pgcl:         'personal-credit-cards',
-    factoring:    'receivable-factoring',
-    equipment:    'equipment-financing',
-    po_financing: 'purchase-order-finance',
-    cre:          'dscr-loans',
-    rbf:          'revenue-based-loan',
-    inventory:    'inventory-line-of-credit',
-    acquisition:  'bridge-loans',
-  };
+  // Uses shared PRODUCT_TO_PROGRAM_ID from fundingEligibility (single source of truth)
   const qualifiedProgramIds = [
     ...new Set(eligibleProducts.map(p => PRODUCT_TO_PROGRAM_ID[p.id]).filter(Boolean))
   ];
