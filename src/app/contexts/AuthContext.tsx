@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { isSupabaseConfigured } from '../lib/supabase/client'
+import { restoreFromDatabase } from '../lib/data-adapter'
 import { User, Session } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -35,6 +36,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session } } = await supabase.auth.getSession()
         setSession(session)
         setUser(session?.user ?? null)
+        // Restore assessment + badges from DB if DB record is newer than localStorage.
+        // Runs before setLoading(false) so ProtectedRoute spinner acts as a gate —
+        // no page renders until localStorage is populated.
+        if (session?.user) {
+          await restoreFromDatabase()
+        }
       } catch (error) {
         console.error('Error checking session:', error)
       } finally {
@@ -51,9 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const { supabase } = await import('../lib/supabase/client')
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (_event, session) => {
+          async (_event, session) => {
             setSession(session)
             setUser(session?.user ?? null)
+            // On explicit sign-in (not boot — checkSession handles that),
+            // restore DB data so the user's account follows them across devices
+            if (_event === 'SIGNED_IN' && session?.user) {
+              await restoreFromDatabase()
+            }
           }
         )
         unsubscribe = () => subscription?.unsubscribe()

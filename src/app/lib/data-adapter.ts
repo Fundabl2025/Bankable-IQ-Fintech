@@ -48,6 +48,10 @@ export async function setDataItem(key: string, value: string): Promise<void> {
   // Event: fundscore_generated — fires whenever assessment data is saved
   // T-12B: Also append SBSS snapshot to history on every assessment save
   if (key === 'unified_assessment') {
+    // Track when this assessment was last saved locally — used by restoreFromDatabase()
+    // for timestamp-based conflict resolution (DB vs localStorage, newer wins)
+    localStorage.setItem('fundready_score_generated_at', new Date().toISOString())
+
     const { fund_score, bankable_score } = parseScoresFromAssessment(value)
     if (fund_score > 0) {
       logEvent({ event_name: 'fundscore_generated', payload: { fund_score, scoring_version: SCORING_VERSION } })
@@ -220,6 +224,75 @@ export async function migrateLocalDataToSupabase(): Promise<void> {
   } catch (error) {
     console.error('[FundReady] Error during data migration:', error)
     throw error
+  }
+}
+
+/**
+ * Restores assessment and badge data from Supabase into localStorage when a
+ * user logs in or when an existing session is detected on app boot.
+ *
+ * Conflict resolution: timestamp-based — the record with the newer
+ * `score_generated_at` wins. If localStorage is empty, always restores from DB.
+ *
+ * Silent no-op in all error cases (Supabase unreachable, no DB row, no session).
+ * Never throws — the auth flow always continues regardless.
+ */
+export async function restoreFromDatabase(): Promise<void> {
+  if (!isSupabaseConfigured) return
+
+  try {
+    const user = await getCurrentUser()
+    if (!user) return
+
+    const { data: dbRow, error } = await supabase
+      .from('business_profiles')
+      .select('assessment_data, score_generated_at, badges_data')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (error || !dbRow) return
+
+    // ── Restore unified_assessment ─────────────────────────────────────────
+    if (dbRow.assessment_data) {
+      const localTimestamp = localStorage.getItem('fundready_score_generated_at')
+      const dbTimestamp = dbRow.score_generated_at as string | null
+
+      // Restore when: localStorage has no assessment, OR DB record is newer
+      const shouldRestore =
+        !localStorage.getItem('unified_assessment') ||
+        (dbTimestamp && (!localTimestamp || dbTimestamp > localTimestamp))
+
+      if (shouldRestore) {
+        const assessmentJson =
+          typeof dbRow.assessment_data === 'string'
+            ? dbRow.assessment_data
+            : JSON.stringify(dbRow.assessment_data)
+
+        localStorage.setItem('unified_assessment', assessmentJson)
+        if (dbTimestamp) {
+          localStorage.setItem('fundready_score_generated_at', dbTimestamp)
+        }
+
+        // Notify any already-mounted components that localStorage changed
+        window.dispatchEvent(
+          new StorageEvent('storage', { key: 'unified_assessment', newValue: assessmentJson })
+        )
+        console.info('[FundReady] Assessment restored from database (newer DB record)')
+      }
+    }
+
+    // ── Restore fundready_badges ───────────────────────────────────────────
+    // Additive only — never overwrite locally-earned badges with an older DB copy
+    if (dbRow.badges_data && !localStorage.getItem('fundready_badges')) {
+      const badgesJson =
+        typeof dbRow.badges_data === 'string'
+          ? dbRow.badges_data
+          : JSON.stringify(dbRow.badges_data)
+      localStorage.setItem('fundready_badges', badgesJson)
+    }
+  } catch (error) {
+    // Non-fatal: localStorage remains as-is, app continues normally
+    console.warn('[FundReady] restoreFromDatabase:', error)
   }
 }
 
