@@ -29,12 +29,14 @@ import {
   saveProgressState,
   toggleActionComplete,
   CreditProgressState,
+  DTIResult,
 } from './credit-path/creditBlockers';
 import { UtilizationCalculator } from './credit-path/UtilizationCalculator';
 import { TradlineStarterList } from './credit-path/TradlineStarterList';
 import { InquiryTracker } from './credit-path/InquiryTracker';
 import { DisputeScaffolding } from './credit-path/DisputeScaffolding';
 import { DSCREstimator } from './credit-path/DSCREstimator';
+import { DTIEstimator, DTI_RESULT_KEY, getIncomeSeedFromAssessment } from './credit-path/DTIEstimator';
 import { logEvent } from '../lib/analytics/events';
 
 // ── Score display helpers ─────────────────────────────────────────────────────
@@ -135,6 +137,14 @@ function EmptyState() {
 export function CreditPath() {
   const [data, setData] = useState<UnifiedAnswers | null>(null);
   const [progress, setProgress] = useState<CreditProgressState>(() => loadProgressState());
+  const [dtiResult, setDtiResult] = useState<DTIResult | null>(() => {
+    // Load persisted DTI result on mount — page layer owns storage, not domain layer
+    try {
+      const raw = localStorage.getItem(DTI_RESULT_KEY);
+      if (raw) return JSON.parse(raw) as DTIResult;
+    } catch { /* non-fatal */ }
+    return null;
+  });
   const viewedRef = useRef(false);
 
   // Load assessment
@@ -145,13 +155,25 @@ export function CreditPath() {
     } catch { /* non-fatal */ }
   }, []);
 
+  // Listen for DTI result updates from the estimator component
+  useEffect(() => {
+    const handleDtiUpdate = () => {
+      try {
+        const raw = localStorage.getItem(DTI_RESULT_KEY);
+        if (raw) setDtiResult(JSON.parse(raw) as DTIResult);
+      } catch { /* non-fatal */ }
+    };
+    window.addEventListener('dtiResultUpdated', handleDtiUpdate);
+    return () => window.removeEventListener('dtiResultUpdated', handleDtiUpdate);
+  }, []);
+
   // Fire creditpath_viewed once on mount (ref-guarded)
   useEffect(() => {
     if (!data || viewedRef.current) return;
     viewedRef.current = true;
     try {
       const ext = computeExtendedResults(data);
-      const blockers = extractCreditBlockers(data);
+      const blockers = extractCreditBlockers(data, { dtiResult: dtiResult ?? undefined });
       const top = selectTopThree(blockers);
       logEvent({
         event_name: 'creditpath_viewed',
@@ -177,7 +199,7 @@ export function CreditPath() {
   }
 
   const pcs = ext.personalCreditSummary;
-  const allBlockers = extractCreditBlockers(data);
+  const allBlockers = extractCreditBlockers(data, { dtiResult: dtiResult ?? undefined });
   const topThree = selectTopThree(allBlockers);
   const milestones = evaluateMilestones(data, progress, allBlockers);
   const completedCount = topThree.filter(b => progress.completedActions.includes(b.id)).length;
@@ -656,12 +678,17 @@ export function CreditPath() {
                       />
                     )}
 
-                    {/* Tool 5: DSCR Estimator */}
+                    {/* Tool 5: Capacity Tools (DSCR + DTI) */}
                     {blocker.category === 'capacity' && (
-                      <DSCREstimator
-                        seedNOI={data.annualNOI ? NOI_MIDPOINTS[data.annualNOI] : undefined}
-                        seedDebtService={data.annualDebtService ? DEBT_SERVICE_MIDPOINTS[data.annualDebtService] : undefined}
-                      />
+                      <>
+                        <DSCREstimator
+                          seedNOI={data.annualNOI ? NOI_MIDPOINTS[data.annualNOI] : undefined}
+                          seedDebtService={data.annualDebtService ? DEBT_SERVICE_MIDPOINTS[data.annualDebtService] : undefined}
+                        />
+                        <DTIEstimator
+                          seedIncome={getIncomeSeedFromAssessment(data.personalIncome)}
+                        />
+                      </>
                     )}
 
                     {/* Confidence tier note */}

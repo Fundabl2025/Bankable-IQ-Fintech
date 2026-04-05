@@ -59,6 +59,16 @@ export interface CreditProgressState {
   confidenceTier: 1;
 }
 
+// DTI result type — produced by DTIEstimator, passed into extractCreditBlockers
+// via options. The domain layer never reads localStorage directly.
+export interface DTIResult {
+  monthlyIncome: number;
+  monthlyDebt: number;
+  dti: number;                              // 0–1 ratio (e.g. 0.38 = 38%)
+  status: 'strong' | 'passing' | 'critical';
+  calculatedAt: string;                     // ISO timestamp
+}
+
 // ── Internal ranking constants ────────────────────────────────────────────────
 
 const SEVERITY_WEIGHT: Record<BlockerSeverity, number> = {
@@ -100,7 +110,16 @@ export function getCompositeFromData(data: UnifiedAnswers): number {
 // All readinessImpact and capitalImpact strings use estimate-safe language only.
 // No "will improve," "guaranteed," or exact outcome language.
 
-export function extractCreditBlockers(data: UnifiedAnswers): CreditBlocker[] {
+// Options type for extractCreditBlockers — page layer passes in pre-loaded results
+// so the domain function stays pure (no storage reads).
+export interface ExtractBlockerOptions {
+  dtiResult?: DTIResult;
+}
+
+export function extractCreditBlockers(
+  data: UnifiedAnswers,
+  options?: ExtractBlockerOptions,
+): CreditBlocker[] {
   const blockers: CreditBlocker[] = [];
   const composite = getCompositeFromData(data);
 
@@ -483,6 +502,51 @@ export function extractCreditBlockers(data: UnifiedAnswers): CreditBlocker[] {
           confidenceTier: 1,
         });
       }
+    }
+  }
+
+  // ── CAPACITY — DTI ───────────────────────────────────────────────────────────
+  // Fires only when the page layer provides a completed DTI result.
+  // The domain layer never reads localStorage — see ExtractBlockerOptions.
+
+  const dtiResult = options?.dtiResult;
+  if (dtiResult && dtiResult.dti > 0) {
+    if (dtiResult.dti > 0.43) {
+      blockers.push({
+        id: 'dti_critical',
+        category: 'capacity',
+        severity: 'critical',
+        title: 'DTI Exceeds Lender Threshold',
+        why: `Your estimated debt-to-income ratio is approximately ${Math.round(dtiResult.dti * 100)}% — above the 43% threshold most lenders apply when evaluating personal guarantees. This triggers a Capacity flag in underwriting and is a common reason for denial even when credit scores are strong.`,
+        effort: 'high',
+        timeToResult: '90–180 days',
+        readinessImpact: 'Reducing monthly debt obligations to bring DTI below 43% may clear the personal guarantee Capacity flag and meaningfully improve your approval profile.',
+        capitalImpact: 'High DTI may limit access to products requiring personal guarantees. Some alternative products evaluate business cash flow more heavily than personal DTI.',
+        firstStep: 'Use the DTI Estimator to identify exactly how much monthly debt reduction — or income increase — is needed to reach the 43% threshold.',
+        disclosures: [
+          'DTI estimate is based on values you self-reported. Actual lender calculations use verified tax returns, pay stubs, and full debt schedules.',
+          'This is not financial or lending advice. Consult a qualified advisor for your specific situation.',
+        ],
+        confidenceTier: 1,
+      });
+    } else if (dtiResult.dti > 0.36) {
+      blockers.push({
+        id: 'dti_high',
+        category: 'capacity',
+        severity: 'high',
+        title: 'DTI Above Preferred Range',
+        why: `Your estimated debt-to-income ratio is approximately ${Math.round(dtiResult.dti * 100)}% — above the 36% preferred range, though within what many lenders allow up to 43%. Lenders prefer DTI below 36% when evaluating personal guarantees.`,
+        effort: 'medium',
+        timeToResult: '60–90 days',
+        readinessImpact: 'Reducing monthly debt to bring DTI under 36% may improve your personal guarantee profile and strengthen rate and terms offers.',
+        capitalImpact: 'DTI in the 36–43% range may still be acceptable for many products, but reducing it before applying may improve approval odds and terms.',
+        firstStep: 'Review recurring monthly obligations and identify any that can be paid off or reduced before your application.',
+        disclosures: [
+          'DTI estimate is based on values you self-reported. Actual lender calculations will differ.',
+          'Some lenders accept DTI above 36% with strong compensating factors such as business cash flow or high credit scores.',
+        ],
+        confidenceTier: 1,
+      });
     }
   }
 

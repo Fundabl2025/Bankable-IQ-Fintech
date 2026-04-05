@@ -378,6 +378,12 @@ Before shipping any feature, run it through all four:
 | `CLAUDE.md` | This file — AI operating manual, enforced on every task |
 | `PROJECT_PREFLIGHT.md` | Mandatory preflight process before any non-trivial task |
 | `PROJECT_GOVERNANCE.md` | Platform governance — decisions, risk, versioning, anti-patterns |
+| `docs/ENGINEERING.md` | Engineering standards — architecture principles, code ownership, layer rules |
+| `docs/TESTING.md` | Testing strategy — engine unit tests, smoke tests, fixture patterns |
+| `docs/RELEASES.md` | Release management — deploy checklist, classification, hotfix protocol |
+| `docs/OBSERVABILITY.md` | Analytics — event taxonomy, funnel definition, KPIs, privacy rules |
+| `docs/INCIDENTS.md` | Incident management — severity levels, response protocol, incident log |
+| `docs/MIGRATIONS.md` | Schema and scoring migrations — versioning protocol, backward compat rules |
 | `src/app/components/Sidebar.tsx` | Nav, MY TOOLS section, membership badge |
 | `src/app/utils/loanRequirementsMap.ts` | Apply-readiness engine for all programs |
 | `src/app/utils/fundingRequirements.ts` | 19 funding programs, eligibility objects |

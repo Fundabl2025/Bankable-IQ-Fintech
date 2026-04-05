@@ -22,6 +22,8 @@ import {
   FileText,
   Lock,
   Info,
+  Percent,
+  Landmark,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router';
 import { useState, useEffect, useRef } from 'react';
@@ -34,8 +36,11 @@ import {
 import { computeScore, getBand, computeExtendedResults } from './business-assessment/engine';
 import { getDataItem } from '../lib/data-adapter';
 import { useAuth } from '../contexts/AuthContext';
-import { DIM_LABELS } from './business-assessment/types';
+import { DIM_LABELS, NOI_MIDPOINTS, DEBT_SERVICE_MIDPOINTS } from './business-assessment/types';
 import type { UnifiedAnswers } from './business-assessment/types';
+import { computeBestFirstMove, type BestFirstMove } from '../utils/capitalSequencing';
+import { type DTIResult } from './credit-path/creditBlockers';
+import { DTI_RESULT_KEY } from './credit-path/DTIEstimator';
 import { BadgeStrip, BadgeToastContainer } from '../components/BadgeGrid';
 import { checkAndAwardBadges, syncBadgesFromCloud, recordInitialScore, getInitialScore } from '../lib/badges';
 import { getPreQualifiedPrograms } from '../utils/fundingEligibility';
@@ -1290,6 +1295,275 @@ function NextBestMoveCard({ criticalBlockers, topBlocker, fundScore, capitalDisp
   );
 }
 
+// ── CapacityCard ──────────────────────────────────────────────────────────────
+
+interface CapacityCardProps {
+  dscrValue: number | null;
+  dtiResult: DTIResult | null;
+  navigate: (path: string) => void;
+}
+
+function CapacityCard({ dscrValue, dtiResult, navigate }: CapacityCardProps) {
+  const dscrStatus =
+    dscrValue === null ? null
+    : dscrValue >= 1.35 ? 'strong'
+    : dscrValue >= 1.25 ? 'passing'
+    : dscrValue >= 1.0 ? 'below'
+    : 'critical';
+
+  const dtiStatus = dtiResult?.status ?? null;
+
+  const dscrColor =
+    dscrStatus === 'strong' ? '#10b981'
+    : dscrStatus === 'passing' ? '#8ab820'
+    : dscrStatus === 'below' ? '#f59e0b'
+    : dscrStatus === 'critical' ? '#b04428'
+    : 'var(--muted-foreground)';
+
+  const dtiColor =
+    dtiStatus === 'strong' ? '#10b981'
+    : dtiStatus === 'passing' ? '#f59e0b'
+    : dtiStatus === 'critical' ? '#b04428'
+    : 'var(--muted-foreground)';
+
+  // Fire analytics event on mount
+  useEffect(() => {
+    logEvent({ event_name: 'capacity_card_viewed', payload: {
+      dscr_status: dscrStatus ?? 'not_assessed',
+      dti_status: dtiStatus ?? 'not_assessed',
+    }});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div style={{
+      background: 'var(--card)',
+      border: '1px solid var(--border)',
+      borderRadius: '16px',
+      padding: '20px 22px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+        <Percent size={14} style={{ color: '#f59e0b', flexShrink: 0 }} />
+        <p style={{
+          fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700,
+          color: 'var(--muted-foreground)', textTransform: 'uppercase',
+          letterSpacing: '0.08em', margin: 0,
+        }}>
+          Capacity Readiness
+        </p>
+      </div>
+
+      {/* DSCR row */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '10px 0', borderBottom: '1px solid var(--border)',
+      }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--foreground)' }}>
+          DSCR
+        </span>
+        {dscrValue !== null ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 800, color: dscrColor }}>
+              {dscrValue.toFixed(2)}x
+            </span>
+            <span style={{
+              padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 700,
+              fontFamily: 'var(--font-body)',
+              background: `${dscrColor}15`, color: dscrColor, border: `1px solid ${dscrColor}30`,
+            }}>
+              {dscrStatus === 'strong' ? 'Strong' : dscrStatus === 'passing' ? 'At threshold' : dscrStatus === 'below' ? 'Below 1.25x' : 'Critical'}
+            </span>
+          </div>
+        ) : (
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
+            — Not assessed
+          </span>
+        )}
+      </div>
+
+      {/* DTI row */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '10px 0', borderBottom: '1px solid var(--border)',
+      }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600, color: 'var(--foreground)' }}>
+          DTI
+        </span>
+        {dtiResult ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 800, color: dtiColor }}>
+              {Math.round(dtiResult.dti * 100)}%
+            </span>
+            <span style={{
+              padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 700,
+              fontFamily: 'var(--font-body)',
+              background: `${dtiColor}15`, color: dtiColor, border: `1px solid ${dtiColor}30`,
+            }}>
+              {dtiStatus === 'strong' ? 'Strong' : dtiStatus === 'passing' ? 'Borderline' : 'High'}
+            </span>
+          </div>
+        ) : (
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)' }}>
+            — Not assessed
+          </span>
+        )}
+      </div>
+
+      {/* Callout + CTA */}
+      <div style={{ paddingTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+        <p style={{
+          fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)',
+          lineHeight: 1.5, margin: 0, flex: 1,
+        }}>
+          Capacity issues can block approval even with strong credit.
+        </p>
+        <button
+          onClick={() => navigate('/app/credit-path')}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '5px',
+            padding: '7px 14px', borderRadius: '8px', flexShrink: 0,
+            background: 'transparent', border: '1px solid var(--border)',
+            fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700,
+            color: 'var(--foreground)', cursor: 'pointer',
+            transition: 'border-color 0.15s',
+          }}
+        >
+          Review in CreditPath <ChevronRight size={12} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── BestFirstCapitalMoveCard ──────────────────────────────────────────────────
+
+interface BestFirstCapitalMoveCardProps {
+  bestFirstMove: BestFirstMove | null;
+  navigate: (path: string) => void;
+}
+
+function BestFirstCapitalMoveCard({ bestFirstMove, navigate }: BestFirstCapitalMoveCardProps) {
+  const viewedRef = useRef(false);
+
+  useEffect(() => {
+    if (bestFirstMove && !viewedRef.current) {
+      viewedRef.current = true;
+      logEvent({ event_name: 'best_first_move_viewed', payload: {
+        product: bestFirstMove.product,
+        blocked_by: bestFirstMove.blockedBy ?? 'none',
+      }});
+    }
+  }, [bestFirstMove]);
+
+  if (!bestFirstMove) return null;
+
+  const blockedByColor =
+    bestFirstMove.blockedBy === 'character' ? '#f59e0b'
+    : bestFirstMove.blockedBy === 'capacity' ? '#b04428'
+    : bestFirstMove.blockedBy === 'compliance' ? '#a0a020'
+    : null;
+
+  return (
+    <div style={{
+      background: 'var(--card)',
+      border: '1px solid var(--border)',
+      borderRadius: '16px',
+      padding: '20px 22px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '14px',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <Landmark size={14} style={{ color: '#10b981', flexShrink: 0 }} />
+        <p style={{
+          fontFamily: 'var(--font-body)', fontSize: '11px', fontWeight: 700,
+          color: 'var(--muted-foreground)', textTransform: 'uppercase',
+          letterSpacing: '0.08em', margin: 0,
+        }}>
+          Best First Capital Move
+        </p>
+      </div>
+
+      {/* Product name */}
+      <div>
+        <h3 style={{
+          fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 900,
+          color: 'var(--foreground)', margin: '0 0 6px', lineHeight: 1.1,
+          letterSpacing: '-0.02em',
+        }}>
+          {bestFirstMove.product}
+        </h3>
+        {blockedByColor && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '5px',
+            padding: '3px 9px', borderRadius: '6px', marginBottom: '8px',
+            background: `${blockedByColor}12`, border: `1px solid ${blockedByColor}30`,
+          }}>
+            <AlertCircle size={10} style={{ color: blockedByColor }} />
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: blockedByColor }}>
+              {bestFirstMove.blockedBy === 'character' ? 'Credit improvement may strengthen odds'
+               : bestFirstMove.blockedBy === 'capacity' ? 'Capacity review recommended first'
+               : 'Compliance module may be required'}
+            </span>
+          </div>
+        )}
+        <p style={{
+          fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--muted-foreground)',
+          lineHeight: 1.6, margin: 0,
+        }}>
+          {bestFirstMove.reasoning}
+        </p>
+      </div>
+
+      {/* Next after */}
+      <div style={{
+        padding: '10px 12px', borderRadius: '8px',
+        background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)',
+      }}>
+        <p style={{
+          fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700,
+          textTransform: 'uppercase', letterSpacing: '0.06em',
+          color: '#10b981', margin: '0 0 4px',
+        }}>
+          What opens next
+        </p>
+        <p style={{
+          fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--foreground)',
+          lineHeight: 1.5, margin: 0,
+        }}>
+          {bestFirstMove.nextAfter}
+        </p>
+      </div>
+
+      {/* CTA */}
+      <button
+        onClick={() => {
+          logEvent({ event_name: 'best_first_move_clicked', payload: {
+            product: bestFirstMove.product,
+            route: bestFirstMove.route,
+          }});
+          navigate(bestFirstMove.route);
+        }}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          padding: '11px 20px', borderRadius: '10px',
+          background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+          border: 'none', cursor: 'pointer',
+          fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700,
+          color: 'white', letterSpacing: '-0.01em',
+          boxShadow: '0 4px 16px rgba(16,185,129,0.25)',
+          transition: 'opacity 0.15s',
+        }}
+      >
+        View {bestFirstMove.product} <ArrowRight size={14} />
+      </button>
+    </div>
+  );
+}
+
 // ════════════════════════════════════════════════════════════════════════════════
 // MAIN DASHBOARD COMPONENT
 // ════════════════════════════════════════════════════════════════════════════════
@@ -1311,12 +1585,30 @@ export function Dashboard() {
   const [napScore, setNapScore] = useState(0);
   const [membershipTier, setMembershipTier] = useState<MembershipTier>(() => getMembershipTier());
   const [storedAssessment, setStoredAssessment] = useState<UnifiedAnswers | null>(null);
+  const [dtiResult, setDtiResult] = useState<DTIResult | null>(() => {
+    try {
+      const raw = localStorage.getItem(DTI_RESULT_KEY);
+      return raw ? JSON.parse(raw) as DTIResult : null;
+    } catch { return null; }
+  });
   // Ref-guard: fire dashboard_viewed once per component mount, not on every storage refresh
   const dashboardViewedFiredRef = useRef(false);
   const dismissWelcome = () => {
     localStorage.setItem('fundready_welcomed', '1');
     setShowWelcome(false);
   };
+
+  // Keep DTI result in sync when user updates it in CreditPath
+  useEffect(() => {
+    const handleDtiUpdate = () => {
+      try {
+        const raw = localStorage.getItem(DTI_RESULT_KEY);
+        if (raw) setDtiResult(JSON.parse(raw) as DTIResult);
+      } catch { /* non-fatal */ }
+    };
+    window.addEventListener('dtiResultUpdated', handleDtiUpdate);
+    return () => window.removeEventListener('dtiResultUpdated', handleDtiUpdate);
+  }, []);
 
   // Load scores from Supabase (if logged in) or localStorage
   useEffect(() => {
@@ -1493,6 +1785,19 @@ export function Dashboard() {
   ].slice(0, 3);
   const topBlocker = criticalBlockers[0];
 
+  // Capacity card: compute DSCR inline from assessment fields (no component import needed)
+  const dscrValue: number | null = (() => {
+    if (!storedAssessment?.annualNOI || !storedAssessment?.annualDebtService) return null;
+    const noi = NOI_MIDPOINTS[storedAssessment.annualNOI] ?? 0;
+    const ds = DEBT_SERVICE_MIDPOINTS[storedAssessment.annualDebtService] ?? 0;
+    return ds > 0 ? noi / ds : null;
+  })();
+
+  // Best First Capital Move: computed from current profile
+  const bestFirstMove: BestFirstMove | null = storedAssessment
+    ? computeBestFirstMove(storedAssessment, fundScore, bankableScore)
+    : null;
+
   return (
     <div
       className="flex-1 min-h-screen overflow-auto"
@@ -1561,6 +1866,19 @@ export function Dashboard() {
                 fundScore={fundScore}
                 capitalDisplay={capitalDisplay}
                 lockedCapital={lockedCapital}
+                navigate={navigate}
+              />
+            </div>
+
+            {/* ROW 2: CAPACITY READINESS + BEST FIRST CAPITAL MOVE */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '28px' }}>
+              <CapacityCard
+                dscrValue={dscrValue}
+                dtiResult={dtiResult}
+                navigate={navigate}
+              />
+              <BestFirstCapitalMoveCard
+                bestFirstMove={bestFirstMove}
                 navigate={navigate}
               />
             </div>
