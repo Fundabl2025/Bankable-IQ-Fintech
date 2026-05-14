@@ -1988,7 +1988,7 @@ function WelcomeModal({ name, onDismiss, onNavigate }: { name: string; onDismiss
             <div style={{ background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)', padding: '28px 28px 24px' }}>
               <div style={{ fontSize: '24px', marginBottom: '10px' }}>👋</div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'white', lineHeight: 1.2, marginBottom: '6px' }}>
-                Welcome{name ? `, ${name}` : ' to FundReady™'}!
+                Welcome{name ? `, ${name}` : ' to Bankable IQ'}!
               </h2>
               <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.5, margin: 0 }}>
                 What's your #1 goal right now?

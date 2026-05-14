@@ -55,8 +55,8 @@ export function ForgotPasswordPage() {
         <div>
           <Link to="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
             <img
-              src="/images/fundready-logo.png"
-              alt="FundReady - Unlocking Your Potential"
+              src="/images/bankableiq-logo-white.png"
+              alt="Bankable IQ"
               style={{
                 height: '48px',
                 width: 'auto',
@@ -93,7 +93,7 @@ export function ForgotPasswordPage() {
           fontSize: '12px',
           color: 'var(--muted-foreground)',
         }}>
-          &copy; {new Date().getFullYear()} Fundabl. All rights reserved.
+          &copy; {new Date().getFullYear()} Bankable Business Solutions. All rights reserved.
         </div>
       </div>
 

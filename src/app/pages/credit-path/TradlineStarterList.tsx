@@ -533,7 +533,7 @@ export function TradlineStarterList({ bizCreditFile }: TradlineStarterListProps)
             }}>
               Vendor approval criteria, reporting behavior, and terms change over time.
               This list is for informational purposes only — verify current terms directly
-              with each vendor. FundReady has no affiliation with any vendor listed.
+              with each vendor. Bankable IQ has no affiliation with any vendor listed.
               Based on self-reported assessment data · Confidence Tier 1
             </div>
           </div>

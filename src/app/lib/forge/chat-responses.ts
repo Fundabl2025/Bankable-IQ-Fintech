@@ -119,7 +119,7 @@ export interface WhatIsForgeCtx {
   completedModules: number; totalModules: number; preQualCount: number;
 }
 export function whatIsForgeResponse(ctx: WhatIsForgeCtx): string {
-  return `FORGE™ is your capital transformation engine — an always-on AI coach that reads every data point in your FundReady profile and tells you exactly what to do next to move from expensive alternative capital to institutional bank capital.\n\nI know your FundScore (${ctx.fundScore}), your SBSS score (${ctx.bankableScore}/300), which compliance modules are done (${ctx.completedModules}/${ctx.totalModules}), and which funding products you qualify for (${ctx.preQualCount} right now). Every answer I give uses your actual data — not generic advice.\n\nAsk me anything about your capital path, your scores, timelines, or specific products.`;
+  return `FORGE™ is your capital transformation engine — an always-on AI coach that reads every data point in your Bankable IQ profile and tells you exactly what to do next to move from expensive alternative capital to institutional bank capital.\n\nI know your FundScore (${ctx.fundScore}), your SBSS score (${ctx.bankableScore}/300), which compliance modules are done (${ctx.completedModules}/${ctx.totalModules}), and which funding products you qualify for (${ctx.preQualCount} right now). Every answer I give uses your actual data — not generic advice.\n\nAsk me anything about your capital path, your scores, timelines, or specific products.`;
 }
 
 // ── Intent: compliance modules ────────────────────────────────────────────────

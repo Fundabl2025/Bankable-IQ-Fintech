@@ -311,7 +311,7 @@ function AssessmentStepTrack({ currentQuestion, totalQuestions }: { currentQuest
             whiteSpace: 'nowrap',
           }}
         >
-          FundReady™
+          Bankable IQ
         </div>
 
         {/* Steps */}

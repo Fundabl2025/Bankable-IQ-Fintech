@@ -24,8 +24,8 @@ export function LoginPage() {
   // ── Demo credential shortcut ────────────────────────────────────────────────
   // These credentials bypass Supabase and seed full live-tier demo data.
   // Share with stakeholders for testing — no Supabase account needed.
-  const DEMO_EMAIL = 'demo@fundreadyai.com';
-  const DEMO_PASSWORD = 'FundReady2025!';
+  const DEMO_EMAIL = 'demo@getbankable.io';
+  const DEMO_PASSWORD = 'BankableIQ2025!';
 
   // Demo login bypasses auth and seeds pre-filled assessment data
   // Defined BEFORE handleSubmit so the credential intercept can call it safely
@@ -94,8 +94,8 @@ export function LoginPage() {
           {/* Logo */}
           <Link to="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
             <img 
-              src="/images/fundready-logo.png" 
-              alt="FundReady - Unlocking Your Potential" 
+              src="/images/bankableiq-logo-white.png"
+              alt="Bankable IQ"
               style={{ 
                 height: '48px',
                 width: 'auto',
@@ -132,7 +132,7 @@ export function LoginPage() {
           fontSize: '12px',
           color: 'var(--muted-foreground)',
         }}>
-          © {new Date().getFullYear()} Fundabl. All rights reserved.
+          © {new Date().getFullYear()} Bankable Business Solutions. All rights reserved.
         </div>
       </div>
 
@@ -420,9 +420,9 @@ export function LoginPage() {
               color: 'var(--muted-foreground)',
             }}>
               <span style={{ color: 'var(--foreground)', fontWeight: 600 }}>Email:</span>{' '}
-              demo@fundreadyai.com<br />
+              demo@getbankable.io<br />
               <span style={{ color: 'var(--foreground)', fontWeight: 600 }}>Password:</span>{' '}
-              FundReady2025!
+              BankableIQ2025!
             </div>
           </div>
         </motion.div>
