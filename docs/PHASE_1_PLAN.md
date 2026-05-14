@@ -46,9 +46,9 @@ dangerous part. Removing the fallback with a server proxy is additive server + s
 `src/app/components/FundingApplicationModal.tsx` line 17–18:
 ```ts
 const BOLT_BROKER_TOKEN =
-  (import.meta as any).env?.VITE_BOLT_BROKER_TOKEN ?? 'WlSUyZcpEZ6cnPh5YgNyJg==';
+  (import.meta as any).env?.VITE_BOLT_BROKER_TOKEN ?? '[REDACTED — token rotated per WO-1]';
 ```
-The hardcoded fallback `'WlSUyZcpEZ6cnPh5YgNyJg=='` ships in the production JS bundle.
+The hardcoded fallback `'[REDACTED]'` shipped in the production JS bundle.
 Any user can read it from browser DevTools or the network tab.
 
 **The fix:**
