@@ -23,9 +23,9 @@ const tasks: ModuleTask[] = [
       'Let the account age a minimum of 3 months before applying for business credit',
     ],
     resources: [
-      { name: 'Chase Business Complete Checking — No min opening deposit', url: 'https://www.chase.com/business/banking/checking?utm_source=fundready&utm_medium=referral' },
-      { name: 'Bank of America Business Advantage — Full-service business banking', url: 'https://www.bankofamerica.com/smallbusiness/checking/?utm_source=fundready&utm_medium=referral' },
-      { name: 'Relay Business Banking — No fees, built for small business', url: 'https://relayfi.com/?utm_source=fundready&utm_medium=referral' },
+      { name: 'Chase Business Complete Checking — No min opening deposit', url: 'https://www.chase.com/business/banking/checking?utm_source=bankableiq&utm_medium=referral' },
+      { name: 'Bank of America Business Advantage — Full-service business banking', url: 'https://www.bankofamerica.com/smallbusiness/checking/?utm_source=bankableiq&utm_medium=referral' },
+      { name: 'Relay Business Banking — No fees, built for small business', url: 'https://relayfi.com/?utm_source=bankableiq&utm_medium=referral' },
     ],
   },
   {

@@ -22,9 +22,9 @@ const tasks: ModuleTask[] = [
       'Never use a Google Voice number as your primary — it does not list in 411',
     ],
     resources: [
-      { name: 'RingCentral — Business VoIP from $20/mo', url: 'https://www.ringcentral.com/?utm_source=fundready&utm_medium=referral' },
-      { name: 'Nextiva — Business phone system', url: 'https://www.nextiva.com/?utm_source=fundready&utm_medium=referral' },
-      { name: 'Grasshopper — Virtual business phone', url: 'https://grasshopper.com/?utm_source=fundready&utm_medium=referral' },
+      { name: 'RingCentral — Business VoIP from $20/mo', url: 'https://www.ringcentral.com/?utm_source=bankableiq&utm_medium=referral' },
+      { name: 'Nextiva — Business phone system', url: 'https://www.nextiva.com/?utm_source=bankableiq&utm_medium=referral' },
+      { name: 'Grasshopper — Virtual business phone', url: 'https://grasshopper.com/?utm_source=bankableiq&utm_medium=referral' },
     ],
   },
   {
@@ -48,7 +48,7 @@ const tasks: ModuleTask[] = [
     resources: [
       { name: '411.com ListYourself — Free business listing', url: 'https://www.411.com/listyourbusiness' },
       { name: 'YellowPages — Free business listing', url: 'https://www.yellowpages.com/advertise' },
-      { name: 'Yext — Sync listings across 70+ directories', url: 'https://www.yext.com/?utm_source=fundready&utm_medium=referral' },
+      { name: 'Yext — Sync listings across 70+ directories', url: 'https://www.yext.com/?utm_source=bankableiq&utm_medium=referral' },
     ],
   },
   {

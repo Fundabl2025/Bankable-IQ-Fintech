@@ -1,4 +1,4 @@
-# RELEASES.md — FundReady Release Management
+# RELEASES.md — Bankable IQ Release Management
 
 > Every production deploy is a trust event. Treat it accordingly.
 
@@ -7,11 +7,11 @@
 ## Release Pipeline
 
 ```
-Local branch → GitHub push → Vercel auto-deploy → fundreadyai.com
+Local branch → GitHub push → Vercel auto-deploy → bankableiq.io
 ```
 
 Branch: `main` auto-deploys to production via Vercel CI/CD.
-GitHub repo: `Fundabl2025/FundablSaasfinancingsystem`
+GitHub repo: `Fundabl-Fintech/Bankable-IQ-Fintech`
 
 ---
 
@@ -88,7 +88,7 @@ When production has a critical defect (wrong score, broken route, trust-affectin
 2. Create hotfix branch, apply minimal targeted fix
 3. Run smoke test locally
 4. Push — Vercel auto-deploys
-5. Verify fix live on fundreadyai.com
+5. Verify fix live on bankableiq.io
 6. Close incident in INCIDENTS.md with resolution
 
 ---

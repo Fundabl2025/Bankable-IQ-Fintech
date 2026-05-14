@@ -46,7 +46,7 @@ const tasks: ModuleTask[] = [
       'After 6 months of clean history, apply for a second business card to increase available credit',
     ],
     resources: [
-      { name: 'Nav — Compare business credit cards by bureau reporting', url: 'https://www.nav.com/business-credit-cards/?utm_source=fundready&utm_medium=referral' },
+      { name: 'Nav — Compare business credit cards by bureau reporting', url: 'https://www.nav.com/business-credit-cards/?utm_source=bankableiq&utm_medium=referral' },
     ],
   },
   {
@@ -77,7 +77,7 @@ const tasks: ModuleTask[] = [
       'Keep records of all disputes and their resolution confirmation',
     ],
     resources: [
-      { name: 'Nav — Free business credit monitoring', url: 'https://www.nav.com/?utm_source=fundready&utm_medium=referral' },
+      { name: 'Nav — Free business credit monitoring', url: 'https://www.nav.com/?utm_source=bankableiq&utm_medium=referral' },
       { name: 'Dun & Bradstreet CreditSignal — Free D&B monitoring', url: 'https://www.dnb.com/products/small-business/dnb-creditsignal.html' },
     ],
   },
