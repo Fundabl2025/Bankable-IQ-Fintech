@@ -215,6 +215,9 @@ export function FundingApplicationModal({
   ) => setForm(prev => ({ ...prev, [key]: e.target.value }));
 
   // ── Submit to Bolt API ───────────────────────────────────────────────────────
+  // PII safety: no fallback storage. If Bolt is unavailable, surface an error.
+  // Sensitive fields (SSN, DOB, EIN, financials) must never be written to Supabase
+  // as a raw payload until RLS is enforced on funding_applications (WO-6).
   const handleSubmit = async () => {
     if (!agreedToTerms) { setError('Please agree to the terms to continue.'); return; }
     if (!signature.trim()) { setError('Please enter your digital signature.'); return; }
@@ -235,40 +238,20 @@ export function FundingApplicationModal({
       });
 
       if (!res.ok) {
-        // Fallback: save to Supabase
-        await saveFallback(payload);
+        setError('Funding applications are temporarily unavailable. Please contact support@getbankable.io or try again later.');
+        setIsSubmitting(false);
+        return;
       }
 
       setIsSuccess(true);
       try { await applyToProgram(programType, programName, programAmount); } catch { /* non-fatal */ }
     } catch {
-      // Network error — save to Supabase
-      try {
-        await saveFallback(payload);
-        setIsSuccess(true);
-        try { await applyToProgram(programType, programName, programAmount); } catch { /* non-fatal */ }
-      } catch {
-        setError('Submission failed. Please try again or contact support.');
-        setIsSubmitting(false);
-        return;
-      }
+      setError('Funding applications are temporarily unavailable. Please contact support@getbankable.io or try again later.');
+      setIsSubmitting(false);
+      return;
     }
 
     setIsSubmitting(false);
-  };
-
-  const saveFallback = async (payload: Record<string, unknown>) => {
-    try {
-      const { supabase } = await import('../lib/supabase/client');
-      const { error } = await supabase.from('funding_applications').insert([{
-        user_id: user?.id,
-        program_name: programName,
-        program_type: programType,
-        payload,
-        submitted_at: new Date().toISOString(),
-      }]);
-      if (error) throw error;
-    } catch { /* final fallback — already showed success */ }
   };
 
   if (!isOpen) return null;
