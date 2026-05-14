@@ -21,7 +21,7 @@ export interface GreetingContext {
 
 export function greetingTemplate(ctx: GreetingContext): string {
   return (
-    `${ctx.name ? `${ctx.name}, ` : ''}I've analyzed your complete FundReady profile. Here's where you stand:\n\n` +
+    `${ctx.name ? `${ctx.name}, ` : ''}I've analyzed your complete Bankable IQ profile. Here's where you stand:\n\n` +
     `**FundScore: ${ctx.fundScore}/1000** (${ctx.tier})\n` +
     `**SBSS: ${ctx.bankableScore}/300** — ${ctx.pointsToBank > 0 ? `${ctx.pointsToBank} points to institutional capital` : '✓ Bankable threshold crossed'}\n` +
     `**Compliance: ${ctx.completedModules}/${ctx.totalModules} modules** complete\n` +

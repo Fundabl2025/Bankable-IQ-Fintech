@@ -562,7 +562,7 @@ function Tier2Gate() {
         marginBottom: '10px',
       }}>
         To generate dispute letters with your actual account details, creditor names,
-        and specific inaccuracy language, FundReady needs to read your official credit report.
+        and specific inaccuracy language, Bankable IQ needs to read your official credit report.
         Uploading or connecting your report unlocks Confidence Tier 2 — giving you
         account-specific guidance instead of general templates.
       </div>

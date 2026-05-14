@@ -78,7 +78,7 @@ const FAQ = [
   { q: 'What is DSCR and why does it matter?', a: 'DSCR (Debt Service Coverage Ratio) = Annual Net Operating Income ÷ Annual Debt Service. Lenders require ≥ 1.25x — meaning your business must generate $1.25 for every $1.00 of debt payments. Below 1.0x is an automatic decline in most lender pipelines. It is the single most common reason commercial loan applications are denied. Use CreditPath\'s DSCR Estimator to calculate yours and see exactly how to reach the 1.25x threshold.' },
   { q: 'What is the SBSS / Bank Readiness Score?', a: 'A 0–300 score (similar to FICO® SBSS) used by banks and the SBA to approve business loans. Score 160+ = bank-eligible. Below 160 = typically auto-declined by banks.' },
   { q: 'How long does it take to move from Stage 1 to Stage 3?', a: 'Most businesses can reach Stage 3 eligibility in 12–24 months with consistent execution. The platform gives you the exact blockers to address and tracks progress in real time.' },
-  { q: 'Do I need an LLC to use FundReady?', a: 'No — sole proprietors can use the platform. But most capital products require an LLC or Corp entity. If you\'re a sole prop, forming an LLC is typically Step 1.' },
+  { q: 'Do I need an LLC to use Bankable IQ?', a: 'No — sole proprietors can use the platform. But most capital products require an LLC or Corp entity. If you\'re a sole prop, forming an LLC is typically Step 1.' },
   { q: 'What documents do I need for Stage 3 bank capital?', a: '2 years of business tax returns, 12 months of business bank statements, current P&L (dated within 60 days), EIN letter, and completed lender compliance file.' },
 ];
 
@@ -125,7 +125,7 @@ export function GettingStarted() {
           Platform Guide
         </p>
         <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(28px, 4vw, 40px)', color: 'var(--foreground)', lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: '12px' }}>
-          How FundReady Works
+          How Bankable IQ Works
         </h1>
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '15px', color: 'var(--muted-foreground)', lineHeight: 1.6, maxWidth: '580px', marginBottom: '24px' }}>
           Everything you need to know to get from where you are today to funded — at the best possible rate.
@@ -263,7 +263,7 @@ export function GettingStarted() {
       <div style={{ maxWidth: '820px', margin: '0 auto 40px' }}>
         <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--foreground)', marginBottom: '6px' }}>Platform Navigation Guide</h2>
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--muted-foreground)', marginBottom: '20px', lineHeight: 1.5 }}>
-          Every section of FundReady has a specific job in your capital readiness journey.
+          Every section of Bankable IQ has a specific job in your capital readiness journey.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {PLATFORM_SECTIONS.map(section => {

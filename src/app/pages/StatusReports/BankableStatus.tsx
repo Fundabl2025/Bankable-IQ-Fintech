@@ -331,7 +331,7 @@ export function BankableStatus({ data: propData }: BankableStatusProps) {
               marginBottom: '16px',
             }}
           >
-            Becoming Bankable is not hard, but it is complicated. The typical business seeking bankable funding does not meet all 20 items listed above. It can take 90 to 180 days to complete all the requirements depending on the starting point. The FundReady system guides you through each requirement with step-by-step instruction, software support, and done-for-you services where needed.
+            Becoming Bankable is not hard, but it is complicated. The typical business seeking bankable funding does not meet all 20 items listed above. It can take 90 to 180 days to complete all the requirements depending on the starting point. The Bankable IQ system guides you through each requirement with step-by-step instruction, software support, and done-for-you services where needed.
           </p>
         </div>
 

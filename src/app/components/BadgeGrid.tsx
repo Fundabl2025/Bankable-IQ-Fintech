@@ -349,7 +349,7 @@ export function BadgeStrip({ newBadgeIds = [], onViewAll }: { newBadgeIds?: stri
   const nextToEarn = BADGES.filter(b => !earnedMap.has(b.id)).slice(0, 3);
 
   const identityLabel = pct >= 90 ? 'Elite achiever — nearly complete'
-    : pct >= 70 ? `${pct}% of the way to FundReady Master`
+    : pct >= 70 ? `${pct}% of the way to Bankable IQ Master`
     : pct >= 40 ? `${pct}% complete — momentum building`
     : `${earnedCount} earned — your journey is underway`;
 

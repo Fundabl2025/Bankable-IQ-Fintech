@@ -211,7 +211,7 @@ export function LenderPortal() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: '16px', background: 'var(--background)' }}>
         <Shield size={40} style={{ color: '#ef4444' }} />
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--foreground)' }}>Access Restricted</div>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)' }}>This portal is for FundReady staff only.</div>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--muted-foreground)' }}>This portal is for Bankable IQ staff only.</div>
         <button onClick={() => navigate('/app')} style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: '13px', padding: '10px 20px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer', color: 'var(--foreground)' }}>
           ← Back to Dashboard
         </button>

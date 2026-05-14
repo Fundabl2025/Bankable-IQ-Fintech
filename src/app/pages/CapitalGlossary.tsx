@@ -20,7 +20,7 @@ const GLOSSARY_TERMS: GlossaryTerm[] = [
   {
     term: 'FundScore',
     category: 'Scoring',
-    definition: 'FundReady™\'s proprietary 0–1000 capital readiness score. It measures how prepared your business is to access institutional capital across six dimensions: Business Profile, Documentation, Cash Flow, Credit, Credit History, and Capital Access.',
+    definition: 'Bankable IQ\'s proprietary 0–1000 capital readiness score. It measures how prepared your business is to access institutional capital across six dimensions: Business Profile, Documentation, Cash Flow, Credit, Credit History, and Capital Access.',
     example: 'A FundScore of 720 suggests strong documentation and cash flow but some credit gaps.',
     impact: 'Higher FundScore = more capital products unlocked at better terms.',
   },

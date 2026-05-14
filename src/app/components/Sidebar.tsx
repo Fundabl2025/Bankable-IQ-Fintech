@@ -44,7 +44,7 @@ const PRIMARY_NAV = [
   { path: '/app/credit-path',     label: 'CreditPath',            icon: CreditCard },
   { path: '/app/access-funding',  label: 'Access Funding',        icon: DollarSign, showFunding: true },
   { path: '/app/my-progress',     label: 'My Progress',           icon: TrendingUp },
-  { path: '/app/ai-coach',        label: 'FORGE™ AI Coach',       icon: Brain, isCoach: true },
+  { path: '/app/ai-coach',        label: 'Bankable AI Coach',      icon: Brain, isCoach: true },
   { path: '/app/finances',        label: 'Finances',              icon: Wallet },
 ];
 
@@ -104,7 +104,7 @@ function NavItem({
 const MOBILE_NAV = [
   { path: '/app/dashboard',      label: 'Dashboard', icon: LayoutDashboard },
   { path: '/app/access-funding', label: 'Funding',   icon: DollarSign },
-  { path: '/app/ai-coach',       label: 'FORGE',     icon: Brain },
+  { path: '/app/ai-coach',       label: 'AI Coach',  icon: Brain },
   { path: '/app/lender-compliance', label: 'Comply', icon: Shield },
   { path: '/app/settings',       label: 'Profile',   icon: User },
 ];
@@ -205,8 +205,8 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
       }}>
         <Link to="/" onClick={close} style={{ textDecoration: 'none', lineHeight: 0 }}>
           <img
-            src="/images/fundready-logo.png"
-            alt="FundReady"
+            src="/images/bankableiq-logo.png"
+            alt="Bankable IQ"
             style={{ height: '32px', width: 'auto', objectFit: 'contain' }}
           />
         </Link>
@@ -236,7 +236,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              FundScore™
+              Bankable Score™
             </span>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>
               / 1,000
@@ -426,7 +426,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
               {userName || 'My Account'}
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: '10px', color: 'var(--muted-foreground)' }}>
-              {fundScore > 0 ? `FundScore ${fundScore}` : 'Start assessment'}
+              {fundScore > 0 ? `Bankable Score ${fundScore}` : 'Start assessment'}
             </div>
           </div>
         </div>

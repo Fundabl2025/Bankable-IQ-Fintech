@@ -474,8 +474,8 @@ export function LandingPage() {
       }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
           <img
-            src="/images/fundready-logo.png"
-            alt="FundReady"
+            src="/images/bankableiq-logo-wide.png"
+            alt="Bankable IQ"
             style={{ height: '34px', width: 'auto', objectFit: 'contain' }}
           />
         </Link>
@@ -976,7 +976,7 @@ export function LandingPage() {
                 color: 'var(--muted-foreground)', maxWidth: '600px',
                 margin: '0 auto', lineHeight: 1.7,
               }}>
-                FundReady maps the exact path from where your business is today to where it can access bank-grade capital — and shows you the fastest way through.
+                Bankable IQ maps the exact path from where your business is today to where it can access bank-grade capital — and shows you the fastest way through.
               </p>
             </div>
           </FadeIn>
@@ -1024,7 +1024,7 @@ export function LandingPage() {
                 fontFamily: 'var(--font-body)', fontSize: '14px',
                 color: 'var(--muted-foreground)',
               }}>
-                <strong style={{ color: 'var(--foreground)' }}>The average FundReady member reaches Goal #2 in 60–90 days.</strong>
+                <strong style={{ color: 'var(--foreground)' }}>The average Bankable IQ member reaches Goal #2 in 60–90 days.</strong>
                 {' '}Most businesses that do the compliance work unlock 3–5x more capital than they had before — at significantly lower rates.
               </span>
             </div>
@@ -1148,7 +1148,7 @@ export function LandingPage() {
               marginBottom: '28px',
             }}>
               Less than 1% of businesses are bankable.<br />
-              <span style={{ color: '#10b981' }}>FundReady exists to change that number.</span>
+              <span style={{ color: '#10b981' }}>Bankable IQ exists to change that number.</span>
             </h2>
 
             <p style={{
@@ -1321,7 +1321,7 @@ export function LandingPage() {
             },
             {
               q: 'Do I need good credit to start?',
-              a: 'No. FundReady is designed for businesses at every stage of their credit journey. Many users start with sub-600 credit scores and use the platform to understand what products are available right now while building toward bank-grade products in 60–90 days.',
+              a: 'No. Bankable IQ is designed for businesses at every stage of their credit journey. Many users start with sub-600 credit scores and use the platform to understand what products are available right now while building toward bank-grade products in 60–90 days.',
             },
             {
               q: 'Will this pull my credit?',
@@ -1329,11 +1329,11 @@ export function LandingPage() {
             },
             {
               q: 'Who is this for — people who have been denied, or people who want to apply?',
-              a: 'Both. If you\'ve been denied, FundReady shows you exactly why and what to fix. If you haven\'t applied yet, FundReady makes sure you\'re prepared before you walk into that conversation — so you don\'t get the answer most businesses get.',
+              a: 'Both. If you\'ve been denied, Bankable IQ shows you exactly why and what to fix. If you haven\'t applied yet, Bankable IQ makes sure you\'re prepared before you walk into that conversation — so you don\'t get the answer most businesses get.',
             },
             {
-              q: 'What makes FundReady different from a loan broker?',
-              a: 'A broker finds you a product. FundReady changes your profile so you qualify for better products — lower rates, larger amounts, longer terms. The difference between a 24% merchant cash advance and a 9% SBA loan is bankability. That\'s what FundReady builds.',
+              q: 'What makes Bankable IQ different from a loan broker?',
+              a: 'A broker finds you a product. Bankable IQ changes your profile so you qualify for better products — lower rates, larger amounts, longer terms. The difference between a 24% merchant cash advance and a 9% SBA loan is bankability. That\'s what Bankable IQ builds.',
             },
           ].map(({ q, a }, i) => (
             <FadeIn key={i} delay={i * 0.07}>
@@ -1498,7 +1498,7 @@ export function LandingPage() {
             fontFamily: 'var(--font-body)', fontSize: '12px',
             color: 'var(--muted-foreground)', textAlign: 'center',
           }}>
-            © {new Date().getFullYear()} Fundabl, Inc. All rights reserved. · FundReady™ is a capital readiness platform, not a lender. Funding results depend on individual business profiles.
+            © {new Date().getFullYear()} Bankable Business Solutions. All rights reserved. · Bankable IQ is a capital readiness platform, not a lender. Funding results depend on individual business profiles.
           </p>
         </div>
       </footer>

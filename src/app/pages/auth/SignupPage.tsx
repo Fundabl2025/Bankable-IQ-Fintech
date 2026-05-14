@@ -154,8 +154,8 @@ export function SignupPage() {
           {/* Logo */}
           <Link to="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
             <img 
-              src="/images/fundready-logo.png" 
-              alt="FundReady - Unlocking Your Potential" 
+              src="/images/bankableiq-logo-white.png"
+              alt="Bankable IQ"
               style={{ 
                 height: '48px',
                 width: 'auto',
@@ -221,7 +221,7 @@ export function SignupPage() {
           fontSize: '12px',
           color: 'var(--muted-foreground)',
         }}>
-          © {new Date().getFullYear()} Fundabl. All rights reserved.
+          © {new Date().getFullYear()} Bankable Business Solutions. All rights reserved.
         </div>
       </div>
 

@@ -125,7 +125,7 @@ const sectionTitle: React.CSSProperties = {
 // ── Helper ─────────────────────────────────────────────────────────────────────
 function PreFilledDot() {
   return (
-    <span title="Pre-filled from your FundReady profile" style={{
+    <span title="Pre-filled from your Bankable IQ profile" style={{
       display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%',
       background: '#10b981', marginLeft: '5px', verticalAlign: 'middle',
     }} />
@@ -324,7 +324,7 @@ export function FundingApplicationModal({
           {preFillCount > 0 && (
             <div style={{ padding: '8px 12px', borderRadius: '8px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', marginBottom: '12px' }}>
               <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: '#10b981', fontWeight: 600 }}>
-                ✓ Pre-filling <strong>{preFillCount} of {TOTAL_FIELDS}</strong> fields from your FundReady profile
+                ✓ Pre-filling <strong>{preFillCount} of {TOTAL_FIELDS}</strong> fields from your Bankable IQ profile
                 <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}> — marked with <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', verticalAlign: 'middle' }} /></span>
               </div>
             </div>
@@ -744,7 +744,7 @@ export function FundingApplicationModal({
               {/* Consent + Signature */}
               <div style={{ marginTop: '8px', padding: '16px', borderRadius: '10px', background: 'var(--background)', border: '1px solid var(--border)' }}>
                 <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--muted-foreground)', lineHeight: 1.6, margin: '0 0 12px' }}>
-                  By signing below, I authorize FundReady and its funding partners to obtain my personal and business credit information for the purpose of evaluating this application. I confirm all information provided is accurate.
+                  By signing below, I authorize Bankable IQ and its funding partners to obtain my personal and business credit information for the purpose of evaluating this application. I confirm all information provided is accurate.
                 </p>
 
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '12px' }}>

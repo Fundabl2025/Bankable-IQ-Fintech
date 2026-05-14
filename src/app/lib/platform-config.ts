@@ -16,8 +16,8 @@ const DEFAULTS: Record<string, string> = {
   price_currency:           'USD',
   virtual_trial_days:       '0',
   live_trial_days:          '0',
-  platform_name:            'FundReady',
-  support_email:            'support@fundreadyai.com',
+  platform_name:            'Bankable IQ',
+  support_email:            'support@getbankable.io',
   forge_ai_enabled:         'true',
   compliance_modules_count: '13',
 };

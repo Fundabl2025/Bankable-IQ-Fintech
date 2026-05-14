@@ -72,7 +72,7 @@ function PreApplyModal({ program, onStart, onClose }: { program: any; onStart: (
           <div style={{ padding: '12px 14px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '10px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Zap size={14} style={{ color: '#10b981', flexShrink: 0 }} />
             <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--foreground)', lineHeight: 1.4 }}>
-              <strong>14 of 36 fields already filled</strong> from your FundReady profile. Most applications take under 3 minutes.
+              <strong>14 of 36 fields already filled</strong> from your Bankable IQ profile. Most applications take under 3 minutes.
             </span>
           </div>
 
