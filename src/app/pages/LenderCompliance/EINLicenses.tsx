@@ -41,7 +41,7 @@ const tasks: ModuleTask[] = [
     ],
     resources: [
       { name: 'SBA Business License & Permits Lookup — Free', url: 'https://www.sba.gov/business-guide/launch-your-business/apply-licenses-permits' },
-      { name: 'LicenseSuite — Business license research by state', url: 'https://www.licensesuite.com/?utm_source=fundready&utm_medium=referral' },
+      { name: 'LicenseSuite — Business license research by state', url: 'https://www.licensesuite.com/?utm_source=bankableiq&utm_medium=referral' },
     ],
   },
   {

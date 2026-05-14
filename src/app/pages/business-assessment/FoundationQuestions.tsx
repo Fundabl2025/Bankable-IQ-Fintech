@@ -474,7 +474,7 @@ function QuestionF2({ data, updateData, onNext, onBack, currentQuestionNumber, t
             An LLC or Corp creates the legal separation lenders require. It also protects your personal assets. You can form one in as little as 24 hours.
           </div>
           <a
-            href="https://www.zenbusiness.com/?utm_source=fundready"
+            href="https://www.zenbusiness.com/?utm_source=bankableiq"
             target="_blank"
             rel="noopener noreferrer"
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 700, color: '#1d4ed8', textDecoration: 'none', background: 'rgba(59,130,246,0.1)', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(59,130,246,0.25)' }}

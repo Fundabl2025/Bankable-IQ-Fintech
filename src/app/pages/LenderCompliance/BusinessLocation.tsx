@@ -22,9 +22,9 @@ const tasks: ModuleTask[] = [
       'Ensure your address is consistent on all accounts: bank, licenses, credit applications',
     ],
     resources: [
-      { name: 'Regus — Virtual office addresses from $49/mo', url: 'https://www.regus.com/en-us/virtual-offices?utm_source=fundready&utm_medium=referral' },
-      { name: 'Alliance Virtual Offices — from $49/mo', url: 'https://www.alliancevirtualoffices.com/?utm_source=fundready&utm_medium=referral' },
-      { name: 'iPostal1 — Virtual address + mail scanning', url: 'https://ipostal1.com/?utm_source=fundready&utm_medium=referral' },
+      { name: 'Regus — Virtual office addresses from $49/mo', url: 'https://www.regus.com/en-us/virtual-offices?utm_source=bankableiq&utm_medium=referral' },
+      { name: 'Alliance Virtual Offices — from $49/mo', url: 'https://www.alliancevirtualoffices.com/?utm_source=bankableiq&utm_medium=referral' },
+      { name: 'iPostal1 — Virtual address + mail scanning', url: 'https://ipostal1.com/?utm_source=bankableiq&utm_medium=referral' },
     ],
   },
   {

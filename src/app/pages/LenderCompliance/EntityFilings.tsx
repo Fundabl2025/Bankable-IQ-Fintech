@@ -26,10 +26,10 @@ const tasks: ModuleTask[] = [
       'Keep all formation documents in a secure, accessible folder',
     ],
     resources: [
-      { name: 'ZenBusiness — Form LLC from $0 + state fee', url: 'https://www.zenbusiness.com/?utm_source=fundready&utm_medium=referral&utm_campaign=entity-formation' },
-      { name: 'Northwest Registered Agent — $39 LLC + privacy protection', url: 'https://www.northwestregisteredagent.com/?utm_source=fundready&utm_medium=referral' },
-      { name: 'Bizee (formerly Incfile) — $0 LLC formation', url: 'https://www.bizee.com/?utm_source=fundready&utm_medium=referral' },
-      { name: 'LegalZoom — Attorney-reviewed formation', url: 'https://www.legalzoom.com/business/business-formation/?utm_source=fundready&utm_medium=referral' },
+      { name: 'ZenBusiness — Form LLC from $0 + state fee', url: 'https://www.zenbusiness.com/?utm_source=bankableiq&utm_medium=referral&utm_campaign=entity-formation' },
+      { name: 'Northwest Registered Agent — $39 LLC + privacy protection', url: 'https://www.northwestregisteredagent.com/?utm_source=bankableiq&utm_medium=referral' },
+      { name: 'Bizee (formerly Incfile) — $0 LLC formation', url: 'https://www.bizee.com/?utm_source=bankableiq&utm_medium=referral' },
+      { name: 'LegalZoom — Attorney-reviewed formation', url: 'https://www.legalzoom.com/business/business-formation/?utm_source=bankableiq&utm_medium=referral' },
       { name: 'IRS EIN Online Application — Free, instant', url: 'https://www.irs.gov/businesses/small-businesses-self-employed/apply-for-an-employer-identification-number-ein-online' },
     ],
   },
@@ -54,8 +54,8 @@ const tasks: ModuleTask[] = [
     ],
     resources: [
       { name: 'USPTO TESS Trademark Search — Free federal database', url: 'https://tess.uspto.gov' },
-      { name: 'Trademark Engine — File a trademark from $99', url: 'https://www.trademarkengine.com/?utm_source=fundready&utm_medium=referral' },
-      { name: 'LegalZoom — Trademark Registration with attorney review', url: 'https://www.legalzoom.com/trademarks/?utm_source=fundready&utm_medium=referral' },
+      { name: 'Trademark Engine — File a trademark from $99', url: 'https://www.trademarkengine.com/?utm_source=bankableiq&utm_medium=referral' },
+      { name: 'LegalZoom — Trademark Registration with attorney review', url: 'https://www.legalzoom.com/trademarks/?utm_source=bankableiq&utm_medium=referral' },
     ],
   },
 

@@ -23,9 +23,9 @@ const tasks: ModuleTask[] = [
       'Add an SSL certificate (HTTPS) — free via most hosts, required for trust',
     ],
     resources: [
-      { name: 'GoDaddy — Domains from $12/yr', url: 'https://www.godaddy.com/?utm_source=fundready&utm_medium=referral' },
-      { name: 'Squarespace — Professional websites from $16/mo', url: 'https://www.squarespace.com/?utm_source=fundready&utm_medium=referral' },
-      { name: 'Webflow — Professional websites from $14/mo', url: 'https://webflow.com/?utm_source=fundready&utm_medium=referral' },
+      { name: 'GoDaddy — Domains from $12/yr', url: 'https://www.godaddy.com/?utm_source=bankableiq&utm_medium=referral' },
+      { name: 'Squarespace — Professional websites from $16/mo', url: 'https://www.squarespace.com/?utm_source=bankableiq&utm_medium=referral' },
+      { name: 'Webflow — Professional websites from $14/mo', url: 'https://webflow.com/?utm_source=bankableiq&utm_medium=referral' },
     ],
   },
   {
@@ -47,8 +47,8 @@ const tasks: ModuleTask[] = [
       'Set up email forwarding from your old personal email if needed during transition',
     ],
     resources: [
-      { name: 'Google Workspace — Business email from $6/mo', url: 'https://workspace.google.com/?utm_source=fundready&utm_medium=referral' },
-      { name: 'Microsoft 365 Business Basic — $6/mo', url: 'https://www.microsoft.com/en-us/microsoft-365/business/compare-all-plans?utm_source=fundready&utm_medium=referral' },
+      { name: 'Google Workspace — Business email from $6/mo', url: 'https://workspace.google.com/?utm_source=bankableiq&utm_medium=referral' },
+      { name: 'Microsoft 365 Business Basic — $6/mo', url: 'https://www.microsoft.com/en-us/microsoft-365/business/compare-all-plans?utm_source=bankableiq&utm_medium=referral' },
     ],
   },
   {

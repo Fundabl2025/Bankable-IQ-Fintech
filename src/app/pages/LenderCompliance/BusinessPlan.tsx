@@ -25,7 +25,7 @@ const tasks: ModuleTask[] = [
     ],
     resources: [
       { name: 'SBA Business Plan Guide — Free official template', url: 'https://www.sba.gov/business-guide/plan-your-business/write-your-business-plan' },
-      { name: 'LivePlan — Business plan software from $20/mo', url: 'https://www.liveplan.com/?utm_source=fundready&utm_medium=referral' },
+      { name: 'LivePlan — Business plan software from $20/mo', url: 'https://www.liveplan.com/?utm_source=bankableiq&utm_medium=referral' },
       { name: 'Bplans — Free business plan examples by industry', url: 'https://www.bplans.com/sample-business-plans/' },
     ],
   },

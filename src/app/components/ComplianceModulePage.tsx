@@ -228,7 +228,7 @@ function TaskCard({
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {task.resources.map(r => {
-                      const isPartner = r.url.includes('utm_source=fundready');
+                      const isPartner = r.url.includes('utm_source=bankableiq');
                       return (
                         <a
                           key={r.name}
