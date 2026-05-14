@@ -287,6 +287,25 @@ The AI Coach output is filtered through a forbidden-claims sanitizer before deli
 
 ---
 
+## Engineering directives
+
+All active engineering work is governed by the documents below. The latest committed version of each file is the source of truth.
+
+| Document | Purpose |
+|---|---|
+| [`docs/BANKABLE-IQ-ENGINEERS-PDR.md`](docs/BANKABLE-IQ-ENGINEERS-PDR.md) | Full product design requirements — architecture, scoring rules, integrations, governance |
+| [`docs/BANKABLE-IQ-PRODUCTION-STABILIZATION-DIRECTIVE.md`](docs/BANKABLE-IQ-PRODUCTION-STABILIZATION-DIRECTIVE.md) | **Active launch directive** — 8 sequenced work orders (WO-1 through WO-8) that must close before 2026-05-29 |
+
+### Quick orientation for engineers
+
+1. **Read the PDR first.** It defines the architecture, the sacred rules, the data model, and what every component does.
+2. **The Directive is your task list.** Each work order has an owner, acceptance criteria, and a PR checklist entry. Do not open a PR without completing the checklist in Section 6 of the directive.
+3. **`engine.ts` is sacred.** Never modify `computeScore()` without Director 17 review noted in your commit message and all 21 golden test cases passing.
+4. **Compliance is structural.** No banned phrase from `GLOBAL_FORBIDDEN_CLAIMS` ships. No exceptions. Director 11 must review every customer-facing copy change.
+5. **WO-1 is urgent.** The `BOLT_BROKER_TOKEN` credential rotation is an active security action — it is not a pre-launch checklist item.
+
+---
+
 ## Contributing
 
 This is currently a private development project. External contributions are not being accepted at this time. If you're a partner, advisor, or member of the Bankable team, contact the project lead.
