@@ -14,6 +14,8 @@ permissions:
 jobs:
   preflight:
     runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     outputs:
       paused: ${{ steps.budget.outputs.paused }}
       bot: ${{ steps.resolve.outputs.bot }}
@@ -78,6 +80,8 @@ jobs:
     needs: preflight
     if: needs.preflight.outputs.paused != 'true' && needs.preflight.outputs.should_run == 'true'
     runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     timeout-minutes: 45
     concurrency:
       group: fleet-agents-${{ github.event.issue.number }}
@@ -118,7 +122,6 @@ jobs:
       - name: Run ${{ needs.preflight.outputs.bot }} via Claude Code
         uses: anthropics/claude-code-base-action@beta
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         with:
           prompt: ${{ steps.prompt.outputs.prompt }}
