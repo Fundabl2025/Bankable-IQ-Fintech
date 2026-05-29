@@ -1,3 +1,4 @@
+﻿# Fleet Design Sync (ACTIVATED v1)
 name: fleet-design-sync
 on:
   push:
@@ -8,10 +9,39 @@ permissions:
   pull-requests: write
 jobs:
   sync:
+    if: vars.FLEET_PAUSED != 'true'
     runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ANTHROPIC_DEFAULT_SONNET_MODEL: claude-sonnet-4-6
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Spawn bot-design
+      - name: Mint GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      - name: Load bot-design prompt
+        id: prompt
         run: |
-          echo "bot-design syncing tokens to Tailwind preset + Figma file"
-          echo "System prompt: .github/agents/bot-design.md"
+          {
+            echo 'prompt<<EOFPROMPT'
+            cat .github/agents/bot-design.md
+            echo
+            cat .github/agents/_TEMPLATE.md
+            echo
+            echo "Tokens at packages/design-tokens/tokens.json changed."
+            echo "Regenerate apps/web-next/app/_styles/brand.css and any Tailwind preset."
+            echo 'EOFPROMPT'
+          } >> "$GITHUB_OUTPUT"
+      - name: Sync tokens via Claude Code
+        uses: anthropics/claude-code-base-action@beta
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: ${{ steps.prompt.outputs.prompt }}
+          allowed_tools: "Bash,Read,Write,Edit"
+          max_turns: 15

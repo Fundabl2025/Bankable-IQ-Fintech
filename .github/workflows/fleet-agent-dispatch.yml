@@ -1,6 +1,6 @@
-# Fleet Agent Dispatch
+﻿# Fleet Agent Dispatch (ACTIVATED v1)
 # When an issue is labeled with an owner label or has /run comment,
-# spawn the matching agent via claude-code-action.
+# spawn the matching agent via Claude Code.
 name: fleet-agent-dispatch
 on:
   issues:
@@ -14,9 +14,13 @@ permissions:
 jobs:
   preflight:
     runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ANTHROPIC_DEFAULT_SONNET_MODEL: claude-sonnet-4-6
     outputs:
       paused: ${{ steps.budget.outputs.paused }}
       bot: ${{ steps.resolve.outputs.bot }}
+      should_run: ${{ steps.resolve.outputs.should_run }}
     steps:
       - id: budget
         run: |
@@ -24,10 +28,20 @@ jobs:
           paused="${paused:-false}"
           echo "paused=${paused}" >> "$GITHUB_OUTPUT"
       - id: resolve
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          EVENT_NAME: ${{ github.event_name }}
+          LABELS_JSON: ${{ toJson(github.event.issue.labels.*.name) }}
         run: |
-          # Map labels to bot names
+          # Only respond to comments containing /run; for label/assign events, always proceed.
+          if [ "$EVENT_NAME" = "issue_comment" ]; then
+            case "$COMMENT_BODY" in
+              */run*) ;;
+              *) echo "should_run=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+            esac
+          fi
           bot=""
-          for lbl in $(echo '${{ toJson(github.event.issue.labels.*.name) }}' | jq -r '.[]'); do
+          for lbl in $(echo "$LABELS_JSON" | jq -r '.[]'); do
             case "$lbl" in
               orchestrator) bot="bot-orchestrator" ;;
               architect) bot="bot-architect" ;;
@@ -44,6 +58,7 @@ jobs:
               service:billing) bot="bot-billing" ;;
               frontend) bot="bot-frontend" ;;
               design) bot="bot-design" ;;
+              integration:*) bot="bot-integrations" ;;
               security) bot="bot-security" ;;
               observability) bot="bot-observability" ;;
               docs) bot="bot-docs" ;;
@@ -56,20 +71,61 @@ jobs:
             esac
             if [ -n "$bot" ]; then break; fi
           done
-          echo "bot=${bot}" >> "$GITHUB_OUTPUT"
-          echo "Resolved bot: ${bot}"
+          if [ -z "$bot" ]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "bot=${bot}" >> "$GITHUB_OUTPUT"
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
   dispatch:
     needs: preflight
-    if: needs.preflight.outputs.paused != 'true' && needs.preflight.outputs.bot != ''
+    if: needs.preflight.outputs.paused != 'true' && needs.preflight.outputs.should_run == 'true'
     runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    timeout-minutes: 45
     concurrency:
-      group: fleet-agents
+      group: fleet-agents-${{ github.event.issue.number }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - name: Spawn ${{ needs.preflight.outputs.bot }}
+      - name: Mint GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      - name: Load agent system prompt
+        id: prompt
+        env:
+          BOT: ${{ needs.preflight.outputs.bot }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
-          bot="${{ needs.preflight.outputs.bot }}"
-          echo "Spawning ${bot} for issue #${{ github.event.issue.number }}"
-          echo "System prompt: .github/agents/${bot}.md"
-          # Replace with: anthropics/claude-code-action@v1 once ANTHROPIC_API_KEY is configured
+          {
+            echo 'prompt<<EOFPROMPT'
+            cat ".github/agents/${BOT}.md"
+            echo
+            echo "## Universal rules"
+            cat .github/agents/_TEMPLATE.md
+            echo
+            echo "## Issue you are dispatched for"
+            echo "Number: #${ISSUE_NUM}"
+            echo "Title: ${ISSUE_TITLE}"
+            echo
+            echo "Body:"
+            echo "${ISSUE_BODY}"
+            echo
+            echo "Open a PR titled feat/${BOT}/${ISSUE_NUM}-<slug> against branch integration."
+            echo 'EOFPROMPT'
+          } >> "$GITHUB_OUTPUT"
+      - name: Run ${{ needs.preflight.outputs.bot }} via Claude Code
+        uses: anthropics/claude-code-base-action@beta
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: ${{ steps.prompt.outputs.prompt }}
+          allowed_tools: "Bash,Read,Write,Edit,Glob,Grep"
+          max_turns: 50
