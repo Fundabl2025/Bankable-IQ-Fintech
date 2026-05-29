@@ -1,0 +1,1778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a1845">
+<title>BANKABLE IQ™ — Master Engineering Build Specification v1.0</title>
+<meta name="description" content="Master technical and engineering build specification for the BANKABLE IQ™ platform. Audience: engineering hires and contracted development teams.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0a1845;
+  --navy-deep: #050e2b;
+  --navy-light: #142b66;
+  --slate: #2a3d6e;
+  --white: #FFFFFF;
+  --blue: #137DC5;
+  --cyan: #00AEEF;
+  --sky: #7DD3FC;
+  --grey: #8b9bbf;
+  --grey-deep: #5a6a8e;
+  --code-bg: #061128;
+  --code-border: rgba(0,174,239,0.18);
+  --eng-violet: #B197FC;
+  --eng-amber: #FFB347;
+  --eng-green: #51CF66;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+* { min-width: 0; }
+html, body { overflow-x: hidden; overflow-x: clip; max-width: 100%; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--navy-deep); color: var(--white); line-height: 1.65; -webkit-font-smoothing: antialiased; position: relative; }
+h1, h2, h3, h4, h5 { font-family: 'Sora', sans-serif; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; color: var(--white); }
+.serif-i { font-family: 'Playfair Display', Georgia, serif; font-weight: 700; font-style: italic; color: var(--cyan); }
+a { color: var(--cyan); text-decoration: none; }
+a:hover { color: var(--sky); }
+strong { color: var(--cyan); font-weight: 700; }
+code, pre, .mono { font-family: 'JetBrains Mono', monospace; }
+
+.app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+@media (max-width: 1000px) { .app { grid-template-columns: 1fr; } }
+
+.sidebar { position: sticky; top: 0; height: 100vh; background: var(--navy-deep); border-right: 1px solid rgba(0,174,239,0.15); overflow-y: auto; padding: 24px 0; z-index: 100; }
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(0,174,239,0.25); border-radius: 3px; }
+@media (max-width: 1000px) { .sidebar { position: fixed; top: 0; left: -340px; width: 320px; transition: left 0.3s; box-shadow: 4px 0 30px rgba(0,0,0,0.5); } .sidebar.open { left: 0; } }
+.sidebar-header { padding: 0 22px 22px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 16px; }
+.sidebar-logo { margin-bottom: 14px; }
+.sidebar-logo img { width: 100%; max-width: 180px; height: auto; }
+.sidebar-meta { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--eng-violet); margin-top: 8px; }
+.sidebar-doc { font-size: 12px; color: var(--grey); margin-top: 4px; }
+.sidebar-nav { padding: 0 12px; }
+.sidebar-section { margin-bottom: 16px; }
+.sidebar-section-title { padding: 8px 12px 6px; font-size: 10px; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: var(--eng-violet); }
+.sidebar-link { display: block; padding: 6px 12px; font-size: 12.5px; color: var(--grey); border-radius: 4px; transition: all 0.15s; border-left: 2px solid transparent; word-wrap: break-word; overflow-wrap: break-word; }
+.sidebar-link:hover { background: rgba(132,94,247,0.08); color: var(--white); border-left-color: var(--eng-violet); }
+.sidebar-link.active { color: var(--eng-violet); background: rgba(132,94,247,0.1); border-left-color: var(--eng-violet); font-weight: 600; }
+
+.mobile-toggle { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 250; height: 56px; padding: 0 18px; background: linear-gradient(180deg, rgba(5,14,43,0.98) 0%, rgba(10,24,69,0.96) 100%); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: var(--eng-violet); border: none; border-bottom: 1px solid rgba(132,94,247,0.2); font-size: 22px; text-align: left; cursor: pointer; box-shadow: 0 2px 12px rgba(0,0,0,0.4); align-items: center; gap: 12px; }
+.mobile-toggle::after { content: 'BANKABLE IQ™ Build Spec v1.0'; font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; color: rgba(255,255,255,0.7); text-transform: uppercase; }
+@media (max-width: 1000px) { .mobile-toggle { display: flex; } body.has-mobile-bar { padding-top: 56px; } }
+.sidebar-backdrop { display: none; position: fixed; top: 56px; left: 0; right: 0; bottom: 0; background: rgba(5,14,43,0.7); backdrop-filter: blur(4px); z-index: 99; }
+.sidebar-backdrop.open { display: block; }
+
+.doc { padding: 60px 56px 100px; max-width: 1280px; margin: 0 auto; padding-inline: max(env(safe-area-inset-left, 0px), 24px) max(env(safe-area-inset-right, 0px), 24px); }
+@media (max-width: 700px) { .doc { padding: 80px 18px 60px; padding-inline: max(env(safe-area-inset-left, 0px), 18px) max(env(safe-area-inset-right, 0px), 18px); } }
+@media (max-width: 430px) { .doc { padding: 72px 14px 50px; padding-inline: max(env(safe-area-inset-left, 0px), 14px) max(env(safe-area-inset-right, 0px), 14px); } }
+
+.doc-cover { padding: 60px 0 80px; border-bottom: 1px solid rgba(132,94,247,0.2); margin-bottom: 60px; }
+.cover-logo { margin-bottom: 32px; }
+.cover-logo img { width: 100%; max-width: 360px; height: auto; }
+.cover-eyebrow { display: inline-block; padding: 8px 16px; background: linear-gradient(135deg, rgba(132,94,247,0.15) 0%, rgba(0,174,239,0.10) 100%); border: 1px solid var(--eng-violet); color: var(--eng-violet); font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; border-radius: 100px; margin-bottom: 24px; }
+.cover-title { font-size: clamp(2rem, 5vw, 3.4rem); margin-bottom: 18px; background: linear-gradient(135deg, var(--white) 0%, var(--eng-violet) 60%, var(--cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; padding-right: 4px; max-width: 100%; }
+.cover-subtitle { font-size: clamp(1rem, 2vw, 1.3rem); color: rgba(255,255,255,0.78); margin-bottom: 32px; max-width: 820px; font-weight: 400; }
+.cover-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-top: 28px; padding: 24px; background: rgba(10,24,69,0.6); border: 1px solid rgba(132,94,247,0.2); border-radius: 10px; }
+.cover-meta-item dt { font-family: 'Sora', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--eng-violet); margin-bottom: 6px; }
+.cover-meta-item dd { font-size: 13px; color: var(--white); font-weight: 600; word-break: break-word; overflow-wrap: break-word; }
+
+.doc-section { padding: 60px 0; border-bottom: 1px solid rgba(255,255,255,0.05); scroll-margin-top: 20px; }
+.section-number { font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; color: var(--eng-violet); margin-bottom: 12px; padding-right: 4px; }
+.section-heading { font-size: clamp(1.5rem, 4vw, 2.4rem); margin-bottom: 18px; padding-right: 4px; }
+.section-lead { font-size: 1.05rem; color: rgba(255,255,255,0.82); margin-bottom: 32px; max-width: 900px; }
+p { margin-bottom: 14px; color: rgba(255,255,255,0.82); max-width: 100%; word-break: normal; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
+.doc-section ul, .doc-section ol { margin: 14px 0 14px 24px; color: rgba(255,255,255,0.82); }
+.doc-section li { margin-bottom: 6px; max-width: 100%; overflow-wrap: break-word; }
+h3 { margin: 28px 0 12px; font-size: 1.35rem; color: var(--eng-violet); padding-right: 4px; max-width: 100%; }
+h4 { margin: 22px 0 10px; font-size: 1.05rem; color: var(--white); padding-right: 4px; max-width: 100%; }
+
+.callout { margin: 22px 0; padding: 22px 26px; background: linear-gradient(135deg, rgba(132,94,247,0.08) 0%, transparent 100%); border-left: 4px solid var(--eng-violet); border-radius: 6px; max-width: 100%; }
+.callout-label { font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--eng-violet); margin-bottom: 10px; }
+.callout-warn { border-left-color: var(--eng-amber); background: linear-gradient(135deg, rgba(255,179,71,0.08) 0%, transparent 100%); }
+.callout-warn .callout-label { color: var(--eng-amber); }
+.callout-ok { border-left-color: var(--eng-green); background: linear-gradient(135deg, rgba(81,207,102,0.08) 0%, transparent 100%); }
+.callout-ok .callout-label { color: var(--eng-green); }
+
+/* Code blocks */
+pre { background: var(--code-bg); border: 1px solid var(--code-border); border-radius: 8px; padding: 18px 20px; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 16px 0; font-size: 13px; line-height: 1.55; color: rgba(255,255,255,0.92); max-width: 100%; white-space: pre; word-wrap: normal; }
+pre code { font-family: 'JetBrains Mono', monospace; background: transparent; padding: 0; border: none; color: inherit; }
+code { font-family: 'JetBrains Mono', monospace; background: rgba(132,94,247,0.12); border: 1px solid rgba(132,94,247,0.22); border-radius: 4px; padding: 2px 6px; font-size: 0.88em; color: var(--cyan); }
+.code-block-label { display: inline-block; padding: 3px 10px; font-family: 'Sora', sans-serif; font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; background: rgba(132,94,247,0.15); color: var(--eng-violet); border-radius: 4px; margin-bottom: 8px; }
+
+/* Cards */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 22px 0; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 22px 0; }
+@media (max-width: 800px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+.card { background: linear-gradient(180deg, rgba(132,94,247,0.05) 0%, rgba(132,94,247,0.01) 100%); border: 1px solid rgba(132,94,247,0.18); padding: 22px 20px; border-radius: 10px; position: relative; max-width: 100%; }
+.card:hover { border-color: var(--eng-violet); }
+.card-eyebrow { font-family: 'Sora', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--eng-violet); margin-bottom: 10px; }
+.card h4 { margin-top: 0; margin-bottom: 8px; }
+.card p { font-size: 0.92rem; margin-bottom: 0; }
+
+/* Tables */
+.tbl { width: 100%; border-collapse: separate; border-spacing: 0; margin: 22px 0; border-radius: 10px; overflow: hidden; border: 1px solid rgba(132,94,247,0.15); font-size: 0.92rem; }
+.tbl th { background: var(--navy-deep); color: var(--eng-violet); font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 12px 14px; text-align: left; }
+.tbl td { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); vertical-align: top; color: rgba(255,255,255,0.85); word-break: normal; overflow-wrap: break-word; }
+.tbl tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl td strong { color: var(--eng-violet); }
+.tbl .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.88em; color: var(--cyan); }
+
+/* Mobile: stack-on-mobile table pattern */
+@media (max-width: 640px) {
+  .tbl { display: block; max-width: 100%; border: none; background: transparent; }
+  .tbl thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .tbl tbody { display: block; width: 100%; }
+  .tbl tr { display: block; width: 100%; margin-bottom: 16px; padding: 16px 18px; background: linear-gradient(180deg, rgba(132,94,247,0.06) 0%, rgba(10,24,69,0.4) 100%); border: 1px solid rgba(132,94,247,0.18); border-radius: 10px; max-width: 100%; box-sizing: border-box; }
+  .tbl td { display: block; width: 100%; border: none; padding: 6px 0; white-space: normal; word-break: normal; overflow-wrap: break-word; max-width: 100%; }
+  .tbl td::before { content: attr(data-label); display: block; font-family: 'Sora', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--eng-violet); margin-bottom: 4px; }
+  .tbl td:not([data-label])::before { content: ''; display: none; }
+  .tbl td:first-child { font-family: 'Sora', sans-serif; font-weight: 700; color: var(--white); font-size: 1.02rem; padding-bottom: 8px; border-bottom: 1px solid rgba(132,94,247,0.18); margin-bottom: 8px; }
+  .tbl td:first-child::before { display: none; }
+  .tbl tr:nth-child(even) td { background: transparent; }
+}
+
+/* Module spec cards */
+.module-spec { margin: 24px 0; padding: 26px 28px; background: linear-gradient(180deg, rgba(132,94,247,0.07) 0%, rgba(10,24,69,0.4) 100%); border: 1px solid var(--eng-violet); border-radius: 12px; max-width: 100%; }
+.module-spec h3 { color: var(--white); margin-top: 0; font-size: 1.2rem; }
+.module-spec-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 16px 0; padding: 14px 16px; background: rgba(5,14,43,0.5); border-radius: 8px; }
+.module-spec-meta-item { font-size: 0.85rem; }
+.module-spec-meta-item .label { font-family: 'Sora', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--eng-violet); margin-bottom: 3px; }
+.module-spec-meta-item .value { color: var(--white); font-weight: 600; word-break: break-word; }
+
+/* Phase badges */
+.phase-tag { display: inline-block; padding: 3px 9px; font-family: 'Sora', sans-serif; font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 4px; margin-right: 5px; vertical-align: middle; }
+.phase-mvp { background: var(--eng-green); color: var(--navy-deep); }
+.phase-p2 { background: var(--cyan); color: var(--navy-deep); }
+.phase-p3 { background: var(--eng-amber); color: var(--navy-deep); }
+.phase-future { background: var(--grey); color: var(--navy-deep); }
+
+/* API endpoint blocks */
+.endpoint { margin: 14px 0; padding: 16px 18px; background: var(--code-bg); border: 1px solid var(--code-border); border-radius: 8px; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.endpoint-method { display: inline-block; padding: 3px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; border-radius: 4px; margin-right: 10px; }
+.method-get { background: var(--eng-green); color: var(--navy-deep); }
+.method-post { background: var(--cyan); color: var(--navy-deep); }
+.method-put { background: var(--eng-amber); color: var(--navy-deep); }
+.method-patch { background: var(--eng-violet); color: var(--navy-deep); }
+.method-delete { background: #FF6B6B; color: var(--white); }
+.endpoint-path { font-family: 'JetBrains Mono', monospace; color: var(--cyan); font-size: 14px; word-break: break-all; }
+.endpoint-desc { margin-top: 8px; font-size: 0.88rem; color: rgba(255,255,255,0.78); }
+
+/* Doc footer */
+.doc-footer { margin-top: 60px; padding-top: 32px; border-top: 1px solid rgba(255,255,255,0.08); text-align: center; font-size: 0.85rem; color: var(--grey); }
+
+/* ============================================
+   MOBILE HARDENING (v1.9 carried over)
+   ============================================ */
+@media (max-width: 700px) {
+  .section-heading { font-size: clamp(1.3rem, 5vw, 1.6rem) !important; line-height: 1.18; padding-right: 4px; }
+  .section-lead { font-size: 0.95rem; max-width: 100%; }
+  .section-number { font-size: clamp(9px, 2.6vw, 10px); padding-right: 4px; }
+  h3 { font-size: clamp(1.05rem, 4vw, 1.18rem); line-height: 1.22; padding-right: 4px; max-width: 100%; }
+  h4 { font-size: 0.98rem; line-height: 1.25; padding-right: 4px; max-width: 100%; }
+  .cover-title { font-size: clamp(1.5rem, 7vw, 1.85rem) !important; line-height: 1.12; padding-right: 4px; max-width: 100%; }
+  .cover-subtitle { font-size: 0.92rem; max-width: 100%; }
+  .cover-meta { padding: 14px; gap: 10px; }
+  .cover-meta-item dd { font-size: 12px; }
+  .cover-eyebrow { font-size: clamp(8px, 2.4vw, 10px); padding: 5px 10px; }
+  ol, ul, .doc-section ol, .doc-section ul { padding-left: 18px; padding-right: 0; }
+  li { font-size: 0.92rem; line-height: 1.5; }
+  p { font-size: 0.92rem; }
+  .card { padding: 20px 18px !important; }
+  .card p { font-size: 0.88rem; }
+  .module-spec { padding: 22px 18px !important; }
+  .module-spec-meta { padding: 12px 12px; }
+  .callout { padding: 16px 16px !important; }
+  pre { padding: 14px 14px; font-size: 12px; }
+  .endpoint { padding: 14px 14px; }
+  .endpoint-path { font-size: 12px; }
+}
+@media (max-width: 430px) {
+  .doc { padding-left: 14px !important; padding-right: 14px !important; }
+  .card, .module-spec, .callout { padding-left: 16px !important; padding-right: 16px !important; }
+  .tbl tr { padding: 14px 16px !important; }
+  .cover-title { font-size: 1.5rem !important; }
+  .section-heading { font-size: 1.25rem !important; }
+}
+
+/* Print */
+@media print {
+  .sidebar, .mobile-toggle { display: none !important; }
+  .app { grid-template-columns: 1fr; }
+  body { background: white !important; color: black !important; }
+  h1, h2, h3, h4 { color: black !important; }
+  p, li, td { color: #222 !important; }
+  pre { border: 1px solid #ccc; background: #f5f5f5 !important; color: #222 !important; }
+}
+
+/* Print/screen-reader skip link */
+.skip-link { position: absolute; left: -9999px; }
+.skip-link:focus { left: 16px; top: 16px; z-index: 999; padding: 10px 16px; background: var(--cyan); color: var(--navy-deep); border-radius: 6px; font-weight: 700; }
+</style>
+</head>
+<body class="has-mobile-bar">
+
+<a href="#main" class="skip-link">Skip to content</a>
+<button class="mobile-toggle" id="mobile-toggle" aria-label="Toggle navigation">☰</button>
+<div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <img src="bankable-logo-white.png" alt="Bankable" onerror="this.style.display='none'">
+      </div>
+      <div class="sidebar-meta">Engineering Build Spec</div>
+      <div class="sidebar-doc">Master Technical Document · v1.0</div>
+    </div>
+    <nav class="sidebar-nav" aria-label="Document sections">
+      <div class="sidebar-section"><div class="sidebar-section-title">I · Foundation</div>
+        <a href="#cover" class="sidebar-link">1.1 Cover</a>
+        <a href="#exec-summary" class="sidebar-link">1.2 Executive Technical Summary</a>
+        <a href="#how-to-read" class="sidebar-link">1.3 How to Read This Document</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">II · System Architecture</div>
+        <a href="#architecture" class="sidebar-link">2.1 System Architecture Overview</a>
+        <a href="#deployment-topology" class="sidebar-link">2.2 Deployment Topology</a>
+        <a href="#service-decomposition" class="sidebar-link">2.3 Service Decomposition</a>
+        <a href="#data-flow" class="sidebar-link">2.4 Data Flow Diagrams</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">III · Component Specs</div>
+        <a href="#module-1" class="sidebar-link">3.1 Module 1 — Diagnostic Engine</a>
+        <a href="#module-2" class="sidebar-link">3.2 Module 2 — Compliance Engine</a>
+        <a href="#module-3" class="sidebar-link">3.3 Module 3 — AI Coaching System</a>
+        <a href="#module-4" class="sidebar-link">3.4 Module 4 — Credit Intelligence</a>
+        <a href="#module-5" class="sidebar-link">3.5 Module 5 — Readiness Vault</a>
+        <a href="#module-6" class="sidebar-link">3.6 Module 6 — Pathway Engine</a>
+        <a href="#module-7" class="sidebar-link">3.7 Module 7 — BAI Adaptive Intelligence</a>
+        <a href="#workspace" class="sidebar-link">3.8 Client Workspace</a>
+        <a href="#command-center" class="sidebar-link">3.9 Advisor Command Center</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">IV · Database Layer</div>
+        <a href="#database" class="sidebar-link">4.1 Database Architecture</a>
+        <a href="#schemas-ddl" class="sidebar-link">4.2 35 Schemas (Full DDL)</a>
+        <a href="#data-warehouse" class="sidebar-link">4.3 Data Warehouse (Snowflake)</a>
+        <a href="#retention-policies" class="sidebar-link">4.4 Retention & Audit Policies</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">V · API Layer</div>
+        <a href="#api-overview" class="sidebar-link">5.1 API Architecture</a>
+        <a href="#client-api" class="sidebar-link">5.2 Client API Endpoints</a>
+        <a href="#advisor-api" class="sidebar-link">5.3 Advisor API Endpoints</a>
+        <a href="#bai-api" class="sidebar-link">5.4 BAI Prediction API</a>
+        <a href="#marketplace-api" class="sidebar-link">5.5 Capital Marketplace API (B2B)</a>
+        <a href="#auth-api" class="sidebar-link">5.6 Authentication API</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">VI · User Flows</div>
+        <a href="#client-flow" class="sidebar-link">6.1 Client Journey (12 Phases)</a>
+        <a href="#advisor-flow" class="sidebar-link">6.2 Advisor Journey (10 Phases)</a>
+        <a href="#wireframes" class="sidebar-link">6.3 Screen-by-Screen Wireframes</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">VII · Frontend</div>
+        <a href="#frontend-arch" class="sidebar-link">7.1 Frontend Architecture (Next.js)</a>
+        <a href="#design-system" class="sidebar-link">7.2 Design System Tokens</a>
+        <a href="#state-mgmt" class="sidebar-link">7.3 State Management</a>
+        <a href="#accessibility" class="sidebar-link">7.4 Accessibility (WCAG 2.2 AA)</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">VIII · Backend</div>
+        <a href="#backend-arch" class="sidebar-link">8.1 Backend Architecture</a>
+        <a href="#service-mesh" class="sidebar-link">8.2 Service Mesh & API Gateway</a>
+        <a href="#background-jobs" class="sidebar-link">8.3 Background Job Processing</a>
+        <a href="#message-queue" class="sidebar-link">8.4 Message Queue Design</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">IX · Integrations</div>
+        <a href="#int-plaid" class="sidebar-link">9.1 Plaid (Financial Data)</a>
+        <a href="#int-bureaus" class="sidebar-link">9.2 Credit Bureaus (Personal)</a>
+        <a href="#int-business-credit" class="sidebar-link">9.3 Business Credit Bureaus</a>
+        <a href="#int-irs-sos" class="sidebar-link">9.4 IRS + Secretary of State</a>
+        <a href="#int-lenders" class="sidebar-link">9.5 Lender Integrations</a>
+        <a href="#int-accounting" class="sidebar-link">9.6 Accounting Systems</a>
+        <a href="#int-husl" class="sidebar-link">9.7 HUSLConnect™ + HUSLFi™</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">X · Auth & Security</div>
+        <a href="#auth-arch" class="sidebar-link">10.1 Auth Architecture</a>
+        <a href="#rbac" class="sidebar-link">10.2 RBAC Roles</a>
+        <a href="#mfa-sso" class="sidebar-link">10.3 MFA & SSO</a>
+        <a href="#compliance" class="sidebar-link">10.4 Compliance (CROA / FCRA / ECOA / SOC 2)</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">XI · Infrastructure</div>
+        <a href="#infra" class="sidebar-link">11.1 Cloud Architecture (AWS/GCP)</a>
+        <a href="#cicd" class="sidebar-link">11.2 CI/CD Pipelines</a>
+        <a href="#observability" class="sidebar-link">11.3 Observability Stack</a>
+        <a href="#disaster-recovery" class="sidebar-link">11.4 DR & Backups</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">XII · AI / ML</div>
+        <a href="#ml-overview" class="sidebar-link">12.1 ML Architecture Overview</a>
+        <a href="#ml-bpfs" class="sidebar-link">12.2 BPFS Training Pipeline</a>
+        <a href="#ml-blin" class="sidebar-link">12.3 BLIN Data Pipeline</a>
+        <a href="#ml-bii-bms" class="sidebar-link">12.4 BII + BMS Pipelines</a>
+        <a href="#ml-governance" class="sidebar-link">12.5 Bias Audit + Governance</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">XIII · Perf & Scale</div>
+        <a href="#performance" class="sidebar-link">13.1 Performance Targets</a>
+        <a href="#scale-projections" class="sidebar-link">13.2 Scale Projections</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">XIV · QA & Testing</div>
+        <a href="#test-strategy" class="sidebar-link">14.1 Test Strategy</a>
+        <a href="#test-coverage" class="sidebar-link">14.2 Coverage Targets</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">XV · Release & Deploy</div>
+        <a href="#release-strategy" class="sidebar-link">15.1 Release Strategy</a>
+        <a href="#feature-flags" class="sidebar-link">15.2 Feature Flags</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">XVI · MVP Build Order</div>
+        <a href="#mvp-phases" class="sidebar-link">16.1 Phased Build Order</a>
+        <a href="#mvp-sprint" class="sidebar-link">16.2 12-Week MVP Sprint Plan</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">XVII · Cost Model</div>
+        <a href="#cost-model" class="sidebar-link">17.1 Infrastructure Cost Model</a>
+        <a href="#third-party-costs" class="sidebar-link">17.2 Third-Party API Costs</a>
+      </div>
+      <div class="sidebar-section"><div class="sidebar-section-title">XVIII · Appendices</div>
+        <a href="#glossary" class="sidebar-link">18.1 Glossary</a>
+        <a href="#vendor-matrix" class="sidebar-link">18.2 Vendor Matrix</a>
+        <a href="#open-source" class="sidebar-link">18.3 Open-Source Licenses</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="doc" id="main">
+
+    <section class="doc-cover" id="cover">
+      <div class="cover-logo">
+        <img src="bankable-logo-white.png" alt="Bankable" onerror="this.style.display='none'">
+      </div>
+      <div class="cover-eyebrow">Master Engineering Build Specification · Confidential</div>
+      <h1 class="cover-title">BANKABLE IQ™ Build Spec</h1>
+      <p class="cover-subtitle">The complete technical and engineering build specification for the BANKABLE IQ™ platform — the Institutional Readiness Operating System™. End-to-end coverage of system architecture, database schemas, APIs, user flows, integrations, security, infrastructure, AI/ML, MVP build order, and cost model. <em class="serif-i">From Strategic Blueprint to Production Build.</em></p>
+      <dl class="cover-meta">
+        <div class="cover-meta-item"><dt>Version</dt><dd>v1.0 — Engineering Build Spec</dd></div>
+        <div class="cover-meta-item"><dt>Companion to</dt><dd>BANKABLE™ Internal Corporate Blueprint v1.9</dd></div>
+        <div class="cover-meta-item"><dt>Primary Audience</dt><dd>Engineering hires · Contracted dev shops</dd></div>
+        <div class="cover-meta-item"><dt>Secondary Audience</dt><dd>Investors evaluating technical feasibility · B2B partners</dd></div>
+        <div class="cover-meta-item"><dt>Document Type</dt><dd>Master Technical Specification</dd></div>
+        <div class="cover-meta-item"><dt>Founders</dt><dd>Kevin Murphy &amp; Michael Hopkins</dd></div>
+        <div class="cover-meta-item"><dt>Status</dt><dd>Active · Engineering-ready</dd></div>
+        <div class="cover-meta-item"><dt>Distribution</dt><dd>Internal · Engineering · Partner-restricted</dd></div>
+      </dl>
+    </section>
+
+    <section class="doc-section" id="exec-summary">
+      <div class="section-number">§ 1.2 · EXECUTIVE TECHNICAL SUMMARY</div>
+      <h2 class="section-heading">Executive Technical Summary</h2>
+      <p class="section-lead">BANKABLE IQ™ is an AI-enabled, multi-tenant, multi-sided B2B2C platform that operationalizes the Institutional Readiness Intelligence Framework™ for three audiences simultaneously: business owner clients, Certified Capital Advisors (CCAs), and institutional lender partners. This document is the master engineering build specification — the document an engineering hire or contracted dev shop reads to scope, architect, and build the production platform.</p>
+
+      <h3>What the Platform Does (Engineering View)</h3>
+      <ul>
+        <li><strong>Captures</strong> business and personal data via Plaid, tri-bureau APIs, business credit bureaus, accounting integrations, and direct upload</li>
+        <li><strong>Scores</strong> institutional readiness across 7 Cs and 20 Focus Areas (Bankability Score 0-100) and credit position (Credit Position Score 0-100)</li>
+        <li><strong>Adapts</strong> recommendations per business, industry, geography, and current market via the Adaptive Intelligence Engine (BAI)</li>
+        <li><strong>Matches</strong> clients to capital products with per-lender predicted approval probability (BPFS)</li>
+        <li><strong>Packages</strong> lender-ready submissions via AI-powered packaging engine (replaces third-party back-office)</li>
+        <li><strong>Coordinates</strong> a credentialed advisor network (CCA / CCRA / CIRS / Infrastructure Partner) running on the platform</li>
+        <li><strong>Licenses</strong> deal flow to institutional capital providers via the Capital Marketplace API</li>
+        <li><strong>Distributes</strong> via EDO B2B licensing to SBDCs, CDFIs, chambers, franchise systems, and accelerators</li>
+      </ul>
+
+      <h3>Core Technology Decisions (Pre-Locked)</h3>
+      <table class="tbl">
+        <thead><tr><th>Layer</th><th>Technology</th><th>Rationale</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Frontend</strong></td><td>Next.js 14 (App Router) + React 18 + TypeScript</td><td>SSR/ISR for SEO on public surfaces, RSC for performance, full ecosystem maturity</td></tr>
+          <tr><td><strong>UI Library</strong></td><td>TailwindCSS + shadcn/ui</td><td>Design-token driven, accessible primitives, no runtime CSS-in-JS overhead</td></tr>
+          <tr><td><strong>Backend</strong></td><td>Node.js + TypeScript (REST/tRPC) · Python FastAPI (AI services)</td><td>TS for shared types client/server, Python for ML model serving</td></tr>
+          <tr><td><strong>Primary Database</strong></td><td>PostgreSQL 16 + read replicas</td><td>JSONB for flexible schemas, strong consistency, mature tooling</td></tr>
+          <tr><td><strong>Cache</strong></td><td>Redis 7</td><td>Session storage, score caching, rate limiting</td></tr>
+          <tr><td><strong>Document Storage</strong></td><td>S3 + KMS encryption</td><td>Institutional Readiness Vault, encrypted at rest with per-tenant keys</td></tr>
+          <tr><td><strong>Vector DB</strong></td><td>Pinecone (managed) or Weaviate (self-hosted)</td><td>AI Coaching contextual retrieval, similar-business case study matching</td></tr>
+          <tr><td><strong>Data Warehouse</strong></td><td>Snowflake</td><td>Long-term Telemetry Layer + B2B intelligence monetization</td></tr>
+          <tr><td><strong>Auth</strong></td><td>Auth0 (or Supabase Auth)</td><td>Passwordless + SSO + MFA + RBAC built-in</td></tr>
+          <tr><td><strong>AI Layer</strong></td><td>Anthropic Claude (primary) + OpenAI GPT-4 (fallback)</td><td>Best-in-class instruction following, structured output, lender memo drafting</td></tr>
+          <tr><td><strong>Workflow Orchestration</strong></td><td>Temporal (self-hosted) or Inngest (managed)</td><td>4-Stage Pipeline state machine, retry semantics, durable execution</td></tr>
+          <tr><td><strong>Hosting</strong></td><td>Vercel (frontend) + AWS (backend + ML) + Cloudflare (CDN/WAF)</td><td>Vercel's Next.js optimization, AWS for cost-efficient backend, Cloudflare for global edge</td></tr>
+          <tr><td><strong>Observability</strong></td><td>Datadog</td><td>Logs + metrics + traces + RUM + security monitoring in one platform</td></tr>
+          <tr><td><strong>Payments</strong></td><td>Stripe (subscriptions + ACH)</td><td>SaaS billing, multiple tiers, B2B invoicing, lender plug-in subscription billing</td></tr>
+          <tr><td><strong>Email/SMS</strong></td><td>SendGrid + Twilio (orchestrated via HUSLConnect™)</td><td>Transactional + nurture sequences, SMS notifications</td></tr>
+        </tbody>
+      </table>
+
+      <h3>System Boundaries</h3>
+      <p>BANKABLE IQ™ is the central operating system. It interfaces with two sibling platforms (also Bankable-owned but distinct services) and many external integrations:</p>
+      <div class="grid-2">
+        <div class="card"><div class="card-eyebrow">Sibling Platforms</div><h4>HUSLConnect™</h4><p>CRM, funnels, marketing automation, communications, scheduling, payments. Integrates via webhook + REST API. Hosts client-acquisition pipelines and CCA practice operations.</p></div>
+        <div class="card"><div class="card-eyebrow">Sibling Platforms</div><h4>HUSLFi™</h4><p>Plaid-integrated financial telemetry, bookkeeping intelligence, Projection Builder, financial forecasting. Feeds live financial data into BANKABLE IQ™ schemas via internal event bus.</p></div>
+      </div>
+    </section>
+
+    <section class="doc-section" id="how-to-read">
+      <div class="section-number">§ 1.3 · HOW TO READ THIS DOCUMENT</div>
+      <h2 class="section-heading">How to Read This Document</h2>
+      <div class="callout">
+        <div class="callout-label">For Engineering Hires</div>
+        <p>Read in order: §1 → §2 (System Architecture) → §3 (Component Specs for the module you'll own) → §4 (Database) → §5 (API) → §16 (MVP Build Order). The other sections are reference material to consult as needed during implementation.</p>
+      </div>
+      <div class="callout">
+        <div class="callout-label">For Contracted Dev Shops Bidding</div>
+        <p>Read §1, §2, §3, §16, §17. Those sections give you scope, architecture, what's in the MVP, and the cost model. Use §4-§15 to validate your build approach and ask informed questions in the bid process.</p>
+      </div>
+      <div class="callout">
+        <div class="callout-label">For Investors Evaluating Technical Feasibility</div>
+        <p>Read §1, §2, §11 (Infrastructure), §12 (AI/ML), §13 (Performance &amp; Scale), §17 (Cost Model). Those answer: is this buildable, what does it cost to run, and does the architecture support the unicorn-class scale projections.</p>
+      </div>
+      <div class="callout">
+        <div class="callout-label">For B2B Partners (Lenders, EDOs)</div>
+        <p>Read §1, §2.4 (Data Flow), §5.5 (Capital Marketplace API), §10 (Auth &amp; Security), §9 (relevant Integration sections). Those define how you plug in, how data flows, and what security/compliance posture you can expect.</p>
+      </div>
+      <div class="callout callout-warn">
+        <div class="callout-label">Important — Read the Corporate Blueprint First</div>
+        <p>This document does NOT re-explain the business model, market positioning, customer avatars, or strategic moat. Those live in the <strong>BANKABLE™ Internal Corporate Blueprint v1.9</strong> at <a href="/" target="_blank">blueprint.getbankable.io</a>. Read that document first if you don't have business context — many architectural decisions in this spec are driven by the business architecture defined there.</p>
+      </div>
+    </section>
+
+    <section class="doc-section" id="architecture">
+      <div class="section-number">§ 2.1 · SYSTEM ARCHITECTURE OVERVIEW</div>
+      <h2 class="section-heading">System Architecture Overview</h2>
+      <p class="section-lead">BANKABLE IQ™ is a modular, event-driven, multi-tenant platform with explicit separation between the intelligence layer (AI/ML), the operational layer (modules, workflows, integrations), and the data layer (schemas, warehouse, vector store).</p>
+
+      <h3>High-Level Architecture (Layers)</h3>
+      <pre><code>┌─────────────────────────────────────────────────────────────────────┐
+│                    PRESENTATION LAYER (Next.js 14)                  │
+│  Client Workspace · Advisor Command Center · Public Marketing Site │
+│  Admin Console · Lender Partner Portal · EDO Partner Portal         │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ tRPC + REST + WebSockets
+┌──────────────────────────────▼──────────────────────────────────────┐
+│                   API GATEWAY (Kong / AWS API Gateway)              │
+│         Rate limiting · Auth verification · Request routing         │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────────────┐
+│              APPLICATION SERVICES (Node.js / TypeScript)            │
+│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌─────────────┐ │
+│ │  Module 1    │ │  Module 2    │ │  Module 5    │ │ Module 6    │ │
+│ │  Diagnostic  │ │  Compliance  │ │  Vault       │ │ Pathway     │ │
+│ │  Engine      │ │  Engine      │ │  Service     │ │ Engine      │ │
+│ └──────────────┘ └──────────────┘ └──────────────┘ └─────────────┘ │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────────────┐
+│               AI/ML SERVICES (Python / FastAPI)                     │
+│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌─────────────┐ │
+│ │  Module 3    │ │  Module 4    │ │  Module 7    │ │ Packaging   │ │
+│ │  AI Coaching │ │  Credit Intel│ │  BAI Engine  │ │ Engine      │ │
+│ │  System      │ │  Engine      │ │  (BLIN/BII/  │ │ (Lender     │ │
+│ │              │ │              │ │  BMS/BPFS)   │ │  Memo AI)   │ │
+│ └──────────────┘ └──────────────┘ └──────────────┘ └─────────────┘ │
+└─┬────────────────────────────────────────────────────────────────┬──┘
+  │                                                                │
+┌─▼────────────────────────────┐  ┌────────────────────────────────▼┐
+│  EVENT BUS (Kafka/SNS+SQS)   │  │ WORKFLOW ORCH (Temporal/Inngest)│
+│  Plaid events · Score events │  │ 4-Stage Pipeline state machine  │
+│  Lender events · CCA events  │  │ Long-running jobs · Retries     │
+└─┬────────────────────────────┘  └────────────────────────────────┬┘
+  │                                                                │
+┌─▼────────────────────────────────────────────────────────────────▼─┐
+│                       DATA LAYER                                   │
+│ ┌─────────────┐ ┌──────────────┐ ┌────────────┐ ┌───────────────┐ │
+│ │ PostgreSQL  │ │  Redis       │ │  S3 + KMS  │ │  Snowflake    │ │
+│ │ (OLTP - 35  │ │  (Cache,     │ │  (Vault    │ │  (Telemetry,  │ │
+│ │  schemas)   │ │  Sessions)   │ │  Documents)│ │  Analytics)   │ │
+│ └─────────────┘ └──────────────┘ └────────────┘ └───────────────┘ │
+│ ┌─────────────────────────────────────────────────────────────────┐│
+│ │       Pinecone / Weaviate (Vector DB for AI retrieval)          ││
+│ └─────────────────────────────────────────────────────────────────┘│
+└────────────────────────────────────────────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────────────┐
+│              EXTERNAL INTEGRATIONS (via dedicated services)         │
+│  Plaid · Experian · Equifax · TransUnion · D&amp;B · IRS · SOS APIs   │
+│  Lender APIs · SBA APIs · HUSLConnect™ · HUSLFi™                    │
+└─────────────────────────────────────────────────────────────────────┘</code></pre>
+
+      <h3>Design Principles</h3>
+      <table class="tbl">
+        <thead><tr><th>Principle</th><th>Rationale</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Modular monolith first, microservices only when needed</strong></td><td>Start with Node.js modular monolith for application services, Python microservice for AI. Decompose to microservices only when scale demands it. Avoids premature distributed-systems complexity.</td></tr>
+          <tr><td><strong>Event-driven for cross-module communication</strong></td><td>Modules communicate via events (Plaid received → Score Engine subscribes → recomputes Bankability Score → emits ScoreUpdated event). Loose coupling, easy to evolve.</td></tr>
+          <tr><td><strong>Multi-tenant from day 1</strong></td><td>Every row in every schema has <code>tenant_id</code>. Row-level security (RLS) in PostgreSQL enforces isolation. EDO licensees get their own logical tenant.</td></tr>
+          <tr><td><strong>Append-only event log for audit + compliance</strong></td><td>Every state change writes to an immutable event log (Kafka topic + S3 archive). Critical for CROA/FCRA/ECOA audit requirements and for the Telemetry Layer.</td></tr>
+          <tr><td><strong>Background jobs for slow operations</strong></td><td>Credit bureau pulls, lender packaging, AI generation all run as background jobs (Temporal). UI shows progress, never blocks.</td></tr>
+          <tr><td><strong>Read replicas for analytics</strong></td><td>Heavy analytics queries (CCA portfolio dashboards, HQ metrics, investor reports) hit a read replica or Snowflake, never the primary.</td></tr>
+          <tr><td><strong>Feature flags for safe rollout</strong></td><td>Every new feature behind a flag (LaunchDarkly or self-hosted). Gradual rollout: 1% → 10% → 50% → 100%. Instant rollback.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="doc-section" id="deployment-topology">
+      <div class="section-number">§ 2.2 · DEPLOYMENT TOPOLOGY</div>
+      <h2 class="section-heading">Deployment Topology</h2>
+      <p class="section-lead">Production runs across three primary cloud providers, each chosen for what it does best. Disaster recovery and regional failover built in from day 1.</p>
+
+      <h3>Production Environment</h3>
+      <pre><code>┌─────────────────────────────────────────────────────────────────────┐
+│                  CLOUDFLARE (Edge Network)                          │
+│   DNS · CDN · WAF · DDoS protection · Bot management · SSL          │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┴─────────────────────┐
+        │                                           │
+┌───────▼────────────┐                  ┌──────────▼──────────────┐
+│  VERCEL            │                  │  AWS US-East-1 (Primary)│
+│  Frontend hosting  │                  │  + US-West-2 (Failover) │
+│  Next.js 14        │                  ├─────────────────────────┤
+│  Edge functions    │                  │ ECS Fargate (Backend)   │
+│  ISR cache         │                  │ Lambda (Light services) │
+│  Image opt         │                  │ EKS (ML Model serving)  │
+└────────────────────┘                  │                         │
+                                        │ RDS Postgres 16 Multi-AZ│
+┌────────────────────┐                  │ + Read replicas         │
+│  Auth0             │◄─────────────────┤                         │
+│  Identity provider │                  │ ElastiCache Redis       │
+│  MFA · SSO · RBAC  │                  │                         │
+└────────────────────┘                  │ S3 (Vault, backups)     │
+                                        │ KMS (encryption keys)   │
+┌────────────────────┐                  │                         │
+│  Snowflake         │◄─────────────────┤ SQS + SNS (event bus)   │
+│  Data warehouse    │                  │ EventBridge             │
+│  Telemetry         │                  │                         │
+└────────────────────┘                  │ Secrets Manager         │
+                                        │ Parameter Store         │
+┌────────────────────┐                  └─────────────────────────┘
+│  Pinecone          │                              │
+│  Vector DB (AI)    │              ┌───────────────┘
+└────────────────────┘              │
+                                ┌───▼─────────────────────────────┐
+                                │  External Integrations          │
+                                │  (rate-limited, monitored)      │
+                                │  Plaid, Bureaus, SBA, IRS, SOS, │
+                                │  Lender APIs, HUSLConnect™      │
+                                └─────────────────────────────────┘</code></pre>
+
+      <h3>Environment Tiers</h3>
+      <table class="tbl">
+        <thead><tr><th>Environment</th><th>Purpose</th><th>Branch</th><th>URL</th><th>Data</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Production</strong></td><td>Live customer traffic</td><td><code>main</code></td><td><code>app.getbankable.io</code></td><td>Real data, full encryption, audit logging on</td></tr>
+          <tr><td><strong>Staging</strong></td><td>Pre-prod QA, partner integration testing</td><td><code>staging</code></td><td><code>staging.app.getbankable.io</code></td><td>Anonymized snapshot of prod</td></tr>
+          <tr><td><strong>Preview</strong></td><td>Per-PR ephemeral deploys</td><td>Any PR</td><td><code>pr-{n}.preview.getbankable.io</code></td><td>Synthetic data only</td></tr>
+          <tr><td><strong>Development</strong></td><td>Local + shared dev cluster</td><td>Feature branches</td><td>Localhost or <code>dev.getbankable.io</code></td><td>Seed data + synthetic</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============================================================
+         §2.3 SERVICE DECOMPOSITION
+         ============================================================ -->
+    <section id="s2-3" class="doc-section">
+      <h2>2.3 Service Decomposition</h2>
+      <p>Bankable IQ is decomposed into <strong>14 first-class services</strong>, each independently deployable, independently scalable, and owned by a single squad. Boundaries follow domain ownership, not technical convenience.</p>
+
+      <table>
+        <thead>
+          <tr><th>Service</th><th>Responsibility</th><th>Runtime</th><th>Data Store</th><th>Scaling Profile</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>auth-svc</code></td><td>Identity, session, MFA, RBAC, OAuth, Auth0 integration</td><td>Node.js (Edge)</td><td>PostgreSQL <code>identity</code> schema</td><td>Edge-replicated, global</td></tr>
+          <tr><td><code>diagnostic-svc</code></td><td>30-domain readiness scoring, intake, factor calculation</td><td>Python FastAPI</td><td>PostgreSQL <code>readiness</code></td><td>Burst-heavy, async workers</td></tr>
+          <tr><td><code>compliance-svc</code></td><td>CROA, FCRA, ECOA, GLBA enforcement layer</td><td>Node.js</td><td>PostgreSQL <code>compliance</code> + immutable audit log</td><td>Synchronous, low latency</td></tr>
+          <tr><td><code>coaching-svc</code></td><td>AI Coaching System, prompt orchestration, Claude calls</td><td>Python FastAPI</td><td>Pinecone + PostgreSQL <code>coaching</code></td><td>GPU-adjacent, long-poll</td></tr>
+          <tr><td><code>credit-svc</code></td><td>Credit Intelligence Engine, bureau pulls, score modeling</td><td>Python FastAPI</td><td>PostgreSQL <code>credit</code> + S3 raw reports</td><td>Bursty, backpressure-aware</td></tr>
+          <tr><td><code>vault-svc</code></td><td>Document Vault, OCR, classification, retention</td><td>Node.js + Python sidecar</td><td>S3 (KMS-encrypted) + PostgreSQL <code>vault</code></td><td>I/O bound, horizontal</td></tr>
+          <tr><td><code>pathway-svc</code></td><td>Pathway Engine, Goal-Backwards orchestrator, sequencing</td><td>Temporal Workflows</td><td>PostgreSQL <code>pathway</code></td><td>Workflow-bound, durable</td></tr>
+          <tr><td><code>bai-svc</code></td><td>Bankable Adaptive Intelligence Engine top-level coordinator</td><td>Python FastAPI</td><td>PostgreSQL <code>bai</code> + Pinecone + Snowflake</td><td>Aggregator, low latency reads</td></tr>
+          <tr><td><code>blin-svc</code></td><td>Bankable Lender Intelligence Network — lender catalog + match</td><td>Python FastAPI</td><td>PostgreSQL <code>blin</code></td><td>Read-heavy, cached</td></tr>
+          <tr><td><code>bii-svc</code></td><td>Bankable Industry Intelligence — NAICS benchmarks</td><td>Python FastAPI</td><td>Snowflake (read) + Redis (hot)</td><td>Cold path, batch ETL</td></tr>
+          <tr><td><code>bms-svc</code></td><td>Bankable Market Sensor — macro signal ingest</td><td>Python FastAPI</td><td>Snowflake + TimescaleDB</td><td>Streaming ingest, hourly windows</td></tr>
+          <tr><td><code>bpfs-svc</code></td><td>Bankable Predictive Funding Score model server</td><td>Python (Triton/BentoML)</td><td>Feature store (Feast) + PostgreSQL</td><td>GPU/CPU mix, autoscale on QPS</td></tr>
+          <tr><td><code>marketplace-svc</code></td><td>Bankable Capital Marketplace — lender-facing API</td><td>Node.js</td><td>PostgreSQL <code>marketplace</code></td><td>External-facing, rate-limited</td></tr>
+          <tr><td><code>billing-svc</code></td><td>Stripe integration, plans, usage metering, invoicing</td><td>Node.js</td><td>PostgreSQL <code>billing</code></td><td>Steady, idempotent</td></tr>
+        </tbody>
+      </table>
+
+      <h3>2.3.1 Inter-Service Contract Rules</h3>
+      <ul>
+        <li><strong>No shared databases.</strong> Each service owns its schema. Cross-service reads happen over the API.</li>
+        <li><strong>Synchronous calls</strong> are REST (HTTP/2 + JSON) when latency-critical, gRPC for high-throughput service-to-service.</li>
+        <li><strong>Asynchronous events</strong> publish to the event bus (NATS JetStream in dev, AWS EventBridge + SQS in prod) with at-least-once delivery.</li>
+        <li><strong>Schema evolution</strong> follows additive-only rules for events; breaking changes require a new event version and a transition window.</li>
+        <li><strong>Idempotency keys</strong> are required on every state-mutating API endpoint.</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         §2.4 DATA FLOW DIAGRAMS
+         ============================================================ -->
+    <section id="s2-4" class="doc-section">
+      <h2>2.4 Data Flow Diagrams</h2>
+      <p>Three canonical flows define the platform: <strong>Intake → Diagnostic → BAI Decision → Outcome</strong>. Every other flow is a variant.</p>
+
+      <h3>2.4.1 Flow A — Client Onboarding to First Funding Decision</h3>
+      <pre><code>┌─────────┐    1.signup     ┌────────────┐
+│ Client  │ ───────────────▶│  auth-svc  │
+└─────────┘                 └─────┬──────┘
+     │                            │ 2.session
+     │                            ▼
+     │                      ┌────────────┐  3.intake     ┌──────────────┐
+     │ ───────────────────▶ │ diagnostic │ ─────────────▶│ vault-svc    │
+     │      30-domain intake│   -svc     │  doc upload    │ OCR + class  │
+     │                      └─────┬──────┘                └──────┬───────┘
+     │                            │ 4.score                       │ 5.extracted
+     │                            ▼                                ▼
+     │                      ┌────────────┐                ┌──────────────┐
+     │                      │ credit-svc │ ───6.pull────▶ │ Bureaus      │
+     │                      └─────┬──────┘                └──────────────┘
+     │                            │ 7.merged_profile
+     │                            ▼
+     │                      ┌────────────┐  8.evaluate   ┌──────────────┐
+     │                      │  bai-svc   │ ─────────────▶│ bpfs-svc     │
+     │                      └─────┬──────┘                │ blin-svc     │
+     │                            │ 9.matched + scored    │ bii-svc      │
+     │                            ▼                        └──────────────┘
+     │                      ┌────────────┐
+     │                      │ pathway-svc│ ── 10.plan
+     │                      └─────┬──────┘
+     │                            ▼
+     │ ◀────────11.outcomes──────┘
+     │   Capital Today / Bankability Built / Institutional Access</code></pre>
+
+      <h3>2.4.2 Flow B — Advisor Caseload Review</h3>
+      <pre><code>Advisor → auth-svc → diagnostic-svc (caseload query)
+                  → bai-svc (per-client scores)
+                  → coaching-svc (next-best-action queue)
+                  → returned as ranked work list</code></pre>
+
+      <h3>2.4.3 Flow C — Lender Pull from Marketplace</h3>
+      <pre><code>Lender Partner API client → marketplace-svc (signed JWT)
+                          → blin-svc (matching criteria)
+                          → bai-svc (consent + score envelope)
+                          → returned anonymized + opt-in cohort
+Compliance gate at every step. CROA/FCRA disclosures recorded in compliance-svc.</code></pre>
+    </section>
+
+    <!-- ============================================================
+         PART III — COMPONENT SPECIFICATIONS
+         ============================================================ -->
+    <section id="s3-1" class="doc-section">
+      <h2>3.1 Module 1 — Diagnostic Engine</h2>
+      <p><strong>Purpose:</strong> Score a business across 30 readiness domains; produce per-domain factor breakdowns, gaps, and prioritized fixes.</p>
+
+      <h3>3.1.1 Inputs</h3>
+      <ul>
+        <li>Self-reported intake (10 sections, ~140 fields, branching logic)</li>
+        <li>Vault-extracted documents (formation docs, EIN letter, financials, tax returns, bank statements)</li>
+        <li>Connected accounts (Plaid bank/cash flow, accounting via QuickBooks/Xero, IRS transcripts)</li>
+        <li>Bureau data from <code>credit-svc</code></li>
+      </ul>
+
+      <h3>3.1.2 Outputs</h3>
+      <ul>
+        <li>Overall <strong>Readiness Index</strong> (0–1000)</li>
+        <li>Per-domain score (0–100) with factor weights</li>
+        <li>Ranked gap list (top N gaps by Capital-Impact-Score)</li>
+        <li>Source-of-truth lineage for every factor (auditable for FCRA)</li>
+      </ul>
+
+      <h3>3.1.3 Internal Components</h3>
+      <table>
+        <thead><tr><th>Component</th><th>Responsibility</th><th>Tech</th></tr></thead>
+        <tbody>
+          <tr><td>Intake Orchestrator</td><td>Form state machine, branching, validation</td><td>XState + React Hook Form</td></tr>
+          <tr><td>Factor Calculator</td><td>Deterministic rules engine for 800+ factors</td><td>Python + JSON-defined rules</td></tr>
+          <tr><td>Score Aggregator</td><td>Weighted roll-up to domain + overall scores</td><td>NumPy / pandas</td></tr>
+          <tr><td>Gap Ranker</td><td>Prioritize fixes by capital impact</td><td>BPFS impact deltas</td></tr>
+          <tr><td>Snapshot Writer</td><td>Immutable scored snapshots for audit</td><td>PostgreSQL + S3</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s3-2" class="doc-section">
+      <h2>3.2 Module 2 — Compliance Engine</h2>
+      <p><strong>Purpose:</strong> Enforce CROA, FCRA, ECOA, GLBA, and state-level credit-services laws as a non-bypassable layer in every flow.</p>
+
+      <h3>3.2.1 Enforcement Surface</h3>
+      <ul>
+        <li>Pre-action gates: every credit pull, marketing message, lender match, and document share routes through Compliance Engine first.</li>
+        <li>Disclosure rendering: contextual disclosures injected by component into UI; rendered version + timestamp captured.</li>
+        <li>Adverse action: when a lender declines, ECOA-compliant notice is generated automatically.</li>
+        <li>Right to dispute: bureau-aware dispute flow with letter generation and tracking.</li>
+        <li>Immutable audit log: append-only, hash-chained, retained for the longer of 7 years or regulatory minimum.</li>
+      </ul>
+
+      <h3>3.2.2 Rule Storage</h3>
+      <p>Rules live in versioned YAML, signed by Compliance Officer on commit. Hot-reload via signed config push. No code deploy required for rule changes.</p>
+    </section>
+
+    <section id="s3-3" class="doc-section">
+      <h2>3.3 Module 3 — AI Coaching System</h2>
+      <p><strong>Purpose:</strong> Deliver context-aware coaching to clients and advisors using Anthropic Claude with retrieval over the client&rsquo;s own data plus the Bankable Knowledge Graph.</p>
+
+      <h3>3.3.1 Prompt Architecture</h3>
+      <pre><code>System Prompt (locked, signed by Compliance)
++ Client Context Pack (RAG: top-k from client vault + scores)
++ Advisor Notes (if advisor-facing)
++ Compliance Guardrails (forbidden topics, required disclaimers)
++ User Turn
+→ Claude (with structured-output schema)
+→ Validator (schema + compliance scan)
+→ Render</code></pre>
+
+      <h3>3.3.2 Retrieval Index</h3>
+      <ul>
+        <li>Pinecone (or Weaviate) per-tenant namespace</li>
+        <li>Embedding model: Claude embeddings (or OpenAI <code>text-embedding-3-large</code> as fallback)</li>
+        <li>Chunk policy: 512-token chunks with 64-token overlap, document-aware splitting</li>
+        <li>Refresh: event-driven on vault updates, nightly full rebuild</li>
+      </ul>
+    </section>
+
+    <section id="s3-4" class="doc-section">
+      <h2>3.4 Module 4 — Credit Intelligence Engine</h2>
+      <p><strong>Purpose:</strong> Pull, normalize, and model personal + business credit profiles from multiple bureaus and modeling sources.</p>
+
+      <h3>3.4.1 Bureau Integrations</h3>
+      <table>
+        <thead><tr><th>Bureau</th><th>Type</th><th>Pull Method</th><th>Cache TTL</th></tr></thead>
+        <tbody>
+          <tr><td>Experian</td><td>Personal + Business</td><td>API (Experian Connect)</td><td>30 days personal / 14 days business</td></tr>
+          <tr><td>Equifax</td><td>Personal + Business</td><td>API (Equifax APIs)</td><td>30 / 14 days</td></tr>
+          <tr><td>TransUnion</td><td>Personal</td><td>API (TU Direct)</td><td>30 days</td></tr>
+          <tr><td>Dun &amp; Bradstreet</td><td>Business (PAYDEX)</td><td>D&amp;B Direct+</td><td>14 days</td></tr>
+          <tr><td>Nav / Tillful</td><td>Aggregated business</td><td>Partner API</td><td>7 days</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3.4.2 Score Models</h3>
+      <ul>
+        <li>FICO 8/9/10 (personal) — vendor-provided</li>
+        <li>VantageScore 4.0 — vendor-provided</li>
+        <li>PAYDEX, Intelliscore, FICO SBSS — business</li>
+        <li><strong>BPFS (Bankable Predictive Funding Score)</strong> — proprietary, see §12.1</li>
+      </ul>
+    </section>
+
+    <section id="s3-5" class="doc-section">
+      <h2>3.5 Module 5 — Document Vault</h2>
+      <p><strong>Purpose:</strong> Encrypted, classified, retention-aware document store with OCR, extraction, and tamper-evident audit trail.</p>
+
+      <h3>3.5.1 Storage</h3>
+      <ul>
+        <li>S3 with SSE-KMS, per-tenant CMK (Customer Master Key)</li>
+        <li>Object lock in compliance mode for tax returns and signed contracts</li>
+        <li>Presigned URLs only, max 5-minute TTL, IP-restricted when possible</li>
+      </ul>
+
+      <h3>3.5.2 Processing Pipeline</h3>
+      <pre><code>Upload → Antivirus (ClamAV) → MIME check → KMS encrypt
+       → Textract (OCR) → Layout parser → Field extractor
+       → Classifier (doc type) → Index (Pinecone) → Notify pathway-svc</code></pre>
+    </section>
+
+    <section id="s3-6" class="doc-section">
+      <h2>3.6 Module 6 — Pathway Engine</h2>
+      <p><strong>Purpose:</strong> Orchestrate the Goal-Backwards Build-Out — given a target funding outcome, generate and run the multi-step plan.</p>
+
+      <h3>3.6.1 Runtime</h3>
+      <p>Temporal workflows. Every pathway is a long-running, durable workflow with retries, compensation, and human-in-the-loop signals.</p>
+
+      <h3>3.6.2 Pathway Schema</h3>
+      <pre><code>Pathway
+├── Goal (target outcome: Capital Today | Bankability Built | Institutional Access)
+├── Target Amount + Timeline
+├── Current State Snapshot (from diagnostic)
+├── Required State (computed from goal)
+├── Gap Set (ordered)
+├── Steps[] (each = action, owner, due, blockers, dependencies)
+└── Checkpoints[] (auto-reevaluate every N days)</code></pre>
+    </section>
+
+    <section id="s3-7" class="doc-section">
+      <h2>3.7 Module 7 — Bankable Adaptive Intelligence Engine (BAI)</h2>
+      <p><strong>Purpose:</strong> Top-level intelligence layer that combines all five sub-systems into a single coordinated decisioning surface.</p>
+
+      <h3>3.7.1 Sub-System Map</h3>
+      <table>
+        <thead><tr><th>Sub-System</th><th>Code</th><th>Service</th><th>Function</th></tr></thead>
+        <tbody>
+          <tr><td>Bankable Lender Intelligence Network</td><td>BLIN</td><td><code>blin-svc</code></td><td>Lender catalog, matching, success-rate learning</td></tr>
+          <tr><td>Bankable Industry Intelligence</td><td>BII</td><td><code>bii-svc</code></td><td>NAICS-level benchmarks + risk signals</td></tr>
+          <tr><td>Bankable Market Sensor</td><td>BMS</td><td><code>bms-svc</code></td><td>Macro signals (rates, credit conditions, sector heat)</td></tr>
+          <tr><td>Bankable Predictive Funding Score</td><td>BPFS</td><td><code>bpfs-svc</code></td><td>Probability of approval × expected terms × expected size</td></tr>
+          <tr><td>Adaptive Wheel + Adaptive Coaching</td><td>—</td><td><code>bai-svc</code></td><td>Re-prioritization loop, next-best-action ranking</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3.7.2 Decision Output Envelope</h3>
+      <pre><code>{
+  "client_id": "uuid",
+  "snapshot_id": "uuid",
+  "outcomes": {
+    "capital_today":     { "eligible": true,  "score": 0.78, "matches": [...] },
+    "bankability_built": { "eligible": true,  "score": 0.62, "plan_id": "..." },
+    "institutional":     { "eligible": false, "score": 0.31, "gating_factors": [...] }
+  },
+  "next_best_action": { ... },
+  "compliance_envelope": { "consents": [...], "disclosures_rendered": [...] }
+}</code></pre>
+    </section>
+
+    <section id="s3-8" class="doc-section">
+      <h2>3.8 Client Workspace (UI Application)</h2>
+      <p><strong>Purpose:</strong> The client-facing surface. Single Next.js app, mobile-first, branded per tenant.</p>
+      <ul>
+        <li>Routes: <code>/dashboard</code>, <code>/diagnostic</code>, <code>/vault</code>, <code>/pathway</code>, <code>/coach</code>, <code>/marketplace</code>, <code>/settings</code></li>
+        <li>State: React Query for server state, Zustand for ephemeral UI state</li>
+        <li>Auth: Auth0 React SDK with refresh token rotation</li>
+        <li>Real-time: Pusher (or AWS AppSync) for coaching streams and pathway progress</li>
+      </ul>
+    </section>
+
+    <section id="s3-9" class="doc-section">
+      <h2>3.9 Advisor Command Center</h2>
+      <p><strong>Purpose:</strong> The advisor-facing surface. Same Next.js app, gated by role, with caseload, coaching queue, and revenue dashboards.</p>
+      <ul>
+        <li>Routes: <code>/cases</code>, <code>/cases/:id</code>, <code>/queue</code>, <code>/revenue</code>, <code>/team</code>, <code>/settings</code></li>
+        <li>Caseload view: filterable by stage, score, last-touch, BPFS delta</li>
+        <li>Bulk actions: send coaching nudges, request docs, trigger marketplace match</li>
+        <li>Revenue dashboard: client-by-client gross/net, projected pipeline, advisor split</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         PART IV — DATABASE ARCHITECTURE
+         ============================================================ -->
+    <section id="s4-1" class="doc-section">
+      <h2>4.1 Schema Overview &mdash; 35 Logical Schemas</h2>
+      <p>PostgreSQL 16 is the system of record. Logical separation is enforced by <strong>schema-per-domain</strong>, not database-per-domain. Cross-schema FKs are forbidden; cross-domain joins happen at the application layer or via published events.</p>
+
+      <table>
+        <thead>
+          <tr><th>#</th><th>Schema</th><th>Domain</th><th>Owner Service</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td><code>identity</code></td><td>Users, tenants, RBAC, MFA</td><td>auth-svc</td></tr>
+          <tr><td>2</td><td><code>org</code></td><td>Businesses, NAICS, EIN, formation</td><td>diagnostic-svc</td></tr>
+          <tr><td>3</td><td><code>readiness</code></td><td>30-domain scores, factors, snapshots</td><td>diagnostic-svc</td></tr>
+          <tr><td>4</td><td><code>compliance</code></td><td>Consents, disclosures, audit log</td><td>compliance-svc</td></tr>
+          <tr><td>5</td><td><code>vault</code></td><td>Document metadata, classification, lineage</td><td>vault-svc</td></tr>
+          <tr><td>6</td><td><code>credit</code></td><td>Bureau pulls, scores, disputes</td><td>credit-svc</td></tr>
+          <tr><td>7</td><td><code>coaching</code></td><td>Conversations, prompts, completions</td><td>coaching-svc</td></tr>
+          <tr><td>8</td><td><code>pathway</code></td><td>Goals, steps, checkpoints, workflows</td><td>pathway-svc</td></tr>
+          <tr><td>9</td><td><code>billing</code></td><td>Plans, subscriptions, invoices, usage</td><td>billing-svc</td></tr>
+          <tr><td>10</td><td><code>notification</code></td><td>Email, SMS, in-app, preferences</td><td>auth-svc</td></tr>
+          <tr><td>11</td><td><code>partner</code></td><td>Advisor org accounts, white-label config</td><td>auth-svc</td></tr>
+          <tr><td>12</td><td><code>marketplace</code></td><td>Lender catalog, products, criteria</td><td>marketplace-svc</td></tr>
+          <tr><td>13</td><td><code>application</code></td><td>Lender applications, status, decisions</td><td>marketplace-svc</td></tr>
+          <tr><td>14</td><td><code>plaid</code></td><td>Bank connections, transactions, balances</td><td>credit-svc</td></tr>
+          <tr><td>15</td><td><code>accounting</code></td><td>QuickBooks/Xero sync, P&amp;L, balance sheet</td><td>diagnostic-svc</td></tr>
+          <tr><td>16</td><td><code>tax</code></td><td>IRS transcripts, SOS filings, tax returns</td><td>diagnostic-svc</td></tr>
+          <tr><td>17</td><td><code>kyc</code></td><td>KYB/KYC results, beneficial ownership</td><td>compliance-svc</td></tr>
+          <tr><td>18</td><td><code>knowledge</code></td><td>Curated lender knowledge graph</td><td>coaching-svc</td></tr>
+          <tr><td>19</td><td><code>event</code></td><td>Event log (CDC + domain events)</td><td>all (write-only)</td></tr>
+          <tr><td>20</td><td><code>jobs</code></td><td>Job state, retry counters, dead-letter</td><td>all</td></tr>
+          <tr><td>21</td><td><code>analytics</code></td><td>Product analytics events (ingest)</td><td>all</td></tr>
+          <tr><td>22</td><td><code>feature_flag</code></td><td>Flag definitions, targeting rules</td><td>platform</td></tr>
+          <tr><td>23</td><td><code>localization</code></td><td>I18n strings, locale, currency</td><td>platform</td></tr>
+          <tr><td>24</td><td><code>content</code></td><td>Editorial content, lessons, templates</td><td>coaching-svc</td></tr>
+          <tr><td>25</td><td><code>community</code></td><td>Forum posts, Q&amp;A, advisor reputation</td><td>platform</td></tr>
+          <tr><td>26</td><td><code>support</code></td><td>Tickets, chat sessions, SLAs</td><td>platform</td></tr>
+          <tr><td>27</td><td><code>integration</code></td><td>Third-party API keys, OAuth tokens</td><td>all</td></tr>
+          <tr><td>28</td><td><code>document_template</code></td><td>Letters, disclosures, contracts</td><td>compliance-svc</td></tr>
+          <tr><td>29</td><td><code>referral</code></td><td>Affiliate program, referral tracking</td><td>billing-svc</td></tr>
+          <tr><td>30</td><td><code>analytics_warehouse</code></td><td>Snowflake mirror (sync targets)</td><td>data platform</td></tr>
+          <tr><td>31</td><td><code>bai</code></td><td>Decision envelopes, evaluation logs</td><td>bai-svc</td></tr>
+          <tr><td>32</td><td><code>blin</code></td><td>Lender intel network, success rates</td><td>blin-svc</td></tr>
+          <tr><td>33</td><td><code>bii</code></td><td>Industry benchmarks, NAICS cache</td><td>bii-svc</td></tr>
+          <tr><td>34</td><td><code>bms</code></td><td>Macro signals, time-series snapshots</td><td>bms-svc</td></tr>
+          <tr><td>35</td><td><code>bpfs</code></td><td>Model features, predictions, drift logs</td><td>bpfs-svc</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s4-2" class="doc-section">
+      <h2>4.2 Core DDL Patterns (Selected)</h2>
+      <p>Patterns shown apply across schemas. All tables include <code>id UUID PRIMARY KEY DEFAULT gen_random_uuid()</code>, <code>created_at</code>, <code>updated_at</code>, <code>tenant_id</code>, and row-level security policies tied to tenant.</p>
+
+      <h3>4.2.1 identity.users</h3>
+      <pre><code>CREATE TABLE identity.users (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id     UUID NOT NULL REFERENCES identity.tenants(id),
+  auth0_sub     TEXT NOT NULL UNIQUE,
+  email         CITEXT NOT NULL,
+  email_verified BOOLEAN NOT NULL DEFAULT false,
+  role          identity.role_enum NOT NULL,
+  status        identity.status_enum NOT NULL DEFAULT 'active',
+  mfa_enabled   BOOLEAN NOT NULL DEFAULT false,
+  last_login_at TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX ON identity.users (tenant_id);
+CREATE INDEX ON identity.users (email);
+ALTER TABLE identity.users ENABLE ROW LEVEL SECURITY;</code></pre>
+
+      <h3>4.2.2 readiness.snapshots</h3>
+      <pre><code>CREATE TABLE readiness.snapshots (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id     UUID NOT NULL,
+  org_id        UUID NOT NULL,
+  overall_score INTEGER NOT NULL CHECK (overall_score BETWEEN 0 AND 1000),
+  domain_scores JSONB  NOT NULL,
+  factor_trace  JSONB  NOT NULL,
+  source_hash   TEXT   NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX ON readiness.snapshots (org_id, created_at DESC);</code></pre>
+
+      <h3>4.2.3 compliance.audit_log (Hash-Chained)</h3>
+      <pre><code>CREATE TABLE compliance.audit_log (
+  seq           BIGSERIAL PRIMARY KEY,
+  tenant_id     UUID NOT NULL,
+  actor_id      UUID,
+  action        TEXT NOT NULL,
+  subject_type  TEXT NOT NULL,
+  subject_id    UUID,
+  payload       JSONB NOT NULL,
+  prev_hash     BYTEA NOT NULL,
+  curr_hash     BYTEA NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- Append-only enforced by trigger; no UPDATE or DELETE grants.</code></pre>
+
+      <h3>4.2.4 bpfs.predictions</h3>
+      <pre><code>CREATE TABLE bpfs.predictions (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id        UUID NOT NULL,
+  snapshot_id   UUID NOT NULL,
+  model_version TEXT NOT NULL,
+  features      JSONB NOT NULL,
+  approval_prob NUMERIC(5,4) NOT NULL,
+  expected_apr  NUMERIC(6,4),
+  expected_amount NUMERIC(12,2),
+  expected_term_months INTEGER,
+  shap_values   JSONB,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX ON bpfs.predictions (org_id, created_at DESC);</code></pre>
+    </section>
+
+    <section id="s4-3" class="doc-section">
+      <h2>4.3 Caching, Search, and Warehouse</h2>
+
+      <h3>4.3.1 Redis 7</h3>
+      <ul>
+        <li>Session cache (auth-svc): 1-hour TTL, sliding</li>
+        <li>BLIN match cache: 15-min TTL, keyed by score-bucket + NAICS + state</li>
+        <li>Rate-limit counters: token-bucket per API key</li>
+        <li>Distributed locks for workflow signals (Redlock pattern)</li>
+      </ul>
+
+      <h3>4.3.2 Pinecone (Vector)</h3>
+      <ul>
+        <li>Per-tenant namespace</li>
+        <li>1536-dim vectors, cosine similarity</li>
+        <li>Indexes: <code>vault-chunks</code>, <code>knowledge-graph</code>, <code>coaching-history</code></li>
+      </ul>
+
+      <h3>4.3.3 Snowflake (Warehouse)</h3>
+      <ul>
+        <li>CDC from PostgreSQL via Fivetran / native Debezium → Kafka → Snowflake</li>
+        <li>Star schema in <code>ANALYTICS</code> database: facts (events, applications, decisions) + dimensions (clients, advisors, lenders, products, time)</li>
+        <li>dbt models for BII benchmarks and historical funding-success rollups</li>
+      </ul>
+    </section>
+
+    <section id="s4-4" class="doc-section">
+      <h2>4.4 Data Lifecycle, Retention, and PII Handling</h2>
+      <table>
+        <thead><tr><th>Data Class</th><th>Retention</th><th>Encryption</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Identity (PII)</td><td>Active + 7 years post-closure</td><td>AES-256 at rest, TLS 1.3 in transit, KMS-managed CMK</td><td>Right-to-delete honored where law allows; CROA overrides for credit-services records</td></tr>
+          <tr><td>Credit reports</td><td>7 years (FCRA aligned)</td><td>Same as above + field-level encryption on SSN/DOB</td><td>Never logged in plain text; redacted in all observability outputs</td></tr>
+          <tr><td>Tax docs</td><td>7 years</td><td>S3 Object Lock (compliance mode)</td><td>Tamper-evident</td></tr>
+          <tr><td>Audit log</td><td>10 years</td><td>WORM (write-once, read-many)</td><td>Hash-chained; daily Merkle root checkpoint</td></tr>
+          <tr><td>Marketing data</td><td>2 years rolling</td><td>Standard</td><td>Auto-purge job</td></tr>
+          <tr><td>Operational logs</td><td>90 days hot / 1 year cold</td><td>Standard</td><td>PII scrubbed at ingest</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============================================================
+         PART V — API LAYER
+         ============================================================ -->
+    <section id="s5-1" class="doc-section">
+      <h2>5.1 API Style and Conventions</h2>
+      <ul>
+        <li><strong>External clients</strong> (web, mobile, partners): REST + JSON over HTTPS, versioned with <code>/v1/</code> path prefix</li>
+        <li><strong>Service-to-service</strong>: gRPC with Protocol Buffers for high-throughput paths; REST for everything else</li>
+        <li><strong>Authentication</strong>: Bearer JWT from Auth0; service-to-service uses short-lived mTLS certs</li>
+        <li><strong>Idempotency</strong>: <code>Idempotency-Key</code> header required on POST/PATCH/DELETE</li>
+        <li><strong>Pagination</strong>: cursor-based, max page size 100</li>
+        <li><strong>Errors</strong>: RFC 7807 problem+json with stable <code>type</code> URIs</li>
+        <li><strong>Rate limiting</strong>: token bucket per API key + per user; headers expose remaining quota</li>
+        <li><strong>Schemas</strong>: published as OpenAPI 3.1; clients generated from spec</li>
+      </ul>
+    </section>
+
+    <section id="s5-2" class="doc-section">
+      <h2>5.2 Canonical Endpoints (Selected)</h2>
+      <pre><code>// Identity
+POST   /v1/auth/session                  → exchange Auth0 token for app session
+GET    /v1/me                            → current user + tenant + role
+PATCH  /v1/me                            → update profile (non-PII)
+
+// Diagnostic
+POST   /v1/diagnostic/intake             → upsert intake answers
+POST   /v1/diagnostic/score              → run scoring, return snapshot_id
+GET    /v1/diagnostic/snapshots/:id      → retrieve full snapshot
+GET    /v1/diagnostic/gaps?top=10        → ranked gap list
+
+// Vault
+POST   /v1/vault/upload-url              → presigned URL for direct S3 PUT
+POST   /v1/vault/documents               → register uploaded object, kick processing
+GET    /v1/vault/documents/:id           → metadata
+GET    /v1/vault/documents/:id/download  → presigned GET, 5-min TTL
+
+// Credit
+POST   /v1/credit/pull                   → consented bureau pull
+GET    /v1/credit/profile                → merged credit profile
+POST   /v1/credit/dispute                → file a dispute
+
+// BAI / Decisions
+POST   /v1/bai/evaluate                  → run evaluation, return envelope
+GET    /v1/bai/envelopes/:id             → fetch decision envelope
+
+// Marketplace
+GET    /v1/marketplace/matches           → personalized lender match
+POST   /v1/marketplace/apply             → start lender application
+
+// Pathway
+POST   /v1/pathway                       → create pathway from goal
+GET    /v1/pathway/:id                   → current state + next steps
+POST   /v1/pathway/:id/checkpoint        → trigger re-evaluation
+
+// Coaching
+POST   /v1/coach/chat                    → streaming SSE coaching turn
+GET    /v1/coach/history?limit=50        → prior turns
+
+// Billing
+GET    /v1/billing/plan                  → current plan + usage
+POST   /v1/billing/checkout              → Stripe Checkout session
+POST   /v1/billing/portal                → Stripe Customer Portal</code></pre>
+    </section>
+
+    <section id="s5-3" class="doc-section">
+      <h2>5.3 Webhooks (Inbound + Outbound)</h2>
+      <p><strong>Inbound</strong> (we receive): Plaid, bureaus, Stripe, DocuSign, SendGrid, Twilio, lender partner APIs. All inbound webhooks verified via HMAC signature or mTLS. Replay protection via signature timestamp window (5 min) + idempotency key.</p>
+      <p><strong>Outbound</strong> (we send): client-tenant webhooks for events such as <code>score.updated</code>, <code>pathway.checkpoint.reached</code>, <code>application.status.changed</code>, <code>decision.envelope.created</code>. Delivered at-least-once, exponential backoff with dead-letter after 24 hours.</p>
+    </section>
+
+    <section id="s5-4" class="doc-section">
+      <h2>5.4 Event Bus &amp; Streaming Topics</h2>
+      <table>
+        <thead><tr><th>Topic</th><th>Producer</th><th>Consumers</th><th>Retention</th></tr></thead>
+        <tbody>
+          <tr><td><code>diagnostic.snapshot.created</code></td><td>diagnostic-svc</td><td>bai-svc, pathway-svc, analytics</td><td>14 days</td></tr>
+          <tr><td><code>vault.document.processed</code></td><td>vault-svc</td><td>coaching-svc (re-index), diagnostic-svc</td><td>14 days</td></tr>
+          <tr><td><code>credit.profile.updated</code></td><td>credit-svc</td><td>bai-svc, pathway-svc</td><td>14 days</td></tr>
+          <tr><td><code>bai.envelope.created</code></td><td>bai-svc</td><td>marketplace-svc, notification-svc</td><td>30 days</td></tr>
+          <tr><td><code>marketplace.application.updated</code></td><td>marketplace-svc</td><td>pathway-svc, blin-svc (success-rate update), notification-svc</td><td>30 days</td></tr>
+          <tr><td><code>billing.subscription.changed</code></td><td>billing-svc</td><td>auth-svc (feature gating), notification-svc</td><td>30 days</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s5-5" class="doc-section">
+      <h2>5.5 Partner API (External)</h2>
+      <p>The Marketplace exposes an external API for lenders. OAuth 2.0 client credentials flow. Rate-limited per partner. Endpoints:</p>
+      <pre><code>POST /partner/v1/auth/token             → client credentials → access token
+GET  /partner/v1/cohorts                → anonymized matching cohorts
+GET  /partner/v1/cohorts/:id/applicants → opt-in applicants
+POST /partner/v1/decisions              → submit decision (approve/decline/counter)
+POST /partner/v1/feedback               → submit funding outcome for BLIN learning</code></pre>
+    </section>
+
+    <section id="s5-6" class="doc-section">
+      <h2>5.6 Versioning Policy</h2>
+      <ul>
+        <li>Major versions in URL path (<code>/v1/</code>, <code>/v2/</code>); two majors supported concurrently for 12 months</li>
+        <li>Additive changes (new fields) are not breaking</li>
+        <li>Removals or field-type changes require a major version bump and migration window</li>
+        <li>Partner API deprecations announced 180 days in advance</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         PART VI — USER FLOWS
+         ============================================================ -->
+    <section id="s6-1" class="doc-section">
+      <h2>6.1 Client Journey (12 Phases)</h2>
+      <ol>
+        <li><strong>Acquisition</strong> — Lands from advisor referral, ad, or marketplace search. Captured with referrer attribution.</li>
+        <li><strong>Signup &amp; Verification</strong> — Auth0 signup, email verify, MFA prompt, ToS + privacy acceptance recorded in compliance audit log.</li>
+        <li><strong>Business Profile</strong> — EIN, legal name, NAICS, formation date, state, ownership.</li>
+        <li><strong>Diagnostic Intake</strong> — 10-section guided intake with branching; save-and-resume; document upload prompts inline.</li>
+        <li><strong>Initial Snapshot</strong> — First Readiness Index computed; Capital Outcomes preview rendered.</li>
+        <li><strong>Pathway Selection</strong> — Client picks target outcome (Capital Today / Bankability Built / Institutional Access).</li>
+        <li><strong>Pathway Activation</strong> — Goal-Backwards plan generated; first 3 steps surfaced; first checkpoint scheduled.</li>
+        <li><strong>Coaching Engagement</strong> — Daily/weekly nudges via in-app + email; conversational coach available 24/7.</li>
+        <li><strong>Document &amp; Data Build-Out</strong> — Vault completed across required doc set for chosen outcome.</li>
+        <li><strong>Re-Diagnostic</strong> — Snapshot regenerated; BPFS updated; matches recomputed.</li>
+        <li><strong>Marketplace Match &amp; Apply</strong> — Curated lender shortlist; one-click apply with prefilled package; consent recorded.</li>
+        <li><strong>Funding Outcome + Loop</strong> — Approval/decline captured; if declined, adverse-action notice + remediation plan triggered. If approved, success fed back to BLIN.</li>
+      </ol>
+    </section>
+
+    <section id="s6-2" class="doc-section">
+      <h2>6.2 Advisor Journey (10 Phases)</h2>
+      <ol>
+        <li><strong>Invite &amp; Onboarding</strong> — Receives Partner invite; completes advisor verification.</li>
+        <li><strong>White-Label Setup</strong> — Brand assets, domain (optional), email-from, payout details.</li>
+        <li><strong>Caseload Import</strong> — CSV import or per-client invite link; clients land into advisor's workspace.</li>
+        <li><strong>Daily Queue</strong> — System-ranked next-best-action list for the advisor's full book.</li>
+        <li><strong>Coaching Delivery</strong> — Send nudges, schedule reviews, drop notes, send doc requests.</li>
+        <li><strong>Progress Review</strong> — Per-client dashboard with score trajectory, pathway state, BPFS delta.</li>
+        <li><strong>Pre-Submission Audit</strong> — Compliance Engine checks every applicant package before marketplace submission.</li>
+        <li><strong>Submission &amp; Tracking</strong> — Submit to lenders; track decisions; manage counter-offers.</li>
+        <li><strong>Revenue Settlement</strong> — Earned fees + funded-deal splits reconciled; payouts via Stripe Connect.</li>
+        <li><strong>Performance &amp; Insight</strong> — Cohort-level analytics on funding-success, time-to-funding, drop-off.</li>
+      </ol>
+    </section>
+
+    <section id="s6-3" class="doc-section">
+      <h2>6.3 Lender Journey (6 Phases)</h2>
+      <ol>
+        <li><strong>Partnership</strong> — Lender signs Marketplace Partner Agreement; receives partner credentials.</li>
+        <li><strong>Criteria Definition</strong> — Lender encodes credit box (FICO bands, time-in-business, revenue, NAICS).</li>
+        <li><strong>Cohort Subscription</strong> — Lender subscribes to matching cohorts; receives daily/weekly digests.</li>
+        <li><strong>Decisioning</strong> — Lender reviews opt-in applicants; submits decisions via Partner API.</li>
+        <li><strong>Funding</strong> — Lender funds approved deals directly with the client (Bankable does not touch funds).</li>
+        <li><strong>Outcome Feedback</strong> — Lender reports funded amount, terms, eventual performance; feeds BLIN learning loop.</li>
+      </ol>
+    </section>
+
+    <!-- ============================================================
+         PART VII — FRONTEND ARCHITECTURE
+         ============================================================ -->
+    <section id="s7-1" class="doc-section">
+      <h2>7.1 Framework, Routing, and Rendering</h2>
+      <ul>
+        <li>Next.js 14 with the App Router; React Server Components used for non-interactive marketing + dashboard shells</li>
+        <li>Client Components for interactive surfaces (intake, coach, vault uploader)</li>
+        <li>Streaming + Suspense for above-the-fold-first rendering</li>
+        <li>Per-tenant theming via CSS variables loaded from tenant config</li>
+      </ul>
+    </section>
+
+    <section id="s7-2" class="doc-section">
+      <h2>7.2 Component System &amp; Styling</h2>
+      <ul>
+        <li>TailwindCSS as the styling layer; design tokens published as Tailwind theme</li>
+        <li>shadcn/ui as the component primitive set (copy-in, owned), themed to Bankable brand</li>
+        <li>Radix UI under the hood for accessibility primitives (modals, popovers, menus)</li>
+        <li>Storybook for all primitives + composite components; visual regression via Chromatic</li>
+      </ul>
+    </section>
+
+    <section id="s7-3" class="doc-section">
+      <h2>7.3 State Management &amp; Data Fetching</h2>
+      <ul>
+        <li>TanStack Query for all server state (cache, retries, mutations, optimistic updates)</li>
+        <li>Zustand for ephemeral cross-component UI state</li>
+        <li>XState for multi-step flows (intake, pathway, marketplace apply)</li>
+        <li>Server Actions for mutations from React Server Components</li>
+      </ul>
+    </section>
+
+    <section id="s7-4" class="doc-section">
+      <h2>7.4 Performance Budgets &amp; Mobile</h2>
+      <table>
+        <thead><tr><th>Metric</th><th>Target</th><th>Hard Limit</th></tr></thead>
+        <tbody>
+          <tr><td>LCP (Mobile)</td><td>&lt; 1.8s</td><td>&lt; 2.5s</td></tr>
+          <tr><td>INP</td><td>&lt; 100ms</td><td>&lt; 200ms</td></tr>
+          <tr><td>CLS</td><td>&lt; 0.05</td><td>&lt; 0.1</td></tr>
+          <tr><td>JS bundle (route entry)</td><td>&lt; 130 KB gz</td><td>&lt; 180 KB gz</td></tr>
+          <tr><td>Mobile Lighthouse</td><td>&gt;= 95</td><td>&gt;= 90</td></tr>
+        </tbody>
+      </table>
+      <p>Mobile-first responsive design. Same patterns as the Corporate Blueprint hardening: <code>overflow-x: clip</code>, <code>env(safe-area-inset-*)</code>, stack-on-mobile tables, app-bar hamburger.</p>
+    </section>
+
+    <!-- ============================================================
+         PART VIII — BACKEND ARCHITECTURE
+         ============================================================ -->
+    <section id="s8-1" class="doc-section">
+      <h2>8.1 Service Runtime Standards</h2>
+      <ul>
+        <li>Node.js services: TypeScript, Fastify framework, OpenTelemetry SDK, structured JSON logs</li>
+        <li>Python services: FastAPI, Pydantic v2, OpenTelemetry, structlog</li>
+        <li>All services dockerized; runs on AWS ECS Fargate (default) or Lambda (event-driven, light)</li>
+        <li>12-Factor app principles strictly applied; secrets via AWS Secrets Manager</li>
+      </ul>
+    </section>
+
+    <section id="s8-2" class="doc-section">
+      <h2>8.2 Workflow Engine (Temporal)</h2>
+      <ul>
+        <li>Long-running flows (pathways, document processing chains, multi-lender applications) run as Temporal workflows</li>
+        <li>Workers per service handle activities; workflows are owner-language-agnostic</li>
+        <li>Determinism enforced; side effects live in activities only</li>
+        <li>Operational UI: Temporal Web for inspection &amp; replay</li>
+      </ul>
+    </section>
+
+    <section id="s8-3" class="doc-section">
+      <h2>8.3 Background Jobs &amp; Scheduling</h2>
+      <ul>
+        <li>Inngest for event-driven jobs (replaceable with EventBridge + SQS at scale)</li>
+        <li>Cron-style schedules in Temporal for daily/weekly recurring work (bureau refresh, BII rollups, BMS pulls)</li>
+        <li>All jobs have explicit timeouts, retry policy, and dead-letter strategy</li>
+      </ul>
+    </section>
+
+    <section id="s8-4" class="doc-section">
+      <h2>8.4 Multi-Tenant Isolation</h2>
+      <ul>
+        <li>Tenant ID present on every row in every table (single-database, schema-per-domain, RLS-enforced)</li>
+        <li>PostgreSQL row-level security policies validated on every connection via session variable <code>app.tenant_id</code></li>
+        <li>S3 bucket prefixes per tenant; KMS CMK per tenant</li>
+        <li>Pinecone namespace per tenant</li>
+        <li>Auth0 organization per partner tenant</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         PART IX — INTEGRATIONS
+         ============================================================ -->
+    <section id="s9-1" class="doc-section">
+      <h2>9.1 Plaid (Bank &amp; Cash Flow)</h2>
+      <ul>
+        <li>Products: Auth, Transactions, Income, Liabilities, Assets, Identity</li>
+        <li>Link flow: server-side <code>link_token</code> creation, client Plaid Link UI, public token → access token exchange server-side only</li>
+        <li>Webhook handling for <code>TRANSACTIONS_REMOVED</code>, <code>SYNC_UPDATES_AVAILABLE</code>, item errors</li>
+        <li>Storage: raw payloads in <code>plaid</code> schema, normalized into <code>accounting</code> for cash-flow signals</li>
+      </ul>
+    </section>
+
+    <section id="s9-2" class="doc-section">
+      <h2>9.2 Consumer &amp; Business Credit Bureaus</h2>
+      <ul>
+        <li>Vendor abstraction layer: <code>credit-svc</code> exposes a uniform interface; per-bureau adapters underneath</li>
+        <li>Consent flow: explicit, per-pull, recorded in <code>compliance.audit_log</code></li>
+        <li>Hard-pull vs soft-pull policy: default soft; hard only at lender application time</li>
+        <li>Adverse action: ECOA-compliant notice template injected automatically</li>
+      </ul>
+    </section>
+
+    <section id="s9-3" class="doc-section">
+      <h2>9.3 Business Credit Sources (D&amp;B, Equifax Commercial, Experian Commercial, Nav)</h2>
+      <ul>
+        <li>PAYDEX, Intelliscore, FICO SBSS pulled and cached per §3.4 cadence</li>
+        <li>Trade reference verification flow for clients with thin business credit</li>
+      </ul>
+    </section>
+
+    <section id="s9-4" class="doc-section">
+      <h2>9.4 IRS, Secretary of State, and Government Data</h2>
+      <ul>
+        <li>IRS transcripts via authorized third-party (Tax Guard, Canopy, or similar)</li>
+        <li>SOS filing verification per state (active/inactive/forfeited)</li>
+        <li>EIN verification via IRS notice or SS-4</li>
+      </ul>
+    </section>
+
+    <section id="s9-5" class="doc-section">
+      <h2>9.5 Lender Partner APIs (Marketplace)</h2>
+      <ul>
+        <li>Direct integrations with SBA-preferred lenders, fintech term lenders, lines of credit, asset-based lenders, equipment finance, and revenue-based finance partners</li>
+        <li>Where direct API is unavailable: secure handoff with prefilled application package + tracking pixel</li>
+        <li>Aggregator fallback (e.g., Lendio-style) for long tail</li>
+      </ul>
+    </section>
+
+    <section id="s9-6" class="doc-section">
+      <h2>9.6 Accounting (QuickBooks Online, Xero, Wave)</h2>
+      <ul>
+        <li>OAuth 2.0 connection per client</li>
+        <li>Sync: chart of accounts, P&amp;L, balance sheet, AR/AP aging</li>
+        <li>Cadence: 24-hour pull + webhook on change</li>
+        <li>Feeds the Diagnostic Engine's financial-readiness domain</li>
+      </ul>
+    </section>
+
+    <section id="s9-7" class="doc-section">
+      <h2>9.7 HUSLConnect &amp; Sister Platforms</h2>
+      <ul>
+        <li>HUSLConnect: SSO bridge + cross-platform notification topic</li>
+        <li>Capital Connection Community: forum + advisor reputation sync</li>
+        <li>NXTWave Wireless / Roccstar Wireless: tenant lookup for connectivity benefit programs</li>
+        <li>Fundabl: legacy customer migration + referral attribution</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         PART X — AUTH & SECURITY
+         ============================================================ -->
+    <section id="s10-1" class="doc-section">
+      <h2>10.1 Authentication &amp; Identity</h2>
+      <ul>
+        <li>Auth0 as IdP; supports password + passwordless email/SMS + SSO (SAML/OIDC) for enterprise advisors</li>
+        <li>MFA required for advisors and admins; optional but encouraged for clients</li>
+        <li>JWT access tokens (15-min TTL) + refresh tokens (7-day rotating)</li>
+        <li>Session revocation list maintained in Redis for fast logout-everywhere</li>
+      </ul>
+    </section>
+
+    <section id="s10-2" class="doc-section">
+      <h2>10.2 Authorization Model (RBAC + ABAC)</h2>
+      <table>
+        <thead><tr><th>Role</th><th>Scope</th><th>Sample Permissions</th></tr></thead>
+        <tbody>
+          <tr><td><code>client</code></td><td>Own org</td><td>read own diagnostic, upload docs, run coaching</td></tr>
+          <tr><td><code>advisor</code></td><td>Assigned clients within tenant</td><td>read/write caseload, send nudges, submit applications</td></tr>
+          <tr><td><code>advisor_admin</code></td><td>Tenant</td><td>manage advisors, billing, branding</td></tr>
+          <tr><td><code>compliance_officer</code></td><td>Tenant</td><td>view audit log, manage rule packs, sign disclosures</td></tr>
+          <tr><td><code>lender_user</code></td><td>Lender partner org</td><td>read cohorts, submit decisions</td></tr>
+          <tr><td><code>platform_admin</code></td><td>Global</td><td>tenant onboarding, global support</td></tr>
+        </tbody>
+      </table>
+      <p>Attribute-based checks layered on top for data-sensitive operations (e.g., compliance scope, document type).</p>
+    </section>
+
+    <section id="s10-3" class="doc-section">
+      <h2>10.3 Regulatory Compliance Surface</h2>
+      <ul>
+        <li><strong>CROA</strong> — written contracts, 3-day cancellation, no advance fees for credit improvement, prescribed disclosures</li>
+        <li><strong>FCRA</strong> — permissible purpose enforcement on every bureau pull; adverse action; dispute handling</li>
+        <li><strong>ECOA / Reg B</strong> — non-discriminatory decisioning; bias audits on BPFS quarterly; adverse action notices</li>
+        <li><strong>GLBA</strong> — Safeguards Rule program; written info-sec policy; vendor due diligence</li>
+        <li><strong>State-level credit-services laws</strong> — per-state rule pack maintained in <code>compliance-svc</code></li>
+        <li><strong>SOC 2 Type II</strong> — annual; controls mapped to engineering practices below</li>
+        <li><strong>PCI DSS</strong> — out-of-scope by design (Stripe handles card data)</li>
+      </ul>
+    </section>
+
+    <section id="s10-4" class="doc-section">
+      <h2>10.4 Application Security Practices</h2>
+      <ul>
+        <li>OWASP ASVS Level 2 baseline; ASVS L3 for compliance-svc and credit-svc</li>
+        <li>SAST: Semgrep + GitHub CodeQL on every PR</li>
+        <li>DAST: ZAP scheduled scans against staging</li>
+        <li>SCA: Snyk + Dependabot for dependency CVEs</li>
+        <li>Secret scanning: GitGuardian + native GitHub secret scanning, push protection on</li>
+        <li>Penetration testing: annual third-party + after material architecture changes</li>
+        <li>Bug bounty: launched in Phase 3 with HackerOne or Bugcrowd</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         PART XI — INFRASTRUCTURE & DEVOPS
+         ============================================================ -->
+    <section id="s11-1" class="doc-section">
+      <h2>11.1 Cloud Topology</h2>
+      <ul>
+        <li>Primary: AWS US-East-1; warm standby: AWS US-West-2</li>
+        <li>Networking: VPC with private subnets for services + data, public subnets for ALBs/NAT</li>
+        <li>Edge: Cloudflare for DNS, WAF, DDoS, Bot Management, and cache</li>
+        <li>Vercel for the Next.js frontend, multi-region edge</li>
+        <li>Auth0 multi-region; Snowflake multi-region (replication subscription)</li>
+      </ul>
+    </section>
+
+    <section id="s11-2" class="doc-section">
+      <h2>11.2 CI/CD Pipeline</h2>
+      <pre><code>commit → GitHub Actions
+  ├─ lint (eslint, ruff, sqlfluff)
+  ├─ unit tests (vitest, pytest)
+  ├─ type check (tsc, mypy)
+  ├─ SAST (Semgrep, CodeQL)
+  ├─ SCA (Snyk)
+  ├─ build images (multi-stage Docker)
+  ├─ push to ECR (immutable tags)
+  ├─ deploy to preview env (auto)
+  ├─ e2e suite (Playwright + API contract tests)
+  ├─ deploy to staging (auto on main)
+  └─ deploy to prod (manual approval; canary 10% → 50% → 100%)</code></pre>
+    </section>
+
+    <section id="s11-3" class="doc-section">
+      <h2>11.3 Observability</h2>
+      <table>
+        <thead><tr><th>Pillar</th><th>Tool</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Metrics</td><td>Datadog</td><td>RED + USE dashboards per service; SLO tracking</td></tr>
+          <tr><td>Logs</td><td>Datadog Log Management</td><td>Structured JSON; PII scrubbed at agent</td></tr>
+          <tr><td>Traces</td><td>Datadog APM (OpenTelemetry)</td><td>End-to-end request tracing across services</td></tr>
+          <tr><td>Errors</td><td>Sentry</td><td>Frontend + backend</td></tr>
+          <tr><td>Synthetics</td><td>Datadog Synthetics</td><td>Critical-path checks every 1 min</td></tr>
+          <tr><td>RUM</td><td>Datadog RUM</td><td>Real-user mobile + web perf</td></tr>
+          <tr><td>On-call</td><td>PagerDuty</td><td>SEV-1/2 paging; runbook links in every alert</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s11-4" class="doc-section">
+      <h2>11.4 Disaster Recovery</h2>
+      <table>
+        <thead><tr><th>Tier</th><th>RPO</th><th>RTO</th><th>Strategy</th></tr></thead>
+        <tbody>
+          <tr><td>Tier 0 (auth, compliance, audit)</td><td>&lt;= 1 min</td><td>&lt;= 15 min</td><td>Cross-region active-active where possible; PITR + cross-region replicas</td></tr>
+          <tr><td>Tier 1 (core app)</td><td>&lt;= 5 min</td><td>&lt;= 1 hour</td><td>Cross-region warm standby; failover via DNS</td></tr>
+          <tr><td>Tier 2 (analytics, warehouse)</td><td>&lt;= 1 hour</td><td>&lt;= 24 hours</td><td>Daily snapshots; rebuild from event log</td></tr>
+        </tbody>
+      </table>
+      <p>DR drill performed semi-annually; results recorded in audit log.</p>
+    </section>
+
+    <!-- ============================================================
+         PART XII — AI / ML SPECIFICATIONS
+         ============================================================ -->
+    <section id="s12-1" class="doc-section">
+      <h2>12.1 Bankable Predictive Funding Score (BPFS) Model</h2>
+      <ul>
+        <li><strong>Targets</strong>: probability of approval, expected APR, expected loan amount, expected term, conditional on a given product type</li>
+        <li><strong>Algorithm</strong>: gradient-boosted trees (XGBoost) for v1; calibrated with isotonic regression; transition to a structured neural approach for v2 once data scale supports it</li>
+        <li><strong>Features</strong>: ~220 features across credit, cash flow, doc completeness, time-in-business, NAICS risk, owner profile, prior funding history</li>
+        <li><strong>Training cadence</strong>: weekly retrain; champion-challenger gate; production rollout via canary</li>
+        <li><strong>Explainability</strong>: SHAP values surfaced per prediction; top drivers shown to advisor &amp; client</li>
+        <li><strong>Fairness</strong>: ECOA-aligned bias audit (4/5ths rule + statistical parity) every quarter on protected proxies; failing audits block promotion</li>
+      </ul>
+    </section>
+
+    <section id="s12-2" class="doc-section">
+      <h2>12.2 BLIN — Lender Intelligence Network</h2>
+      <ul>
+        <li>Stores per-lender per-product success rates segmented by score-band, NAICS, region, time-in-business, revenue band</li>
+        <li>Updates from <code>marketplace.application.updated</code> events; smoothed with Bayesian priors to avoid overfitting on sparse cells</li>
+        <li>Serves as a re-ranking layer on top of BPFS for marketplace match</li>
+      </ul>
+    </section>
+
+    <section id="s12-3" class="doc-section">
+      <h2>12.3 BII — Industry Intelligence Pipeline</h2>
+      <ul>
+        <li>Sources: Census BDS, BLS QCEW, IRS SOI, Fed Small Business Credit Survey, commercial data partners</li>
+        <li>NAICS rollups (2-, 3-, 4-, 6-digit) for benchmarks: typical revenue, margins, default rate, growth rate</li>
+        <li>dbt models in Snowflake; daily refresh; served via cached read API</li>
+      </ul>
+    </section>
+
+    <section id="s12-4" class="doc-section">
+      <h2>12.4 BMS — Macro Signals Pipeline</h2>
+      <ul>
+        <li>Sources: FRED (Fed rates, yield curve), SBA loan volume, Senior Loan Officer Survey, commercial credit conditions indices</li>
+        <li>Stored as time-series in TimescaleDB; published as features to BPFS</li>
+        <li>Triggers Adaptive Wheel re-evaluation on material regime shifts</li>
+      </ul>
+    </section>
+
+    <section id="s12-5" class="doc-section">
+      <h2>12.5 Coaching LLM Stack</h2>
+      <ul>
+        <li>Primary model: Anthropic Claude (latest production model)</li>
+        <li>Structured output via tool-use schemas for non-conversational tasks</li>
+        <li>Streaming SSE for chat surfaces</li>
+        <li>Guardrails: pre-prompt compliance system, output classifier for prohibited categories, citation-required mode for factual claims</li>
+        <li>Evaluation: golden-set regression run on every prompt change; human-in-the-loop sampling on 1% of completions</li>
+      </ul>
+    </section>
+
+    <section id="s12-6" class="doc-section">
+      <h2>12.6 Bias Audit &amp; Model Governance</h2>
+      <ul>
+        <li>Model registry: MLflow; every model has owner, training data lineage, evaluation report, and approval signature</li>
+        <li>Disparate impact tested across geography, NAICS, business age, and revenue bands as proxies</li>
+        <li>Decisions retain SHAP explanations for 7 years</li>
+        <li>Annual external model risk review</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         PART XIII — PERFORMANCE & SCALE
+         ============================================================ -->
+    <section id="s13-1" class="doc-section">
+      <h2>13.1 SLOs</h2>
+      <table>
+        <thead><tr><th>Surface</th><th>Availability</th><th>Latency (p95)</th><th>Error Budget</th></tr></thead>
+        <tbody>
+          <tr><td>Web app (Vercel edge)</td><td>99.95%</td><td>TTFB &lt; 300ms</td><td>21m/month</td></tr>
+          <tr><td>Auth-svc</td><td>99.99%</td><td>200ms</td><td>4m/month</td></tr>
+          <tr><td>Diagnostic-svc score</td><td>99.9%</td><td>1.5s</td><td>43m/month</td></tr>
+          <tr><td>BAI evaluate</td><td>99.9%</td><td>800ms</td><td>43m/month</td></tr>
+          <tr><td>Coaching streaming</td><td>99.5%</td><td>first token &lt; 600ms</td><td>3.6h/month</td></tr>
+          <tr><td>Partner API</td><td>99.9%</td><td>400ms</td><td>43m/month</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s13-2" class="doc-section">
+      <h2>13.2 Capacity Plan</h2>
+      <ul>
+        <li>Year 1: 25k MAU, 2k concurrent at peak, 500 QPS p95 across services</li>
+        <li>Year 2: 150k MAU, 12k concurrent, 4k QPS</li>
+        <li>Year 3: 500k MAU, 40k concurrent, 12k QPS</li>
+        <li>Headroom: services scale horizontally to 3x current peak; databases sized to 2x Y+1 forecast with read replicas added before saturation</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         PART XIV — QA & TESTING
+         ============================================================ -->
+    <section id="s14-1" class="doc-section">
+      <h2>14.1 Test Pyramid</h2>
+      <ul>
+        <li><strong>Unit</strong> (vitest, pytest): &gt;= 80% coverage per service; required to merge</li>
+        <li><strong>Contract</strong> (Pact + OpenAPI schemathesis): every inter-service edge covered</li>
+        <li><strong>Integration</strong>: per-service docker-compose harness; ephemeral DBs; runs in CI</li>
+        <li><strong>End-to-end</strong> (Playwright): top 25 user journeys; run on every PR + nightly</li>
+        <li><strong>Load</strong> (k6): weekly scheduled run against staging; gates major releases</li>
+        <li><strong>Chaos</strong>: monthly game-day with controlled failure injection in staging</li>
+      </ul>
+    </section>
+
+    <section id="s14-2" class="doc-section">
+      <h2>14.2 Compliance &amp; Security Testing</h2>
+      <ul>
+        <li>Compliance rule pack has its own golden-set test suite; rule changes require passing this gate</li>
+        <li>Security: SAST/DAST/SCA on every PR; annual third-party penetration test; bug bounty in Phase 3</li>
+        <li>Accessibility: axe-core on every PR; WCAG 2.2 AA on all client-facing surfaces</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         PART XV — RELEASE & DEPLOYMENT
+         ============================================================ -->
+    <section id="s15-1" class="doc-section">
+      <h2>15.1 Release Cadence</h2>
+      <ul>
+        <li>Trunk-based development; main is always deployable</li>
+        <li>Feature flags for incomplete work (LaunchDarkly or open-source alternative)</li>
+        <li>Production deploys: multiple per day to non-critical services; gated daily window for tier-0 services</li>
+        <li>Canary: 10% → 50% → 100% with automatic rollback on SLO breach</li>
+      </ul>
+    </section>
+
+    <section id="s15-2" class="doc-section">
+      <h2>15.2 Database Migration Policy</h2>
+      <ul>
+        <li>All migrations forward-compatible; deploy code first, migrate second (or vice-versa, but never both at once)</li>
+        <li>Reversible migrations required for any schema change to a tier-0 table</li>
+        <li>Online migrations for large tables (pg_repack, partition switch)</li>
+        <li>No long-running locks during business hours on tier-0 tables</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         PART XVI — MVP BUILD ORDER (12-WEEK SPRINT PLAN)
+         ============================================================ -->
+    <section id="s16-1" class="doc-section">
+      <h2>16.1 MVP Scope</h2>
+      <p>The MVP proves the core loop end-to-end for a narrow ICP (US small business, sole prop or LLC, in business 12+ months, owner FICO 600+). It ships:</p>
+      <ul>
+        <li>Client signup, business profile, abbreviated diagnostic (focus domains, ~50 fields)</li>
+        <li>Document vault with 8 required doc types + OCR</li>
+        <li>Personal credit pull (one bureau) + business credit pull (one source)</li>
+        <li>BPFS v0 (rules-based, transitioning to model in Phase 2)</li>
+        <li>Marketplace shortlist of 5-10 launch lender partners</li>
+        <li>Pathway Engine v0 (linear templates per outcome, no Temporal yet — straight Postgres state machine)</li>
+        <li>Coaching v0 (Claude chat with vault retrieval, no advanced guardrail stack)</li>
+        <li>Advisor command center: caseload + nudges + revenue dashboard</li>
+        <li>Compliance Engine v0 (CROA + FCRA + adverse action; state-level rule pack stubbed)</li>
+        <li>Stripe billing, basic plans</li>
+      </ul>
+      <p>Out of MVP: full BAI stack, Snowflake warehouse, partner API, Capital Connection Community sync, ML BPFS, multi-bureau merge, lender Partner API.</p>
+    </section>
+
+    <section id="s16-2" class="doc-section">
+      <h2>16.2 12-Week Sprint Plan</h2>
+      <table>
+        <thead><tr><th>Week</th><th>Deliverable</th><th>Owner</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Repos, CI/CD, environments, auth-svc, base UI shell, brand tokens</td><td>Platform</td></tr>
+          <tr><td>2</td><td>identity / org / readiness / compliance schemas; intake skeleton</td><td>Backend</td></tr>
+          <tr><td>3</td><td>Diagnostic intake (50 fields, branching); scoring v0 (rules)</td><td>Diagnostic</td></tr>
+          <tr><td>4</td><td>Vault: upload, OCR (Textract), classification, retention policy</td><td>Vault</td></tr>
+          <tr><td>5</td><td>Credit-svc: one personal bureau + one business source; consent flow</td><td>Credit</td></tr>
+          <tr><td>6</td><td>Compliance Engine v0: CROA + FCRA + adverse action; audit log live</td><td>Compliance</td></tr>
+          <tr><td>7</td><td>BAI v0 aggregator + BPFS v0 (rules-based); decision envelope</td><td>AI/ML</td></tr>
+          <tr><td>8</td><td>Marketplace v0: lender catalog, matching, manual handoff for partners</td><td>Marketplace</td></tr>
+          <tr><td>9</td><td>Pathway Engine v0: linear templates, checkpoints, client/advisor UI</td><td>Pathway</td></tr>
+          <tr><td>10</td><td>Coaching v0: Claude chat + RAG over vault; guardrail v0</td><td>Coaching</td></tr>
+          <tr><td>11</td><td>Advisor command center, billing (Stripe), notification (SendGrid/Twilio)</td><td>Frontend + Billing</td></tr>
+          <tr><td>12</td><td>Hardening: load test, security review, accessibility pass, beta cutover</td><td>All</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s16-3" class="doc-section">
+      <h2>16.3 Phase 2 (Weeks 13-26) and Phase 3 (Weeks 27-52)</h2>
+      <ul>
+        <li><strong>Phase 2:</strong> Multi-bureau merge, BPFS model (XGBoost), Snowflake warehouse + BII, Temporal pathways, Lender Partner API, advisor white-labeling, mobile app shell</li>
+        <li><strong>Phase 3:</strong> Full BAI stack with BMS + BLIN learning loop, advanced coaching guardrails, community/advisor reputation, multi-region active-active for tier-0, SOC 2 Type II audit, public Marketplace</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         PART XVII — COST MODEL
+         ============================================================ -->
+    <section id="s17-1" class="doc-section">
+      <h2>17.1 Build Cost (MVP, 12 Weeks)</h2>
+      <table>
+        <thead><tr><th>Line Item</th><th>Notes</th><th>Low</th><th>High</th></tr></thead>
+        <tbody>
+          <tr><td>Engineering (10 FTE equivalents, contracted)</td><td>2 platform, 2 backend, 2 frontend, 1 AI/ML, 1 data, 1 QA, 1 security/compliance</td><td>$420,000</td><td>$640,000</td></tr>
+          <tr><td>Design (1 senior product designer)</td><td>12-week engagement</td><td>$45,000</td><td>$75,000</td></tr>
+          <tr><td>Compliance Counsel</td><td>CROA/FCRA/ECOA, state survey, contract templates</td><td>$35,000</td><td>$60,000</td></tr>
+          <tr><td>Security &amp; Pen Test (pre-launch)</td><td>One-off external</td><td>$25,000</td><td>$45,000</td></tr>
+          <tr><td>Infra (12 weeks pre-launch)</td><td>AWS + Vercel + Cloudflare + Datadog + Auth0 + Snowflake + Pinecone + Stripe</td><td>$18,000</td><td>$32,000</td></tr>
+          <tr><td>Vendors (bureaus, Plaid, Textract, etc.)</td><td>Setup + first 12 weeks volume</td><td>$22,000</td><td>$40,000</td></tr>
+          <tr><td><strong>Total MVP</strong></td><td>End-to-end build to live beta</td><td><strong>~$565,000</strong></td><td><strong>~$892,000</strong></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s17-2" class="doc-section">
+      <h2>17.2 Run-Rate (Year 1, Steady State)</h2>
+      <table>
+        <thead><tr><th>Category</th><th>Monthly (Low)</th><th>Monthly (High)</th></tr></thead>
+        <tbody>
+          <tr><td>Engineering (8 FTE blended)</td><td>$120,000</td><td>$180,000</td></tr>
+          <tr><td>Infra (AWS + Vercel + Cloudflare + Datadog)</td><td>$8,500</td><td>$22,000</td></tr>
+          <tr><td>Auth0</td><td>$1,500</td><td>$5,000</td></tr>
+          <tr><td>Snowflake + Pinecone</td><td>$4,000</td><td>$12,000</td></tr>
+          <tr><td>Anthropic Claude</td><td>$6,000</td><td>$25,000</td></tr>
+          <tr><td>Bureaus + Plaid + OCR + Tax data</td><td>$8,000</td><td>$30,000</td></tr>
+          <tr><td>Stripe processing (pass-through)</td><td>2.9% + 30¢ per txn</td><td>—</td></tr>
+          <tr><td>SendGrid + Twilio</td><td>$1,200</td><td>$4,500</td></tr>
+          <tr><td>Compliance + Audit (amortized)</td><td>$6,000</td><td>$14,000</td></tr>
+          <tr><td><strong>Total OpEx</strong></td><td><strong>~$155,200/mo</strong></td><td><strong>~$292,500/mo</strong></td></tr>
+        </tbody>
+      </table>
+      <p>Unit economics target: variable infra + vendor cost per active client &lt; $14/mo at scale; coaching token budget capped per plan tier.</p>
+    </section>
+
+    <!-- ============================================================
+         PART XVIII — APPENDICES
+         ============================================================ -->
+    <section id="s18-1" class="doc-section">
+      <h2>18.1 Glossary of Bankable Terms</h2>
+      <table>
+        <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>BAI</td><td>Bankable Adaptive Intelligence Engine — the unified intelligence layer</td></tr>
+          <tr><td>BLIN</td><td>Bankable Lender Intelligence Network — lender catalog + success-rate learning</td></tr>
+          <tr><td>BII</td><td>Bankable Industry Intelligence — NAICS benchmarks</td></tr>
+          <tr><td>BMS</td><td>Bankable Market Sensor — macro signals</td></tr>
+          <tr><td>BPFS</td><td>Bankable Predictive Funding Score — proprietary approval/term model</td></tr>
+          <tr><td>Capital Today</td><td>Outcome 1 — immediate non-bank funding</td></tr>
+          <tr><td>Bankability Built</td><td>Outcome 2 — structured business-credit build</td></tr>
+          <tr><td>Institutional Capital Access</td><td>Outcome 3 — bank, SBA, and larger institutional capital</td></tr>
+          <tr><td>Capital Access Matrix</td><td>Mapping of client state to viable funding routes</td></tr>
+          <tr><td>Goal-Backwards Build-Out</td><td>Pathway generation from target outcome backwards to current state</td></tr>
+          <tr><td>Bankable Capital Marketplace</td><td>Lender-facing distribution surface</td></tr>
+          <tr><td>Readiness Index</td><td>0–1000 composite score across 30 domains</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s18-2" class="doc-section">
+      <h2>18.2 Vendor Matrix</h2>
+      <table>
+        <thead><tr><th>Category</th><th>Primary</th><th>Fallback</th></tr></thead>
+        <tbody>
+          <tr><td>Cloud</td><td>AWS</td><td>GCP (DR posture only)</td></tr>
+          <tr><td>Frontend hosting</td><td>Vercel</td><td>AWS Amplify</td></tr>
+          <tr><td>Edge / WAF / DDoS</td><td>Cloudflare</td><td>AWS CloudFront + Shield</td></tr>
+          <tr><td>Identity</td><td>Auth0</td><td>AWS Cognito</td></tr>
+          <tr><td>Database</td><td>PostgreSQL 16 (RDS / Aurora)</td><td>—</td></tr>
+          <tr><td>Cache</td><td>Redis 7 (ElastiCache)</td><td>—</td></tr>
+          <tr><td>Vector</td><td>Pinecone</td><td>Weaviate</td></tr>
+          <tr><td>Warehouse</td><td>Snowflake</td><td>BigQuery</td></tr>
+          <tr><td>Workflow</td><td>Temporal Cloud</td><td>Self-hosted Temporal</td></tr>
+          <tr><td>Event bus</td><td>NATS JetStream (dev) → AWS EventBridge + SQS (prod)</td><td>Kafka (MSK) at scale</td></tr>
+          <tr><td>LLM</td><td>Anthropic Claude</td><td>OpenAI (limited fallback)</td></tr>
+          <tr><td>OCR</td><td>AWS Textract</td><td>Google Document AI</td></tr>
+          <tr><td>Observability</td><td>Datadog</td><td>Grafana Cloud</td></tr>
+          <tr><td>Errors</td><td>Sentry</td><td>Datadog Error Tracking</td></tr>
+          <tr><td>Bank data</td><td>Plaid</td><td>MX</td></tr>
+          <tr><td>Personal credit</td><td>Experian / Equifax / TransUnion</td><td>—</td></tr>
+          <tr><td>Business credit</td><td>D&amp;B / Equifax Commercial / Experian Commercial</td><td>Nav</td></tr>
+          <tr><td>Email</td><td>SendGrid</td><td>Postmark</td></tr>
+          <tr><td>SMS</td><td>Twilio</td><td>Plivo</td></tr>
+          <tr><td>Billing</td><td>Stripe</td><td>—</td></tr>
+          <tr><td>E-signature</td><td>DocuSign</td><td>HelloSign</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s18-3" class="doc-section">
+      <h2>18.3 OSS Licenses &amp; Compliance Notes</h2>
+      <ul>
+        <li>All dependencies SBOM-tracked via Syft; CI fails on GPL-family copyleft introduction without exception sign-off</li>
+        <li>Allowed: MIT, Apache 2.0, BSD-2/3, ISC, MPL 2.0 (with isolation), CC-BY for content</li>
+        <li>Cryptography: only FIPS-validated implementations in compliance-sensitive paths</li>
+        <li>Third-party model licenses: Anthropic Claude commercial; embedding model licenses validated per vendor</li>
+      </ul>
+    </section>
+
+    <section id="s18-4" class="doc-section">
+      <h2>18.4 Document Control</h2>
+      <table>
+        <thead><tr><th>Field</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Document</td><td>BANKABLE IQ&trade; Master Engineering Build Specification</td></tr>
+          <tr><td>Version</td><td>v1.0</td></tr>
+          <tr><td>Owners</td><td>Kevin Murphy (Co-Founder), Michael Hopkins (Co-Founder)</td></tr>
+          <tr><td>Status</td><td>Active &mdash; engineering reference, partner-shareable</td></tr>
+          <tr><td>Distribution</td><td>Engineering hires, contracted dev shops, technical investors, B2B partner technical leads</td></tr>
+          <tr><td>Companion</td><td>BANKABLE&trade; Internal Corporate Blueprint v1.9 (strategic), hosted at <code>blueprint.getbankable.io</code></td></tr>
+          <tr><td>Live URL</td><td><code>blueprint.getbankable.io/engineering-spec.html</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// Auto-data-label every table cell for mobile stack pattern
+(function autoLabelTables() {
+  document.querySelectorAll('table').forEach(function(table) {
+    var headers = Array.from(table.querySelectorAll('thead th')).map(function(th) { return th.textContent.trim(); });
+    if (!headers.length) return;
+    table.querySelectorAll('tbody tr').forEach(function(tr) {
+      Array.from(tr.children).forEach(function(td, i) {
+        if (headers[i] && !td.hasAttribute('data-label')) td.setAttribute('data-label', headers[i]);
+      });
+    });
+  });
+})();
+// Sidebar mobile toggle
+(function() {
+  var sidebar = document.getElementById('sidebar');
+  var toggle = document.getElementById('mobile-toggle');
+  var backdrop = document.getElementById('sidebar-backdrop');
+  function open() { sidebar.classList.add('open'); if (backdrop) backdrop.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  function close() { sidebar.classList.remove('open'); if (backdrop) backdrop.classList.remove('open'); document.body.style.overflow = ''; }
+  toggle && toggle.addEventListener('click', function() { sidebar.classList.contains('open') ? close() : open(); });
+  backdrop && backdrop.addEventListener('click', close);
+  document.querySelectorAll('.sidebar-link').forEach(function(l) { l.addEventListener('click', close); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') close(); });
+})();
+// Active-link on scroll
+(function() {
+  var sections = document.querySelectorAll('.doc-section, .doc-cover');
+  var links = document.querySelectorAll('.sidebar-link');
+  window.addEventListener('scroll', function() {
+    var cur = '';
+    sections.forEach(function(s) { if (window.scrollY >= s.offsetTop - 100) cur = s.id; });
+    links.forEach(function(l) { l.classList.toggle('active', l.getAttribute('href') === '#' + cur); });
+  });
+})();
+</script>
+
+</body>
+</html>
