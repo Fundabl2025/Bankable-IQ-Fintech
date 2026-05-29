@@ -1,1 +1,7 @@
 .vercel
+
+# Next.js (parallel migration scaffold)
+apps/web-next/.next/
+apps/web-next/out/
+apps/web-next/next-env.d.ts.bak
+.vercel/

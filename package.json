@@ -7,7 +7,11 @@
     "build": "vite build",
     "dev": "vite",
     "eval": "vite-node scripts/eval-scoring.ts",
-    "eval:bankable": "vite-node scripts/eval-bankable-items.ts"
+    "eval:bankable": "vite-node scripts/eval-bankable-items.ts",
+    "dev:next": "next dev apps/web-next --port 3001",
+    "build:next": "next build apps/web-next",
+    "start:next": "next start apps/web-next",
+    "lint:next": "next lint apps/web-next"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -67,14 +71,16 @@
     "sonner": "2.0.3",
     "tailwind-merge": "3.2.0",
     "tw-animate-css": "1.3.8",
-    "vaul": "1.1.2"
+    "vaul": "1.1.2",
+    "next": "14.2.18"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
     "@vitejs/plugin-react": "4.7.0",
     "tailwindcss": "4.1.12",
     "vite": "6.3.5",
-    "vite-node": "^6.0.0"
+    "vite-node": "^6.0.0",
+    "@types/node": "20.x"
   },
   "peerDependencies": {
     "react": "18.3.1",
