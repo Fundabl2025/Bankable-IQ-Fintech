@@ -1,4 +1,4 @@
-# Fleet Test-Healer (ACTIVATED v1)
+﻿# Fleet Test-Healer (ACTIVATED v1)
 name: fleet-test-healer
 on:
   check_suite:
@@ -42,6 +42,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: ${{ steps.prompt.outputs.prompt }}
           allowed_tools: "Bash,Read,Write,Edit,Glob,Grep"
           max_turns: 25

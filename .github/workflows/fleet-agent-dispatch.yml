@@ -1,4 +1,4 @@
-# Fleet Agent Dispatch (ACTIVATED v1)
+﻿# Fleet Agent Dispatch (ACTIVATED v1)
 # When an issue is labeled with an owner label or has /run comment,
 # spawn the matching agent via Claude Code.
 name: fleet-agent-dispatch
@@ -124,6 +124,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: ${{ steps.prompt.outputs.prompt }}
           allowed_tools: "Bash,Read,Write,Edit,Glob,Grep"
           max_turns: 50

@@ -1,4 +1,4 @@
-# Fleet Security Triage (ACTIVATED v1)
+﻿# Fleet Security Triage (ACTIVATED v1)
 name: fleet-security-triage
 on:
   workflow_run:
@@ -40,6 +40,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: ${{ steps.prompt.outputs.prompt }}
           allowed_tools: "Bash(gh:*),Read,Grep"
           max_turns: 10

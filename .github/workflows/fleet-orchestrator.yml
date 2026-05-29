@@ -1,4 +1,4 @@
-# Fleet Orchestrator (ACTIVATED v1)
+﻿# Fleet Orchestrator (ACTIVATED v1)
 # Runs every 15 minutes. Reads the spec and blueprint, compares against
 # closed issues, opens new issues for gaps, closes stale ones.
 name: fleet-orchestrator
@@ -62,6 +62,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: ${{ steps.prompt.outputs.prompt }}
           allowed_tools: "Bash(gh:*),Read,Glob,Grep"
           max_turns: 20

@@ -1,4 +1,4 @@
-# Fleet Reviewer (ACTIVATED v1)
+﻿# Fleet Reviewer (ACTIVATED v1)
 name: fleet-reviewer
 on:
   pull_request:
@@ -46,6 +46,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: ${{ steps.prompt.outputs.prompt }}
           allowed_tools: "Bash(gh:*),Read,Grep,Glob"
           max_turns: 15
