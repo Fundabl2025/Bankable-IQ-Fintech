@@ -1,0 +1,17 @@
+name: fleet-reviewer
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  reviewer:
+    if: github.actor != 'bot-reviewer' && vars.FLEET_PAUSED != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Spawn bot-reviewer
+        run: |
+          echo "bot-reviewer reviewing PR #${{ github.event.pull_request.number }}"
+          echo "System prompt: .github/agents/bot-reviewer.md"

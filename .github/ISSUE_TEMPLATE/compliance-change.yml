@@ -1,0 +1,23 @@
+name: Compliance change
+description: Change to packages/compliance-rules or compliance-sensitive code
+title: "[compliance] <summary>"
+labels: ["compliance-sensitive", "service:compliance"]
+body:
+  - type: textarea
+    id: regulation
+    attributes:
+      label: Applicable regulation
+      placeholder: CROA / FCRA / ECOA / GLBA / state-level
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Description of change
+    validations:
+      required: true
+  - type: textarea
+    id: signoff
+    attributes:
+      label: Compliance Officer signoff
+      description: Founder must comment compliance-officer-approved on the PR before merge

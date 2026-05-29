@@ -1,0 +1,29 @@
+name: Spec-driven feature
+description: Work derived from the BANKABLE Spec v1.1 or Blueprint v1.8
+title: "[<owner>] <verb> <subject>"
+labels: []
+body:
+  - type: textarea
+    id: frontmatter
+    attributes:
+      label: Frontmatter
+      description: Required. Declare ownership and dependencies.
+      value: |
+        ---
+        owner: service:<svc>
+        depends_on: []
+        blocks: []
+        spec_sections: ["§<n>"]
+        blueprint_sections: ["§<n>"]
+        maturity_target: <level>
+        acceptance:
+          - <criterion 1>
+          - <criterion 2>
+        ---
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Context, design notes, links.

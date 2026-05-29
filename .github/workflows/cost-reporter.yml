@@ -1,0 +1,16 @@
+name: cost-reporter
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+permissions:
+  issues: write
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Spawn bot-cost
+        run: |
+          echo "bot-cost generating weekly burn report"
+          echo "System prompt: .github/agents/bot-cost.md"

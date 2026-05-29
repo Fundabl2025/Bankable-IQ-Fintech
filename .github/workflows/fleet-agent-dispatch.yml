@@ -1,0 +1,75 @@
+# Fleet Agent Dispatch
+# When an issue is labeled with an owner label or has /run comment,
+# spawn the matching agent via claude-code-action.
+name: fleet-agent-dispatch
+on:
+  issues:
+    types: [labeled, assigned]
+  issue_comment:
+    types: [created]
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      paused: ${{ steps.budget.outputs.paused }}
+      bot: ${{ steps.resolve.outputs.bot }}
+    steps:
+      - id: budget
+        run: |
+          paused="${{ vars.FLEET_PAUSED }}"
+          paused="${paused:-false}"
+          echo "paused=${paused}" >> "$GITHUB_OUTPUT"
+      - id: resolve
+        run: |
+          # Map labels to bot names
+          bot=""
+          for lbl in $(echo '${{ toJson(github.event.issue.labels.*.name) }}' | jq -r '.[]'); do
+            case "$lbl" in
+              orchestrator) bot="bot-orchestrator" ;;
+              architect) bot="bot-architect" ;;
+              platform) bot="bot-platform" ;;
+              service:auth) bot="bot-auth" ;;
+              service:diagnostic) bot="bot-diagnostic" ;;
+              service:compliance) bot="bot-compliance" ;;
+              service:coaching) bot="bot-coaching" ;;
+              service:credit) bot="bot-credit" ;;
+              service:vault) bot="bot-vault" ;;
+              service:pathway) bot="bot-pathway" ;;
+              service:bai) bot="bot-bai" ;;
+              service:marketplace) bot="bot-marketplace" ;;
+              service:billing) bot="bot-billing" ;;
+              frontend) bot="bot-frontend" ;;
+              design) bot="bot-design" ;;
+              security) bot="bot-security" ;;
+              observability) bot="bot-observability" ;;
+              docs) bot="bot-docs" ;;
+              cost) bot="bot-cost" ;;
+              console) bot="bot-console" ;;
+              demo) bot="bot-demo" ;;
+              decision) bot="bot-explainer" ;;
+              archeologist) bot="bot-archeologist" ;;
+              backup) bot="bot-backup" ;;
+            esac
+            if [ -n "$bot" ]; then break; fi
+          done
+          echo "bot=${bot}" >> "$GITHUB_OUTPUT"
+          echo "Resolved bot: ${bot}"
+  dispatch:
+    needs: preflight
+    if: needs.preflight.outputs.paused != 'true' && needs.preflight.outputs.bot != ''
+    runs-on: ubuntu-latest
+    concurrency:
+      group: fleet-agents
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Spawn ${{ needs.preflight.outputs.bot }}
+        run: |
+          bot="${{ needs.preflight.outputs.bot }}"
+          echo "Spawning ${bot} for issue #${{ github.event.issue.number }}"
+          echo "System prompt: .github/agents/${bot}.md"
+          # Replace with: anthropics/claude-code-action@v1 once ANTHROPIC_API_KEY is configured

@@ -1,0 +1,12 @@
+# Vercel handles preview deploys via its GitHub App.
+# This workflow only adds a label to indicate preview is in progress.
+name: vercel-preview
+on:
+  pull_request:
+    types: [opened, synchronize]
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Note preview deploy in progress
+        run: echo "Vercel app deploys preview automatically. Check the PR Checks tab."

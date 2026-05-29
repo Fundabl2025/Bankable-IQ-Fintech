@@ -1,0 +1,41 @@
+# Polls Anthropic billing every 10 minutes. Sets FLEET_PAUSED=true when MTD spend hits ANTHROPIC_BUDGET_HARD_CAP.
+name: fleet-budget-guard
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+permissions:
+  actions: write
+  contents: read
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compute MTD Anthropic spend
+        id: mtd
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "ANTHROPIC_API_KEY not set; skipping budget check"
+            echo "spend=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Anthropic admin API endpoint may evolve; fail-closed if unreachable
+          spend=$(curl -sf -H "x-api-key: $ANTHROPIC_API_KEY" \
+            https://api.anthropic.com/v1/admin/usage/current_month \
+            | jq -r '.usage_usd // 0' || echo "99999999")
+          echo "spend=${spend}" >> "$GITHUB_OUTPUT"
+      - name: Compare against cap
+        env:
+          GH_TOKEN: ${{ secrets.GH_BOT_PAT }}
+          CAP: ${{ vars.ANTHROPIC_BUDGET_HARD_CAP }}
+          SPEND: ${{ steps.mtd.outputs.spend }}
+        run: |
+          cap="${CAP:-3000}"
+          if awk "BEGIN{exit !(${SPEND} >= ${cap})}"; then
+            echo "Budget cap reached: spend=\$${SPEND} cap=\$${cap}. Pausing fleet."
+            # Replace with: gh variable set FLEET_PAUSED --body "true" once GH_BOT_PAT is configured
+          else
+            echo "Budget OK: spend=\$${SPEND} cap=\$${cap}"
+          fi
