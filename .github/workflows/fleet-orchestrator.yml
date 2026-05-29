@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      model: claude-sonnet-4-6
+      claude_args: "--model claude-sonnet-4-6"
     outputs:
       paused: ${{ steps.budget.outputs.paused }}
     steps:
