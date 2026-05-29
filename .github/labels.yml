@@ -1,0 +1,132 @@
+# BANKABLE IQ Fleet Labels
+# Managed by crazy-max/ghaction-github-labeler@v5
+# Owner labels: assign work to specific agent
+
+# Owner labels (agents pick up issues by these)
+- name: orchestrator
+  color: 9333EA
+  description: Owned by bot-orchestrator
+- name: architect
+  color: 9333EA
+  description: Owned by bot-architect
+- name: platform
+  color: 0EA5E9
+  description: Owned by bot-platform
+- name: service:auth
+  color: 06B6D4
+  description: Owned by bot-auth
+- name: service:diagnostic
+  color: 06B6D4
+  description: Owned by bot-diagnostic
+- name: service:compliance
+  color: 06B6D4
+  description: Owned by bot-compliance
+- name: service:coaching
+  color: 06B6D4
+  description: Owned by bot-coaching
+- name: service:credit
+  color: 06B6D4
+  description: Owned by bot-credit
+- name: service:vault
+  color: 06B6D4
+  description: Owned by bot-vault
+- name: service:pathway
+  color: 06B6D4
+  description: Owned by bot-pathway
+- name: service:bai
+  color: 06B6D4
+  description: Owned by bot-bai (and BLIN/BII/BMS/BPFS sub-systems)
+- name: service:marketplace
+  color: 06B6D4
+  description: Owned by bot-marketplace
+- name: service:billing
+  color: 06B6D4
+  description: Owned by bot-billing
+- name: frontend
+  color: 14B8A6
+  description: Owned by bot-frontend
+- name: design
+  color: F472B6
+  description: Owned by bot-design
+- name: integration:plaid
+  color: 8B5CF6
+  description: Plaid integration work
+- name: integration:bureau
+  color: 8B5CF6
+  description: Credit bureau integration work
+- name: integration:stripe
+  color: 8B5CF6
+  description: Stripe billing work
+- name: integration:accounting
+  color: 8B5CF6
+  description: QBO/Xero integration work
+- name: security
+  color: EF4444
+  description: Owned by bot-security
+- name: observability
+  color: F97316
+  description: Owned by bot-observability
+- name: docs
+  color: 6B7280
+  description: Owned by bot-docs
+- name: cost
+  color: EAB308
+  description: Owned by bot-cost
+- name: console
+  color: F472B6
+  description: Owned by bot-console
+- name: demo
+  color: F472B6
+  description: Owned by bot-demo
+- name: decision
+  color: 8B5CF6
+  description: Owned by bot-explainer (ADR plain-English translations)
+- name: archeologist
+  color: A16207
+  description: Owned by bot-archeologist
+- name: backup
+  color: A16207
+  description: Owned by bot-backup
+
+# Lock labels (prevent collision on shared resources)
+- name: lock:db-schema
+  color: B91C1C
+  description: Holding write access to packages/db
+- name: lock:api-gateway
+  color: B91C1C
+  description: Holding write access to apps/api
+- name: lock:design-tokens
+  color: B91C1C
+  description: Holding write access to packages/design-tokens
+- name: lock:compliance-rules
+  color: B91C1C
+  description: Holding write access to packages/compliance-rules
+- name: lock:env-matrix
+  color: B91C1C
+  description: Holding write access to .env.example or env runbook
+- name: lock:openapi
+  color: B91C1C
+  description: Holding write access to packages/sdk/openapi
+
+# Workflow labels
+- name: bug
+  color: D73A4A
+  description: Something is broken
+- name: incident
+  color: 7C2D12
+  description: Production incident
+- name: compliance-sensitive
+  color: F59E0B
+  description: Touches packages/compliance-rules or PII/credit/decisioning code
+- name: blocked-external
+  color: 6B7280
+  description: Waiting on external vendor or approval
+- name: release-candidate
+  color: 22C55E
+  description: Reviewer marked the integration tip as ready for prod
+- name: auto-merge
+  color: 22C55E
+  description: Reviewer approved, auto-merge enabled
+- name: needs-human
+  color: F59E0B
+  description: Requires founder/operator decision

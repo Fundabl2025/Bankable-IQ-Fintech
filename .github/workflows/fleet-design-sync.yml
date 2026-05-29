@@ -1,0 +1,17 @@
+name: fleet-design-sync
+on:
+  push:
+    branches: [main]
+    paths: [packages/design-tokens/**]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Spawn bot-design
+        run: |
+          echo "bot-design syncing tokens to Tailwind preset + Figma file"
+          echo "System prompt: .github/agents/bot-design.md"

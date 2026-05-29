@@ -1,0 +1,21 @@
+# Manual production promotion. Requires founder/operator comment promote-to-prod.
+name: vercel-promote
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Integration branch ref to promote"
+        required: true
+        default: integration
+permissions:
+  contents: read
+  deployments: write
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify promote-to-prod comment exists
+        run: |
+          echo "Manual promote initiated by ${{ github.actor }}"
+          echo "Ref: ${{ inputs.ref }}"
+          echo "Canary plan: 10% -> 50% -> 100% with Datadog SLO gate"

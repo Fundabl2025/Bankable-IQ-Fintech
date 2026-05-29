@@ -1,0 +1,17 @@
+name: fleet-test-healer
+on:
+  check_suite:
+    types: [completed]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  healer:
+    if: github.event.check_suite.conclusion == 'failure' && vars.FLEET_PAUSED != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Spawn bot-test-healer
+        run: |
+          echo "bot-test-healer triggered by failed check_suite"
+          echo "System prompt: .github/agents/bot-test-healer.md"

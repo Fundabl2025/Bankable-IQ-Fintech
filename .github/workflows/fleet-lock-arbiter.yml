@@ -1,0 +1,23 @@
+# Prevents two open PRs from holding the same lock label.
+name: fleet-lock-arbiter
+on:
+  pull_request:
+    types: [labeled, synchronize]
+permissions:
+  pull-requests: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify no lock collision
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for lbl in $(echo '${{ toJson(github.event.pull_request.labels.*.name) }}' | jq -r '.[]' | grep '^lock:' || true); do
+            count=$(gh pr list --label "$lbl" --state open --json number | jq 'length')
+            if [ "${count}" -gt 1 ]; then
+              echo "Lock collision on ${lbl}: ${count} open PRs"
+              exit 1
+            fi
+          done
+          echo "No lock collisions"

@@ -1,0 +1,41 @@
+# Fleet Orchestrator
+# Runs every 15 minutes. Reads the spec and blueprint, compares against
+# closed issues, opens new issues for gaps, closes stale ones.
+# Spawns bot-orchestrator via the claude-code-action.
+name: fleet-orchestrator
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      paused: ${{ steps.budget.outputs.paused }}
+    steps:
+      - name: Check FLEET_PAUSED variable
+        id: budget
+        run: |
+          paused="${{ vars.FLEET_PAUSED }}"
+          paused="${paused:-false}"
+          echo "paused=${paused}" >> "$GITHUB_OUTPUT"
+          echo "Fleet paused: ${paused}"
+  orchestrator:
+    needs: preflight
+    if: needs.preflight.outputs.paused != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run bot-orchestrator
+        # Replace with anthropics/claude-code-action@v1 once configured
+        run: |
+          echo "bot-orchestrator dispatched at $(date -u +%FT%TZ)"
+          echo "System prompt: .github/agents/bot-orchestrator.md"
+          echo "Action: read spec + blueprint, reconcile against issue queue"
+          echo "Status: skeleton workflow. Wire ANTHROPIC_API_KEY + claude-code-action to activate."

@@ -1,0 +1,25 @@
+name: fleet-dashboard-render
+on:
+  push:
+    branches: [integration, main]
+    paths: [docs/runbooks/fleet-status.md]
+  workflow_dispatch:
+permissions:
+  issues: write
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update pinned dashboard issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DASHBOARD_ISSUE: ${{ vars.FLEET_DASHBOARD_ISSUE_NUMBER }}
+        run: |
+          if [ -z "${DASHBOARD_ISSUE}" ]; then
+            echo "FLEET_DASHBOARD_ISSUE_NUMBER not set; skipping render"
+            exit 0
+          fi
+          if [ -f docs/runbooks/fleet-status.md ]; then
+            gh issue edit "${DASHBOARD_ISSUE}" --body-file docs/runbooks/fleet-status.md
+          fi
