@@ -1,3 +1,4 @@
+# Fleet Test-Healer (ACTIVATED v1)
 name: fleet-test-healer
 on:
   check_suite:
@@ -9,9 +10,37 @@ jobs:
   healer:
     if: github.event.check_suite.conclusion == 'failure' && vars.FLEET_PAUSED != 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Spawn bot-test-healer
+      - name: Mint GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      - name: Load bot-test-healer system prompt
+        id: prompt
         run: |
-          echo "bot-test-healer triggered by failed check_suite"
-          echo "System prompt: .github/agents/bot-test-healer.md"
+          {
+            echo 'prompt<<EOFPROMPT'
+            cat .github/agents/bot-test-healer.md
+            echo
+            cat .github/agents/_TEMPLATE.md
+            echo
+            echo "## Failed check_suite"
+            echo "ID: ${{ github.event.check_suite.id }}"
+            echo "Head SHA: ${{ github.event.check_suite.head_sha }}"
+            echo "Use gh CLI to fetch the failing check runs and their logs."
+            echo "Reproduce locally, write the smallest fix, push to the same branch."
+            echo 'EOFPROMPT'
+          } >> "$GITHUB_OUTPUT"
+      - name: Heal via Claude Code
+        uses: anthropics/claude-code-base-action@v1
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        with:
+          prompt: ${{ steps.prompt.outputs.prompt }}
+          allowed_tools: "Bash,Read,Write,Edit,Glob,Grep"
+          max_turns: 25
