@@ -1,0 +1,28 @@
+@import './_styles/brand.css';
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+* { min-width: 0; }
+
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+  background-color: var(--surface-bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.55;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+code, .mono {
+  font-family: var(--font-mono);
+}
+
+a { color: var(--text-accent); text-decoration: none; }
+a:hover { color: var(--brand-cyan-400); }

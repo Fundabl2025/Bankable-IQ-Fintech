@@ -1,0 +1,65 @@
+/**
+ * BANKABLE IQ Brand v1 — CSS custom properties.
+ * Generated from packages/design-tokens/tokens.json
+ * Source: Figma file y3wOnWeFZqJVUH8xi2MoLZ
+ */
+
+:root {
+  /* Color — Brand */
+  --brand-indigo-600: #2F2BB8;
+  --brand-navy-700: #142B66;
+  --brand-navy-900: #0A1845;
+  --brand-navy-950: #050E2B;
+  --brand-blue-600: #137DC5;
+  --brand-cyan-400: #7DD3FC;
+  --brand-cyan-500: #00AEEF;
+  --brand-violet-400: #B197FC;
+
+  /* Color — Semantic */
+  --success-500: #51CF66;
+  --warning-500: #FFB347;
+  --danger-500: #FF6B6B;
+  --info-500: #00AEEF;
+
+  /* Color — Neutrals */
+  --grey-400: #8B9BBF;
+  --grey-600: #5A6A8E;
+
+  /* Color — Surfaces */
+  --surface-bg: #050E2B;
+  --surface-elevated: #061128;
+  --surface-border: #142B66;
+
+  /* Color — Text */
+  --text-primary: #FFFFFF;
+  --text-secondary: #8B9BBF;
+  --text-accent: #00AEEF;
+
+  /* Brand gradient (indigo to cyan, matches BankableIQ logo) */
+  --brand-gradient: linear-gradient(90deg, #2F2BB8 0%, #137DC5 50%, #00AEEF 100%);
+
+  /* Typography */
+  --font-display: 'Sora', system-ui, -apple-system, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-accent: 'Playfair Display', Georgia, serif;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radius scale */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-round: 100px;
+}
