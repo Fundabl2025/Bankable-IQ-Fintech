@@ -83,6 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ANTHROPIC_DEFAULT_SONNET_MODEL: claude-sonnet-4-6
     timeout-minutes: 45
     concurrency:
       group: fleet-agents-${{ github.event.issue.number }}
