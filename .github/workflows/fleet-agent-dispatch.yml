@@ -78,8 +78,7 @@ jobs:
           fi
   dispatch:
     needs: preflight
-    if: needs.preflight.outputs.paused != 'true' && needs.preflight.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
+    if: false  # HOTFIX: hard-disabled while we control rollout. Revert to original condition to re-enable.    runs-on: ubuntu-latest
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       ANTHROPIC_DEFAULT_SONNET_MODEL: claude-sonnet-4-6
