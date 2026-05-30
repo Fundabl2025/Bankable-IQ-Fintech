@@ -43,7 +43,6 @@ jobs:
           bot=""
           for lbl in $(echo "$LABELS_JSON" | jq -r '.[]'); do
             case "$lbl" in
-              orchestrator) bot="bot-orchestrator" ;;
               architect) bot="bot-architect" ;;
               platform) bot="bot-platform" ;;
               service:auth) bot="bot-auth" ;;
